@@ -1728,8 +1728,22 @@ function adminSaveLinks(){
 }
 
 function adminImportOps(mo){
-  const inp=$(`lnk-ops-${mo}`);if(!inp||!inp.value.trim()){updateAdminStatus('Pega un link de Google Sheets primero.','error');return;}
-  ImporterEngine.importOps(inp.value.trim(),mo).then(()=>{ renderAdmin(); }).catch(e=>{ updateAdminStatus('Error: '+e.message+'. Verifica que el Sheet sea publico (Compartir → Cualquiera con el link → Lector).','error'); renderAdmin(); });
+  const inp=$(`lnk-ops-${mo}`);
+  if(!inp||!inp.value.trim()){updateAdminStatus('Pega un link de Google Sheets primero.','error');return;}
+  const savedVal = inp.value.trim();
+  // Save the link FIRST before any async operation so renderAdmin doesn't overwrite it
+  if(!DataEngine._linksConfig[mo]) DataEngine._linksConfig[mo]={};
+  DataEngine._linksConfig[mo].ops = savedVal;
+  DataEngine.saveLinksConfig();
+  ImporterEngine.importOps(savedVal, mo)
+    .then(()=>{ renderAdmin(); })
+    .catch(e=>{
+      updateAdminStatus('Error: '+e.message+'. Verifica que el Sheet sea publico.','error');
+      renderAdmin();
+      // Restore the value the user typed (renderAdmin may overwrite with stale value)
+      const inp2=$(`lnk-ops-${mo}`);
+      if(inp2) inp2.value = savedVal;
+    });
 }
 function adminImportAdh(mo){
   const inp=$(`lnk-adh-${mo}`);if(!inp||!inp.value.trim()){updateAdminStatus('Pega un link primero.','error');return;}
