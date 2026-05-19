@@ -1621,13 +1621,15 @@ function renderAdmin(){
       const updated=mData.updated?mData.updated.slice(0,10):'--';
       // Determine month status
       const hasEmbedded = DataEngine.rows.filter(r=>r.month===mo).length > 0;
-      const isLive = mo === APP_STATE.currentMonth;
-      const isFuture = mo > (APP_STATE.currentMonth||'2026-05');
+      // isLive = last month with data (the one being actively updated)
+      const _lastMonth = DataEngine.months.length ? DataEngine.months[DataEngine.months.length-1] : '2026-05';
+      const isLive = mo === _lastMonth;
+      const isFuture = mo > _lastMonth;
       const hasImported = mData.loaded;
       
       // Color scheme per state
       let borderColor, statusBadge, inputDisabled;
-      if (hasEmbedded && !hasImported) {
+      if (hasEmbedded && !hasImported && !isLive) {
         // Has embedded data — locked (historical)
         borderColor = 'var(--grn)';
         statusBadge = '<span style="background:#f0fdf4;color:#166534;border:1px solid #86efac;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">✓ Datos embebidos</span>';
@@ -1659,7 +1661,7 @@ function renderAdmin(){
           <p style="font-size:13px;font-weight:700;color:var(--txt)">${MES_ES[mo]||mo} 2026</p>
           ${statusBadge}
         </div>
-        <div style="display:grid;gap:8px;${hasEmbedded&&!hasImported?'display:none':''}">
+        <div style="display:grid;gap:8px;${hasEmbedded&&!hasImported&&!isLive?'display:none':''}">
           <div>
             <div class="kl" style="margin-bottom:3px">🔗 Link Google Sheets — Ops: Rec_Agent Performance</div>
             <p style="font-size:10px;color:var(--tx3);margin:2px 0 5px">Lee automaticamente: QS_Sales · QS_Calls · QS_Staff · QS_ER · PAYROLL · RESUMEN · Front_Commisions</p>
@@ -1667,7 +1669,7 @@ function renderAdmin(){
               <input type="text" id="lnk-ops-${mo}" value="${mData.ops||''}" placeholder="https://docs.google.com/spreadsheets/d/..." style="flex:1;padding:6px 10px;border:1px solid var(--bd);border-radius:7px;font-size:11px;font-family:var(--font);outline:none">
               <button onclick="adminImportOps('${mo}')" class="btn-pdf" style="padding:5px 12px;font-size:11px;white-space:nowrap">↓ Cargar</button>
             </div>
-            ${hasEmbedded&&!hasImported?'<p style="font-size:10px;color:var(--grn);margin-top:4px">✓ Este mes tiene datos historicos embebidos. Solo carga si quieres actualizar con datos nuevos.</p>':''}
+            ${hasEmbedded&&!hasImported&&!isLive?'<p style="font-size:10px;color:var(--grn);margin-top:4px">✓ Este mes tiene datos historicos embebidos. Solo carga si quieres actualizar con datos nuevos.</p>':''}
           </div>
         </div>
       </div>`;
@@ -1759,16 +1761,14 @@ async function init(){
   // Restore persisted state
   APP_STATE.currentAgent     = Store.get('state_agent', null);
   APP_STATE.currentSupervisor= Store.get('state_sup',   null);
-  APP_STATE.currentMonth     = Store.get('state_month', null);
   APP_STATE.currentPeriod    = Store.get('state_period','month');
 
   await DataEngine.loadAll();
 
-  // Default month
-  if(!APP_STATE.currentMonth){
-    const ms=DataEngine.months;
-    APP_STATE.currentMonth=ms[ms.length-1]||'2026-05';
-  }
+  // Always default to the LAST available month (most recent data)
+  // Don't restore from localStorage — always start fresh on the latest month
+  const _ms = DataEngine.months;
+  APP_STATE.currentMonth = _ms.length ? _ms[_ms.length-1] : '2026-05';
   // Default agent
   if(!APP_STATE.currentAgent && DataEngine.agentList.length){
     APP_STATE.currentAgent = DataEngine.agentList[0];
