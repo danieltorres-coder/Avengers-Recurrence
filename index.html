@@ -763,13 +763,30 @@ const ImporterEngine = {
   async importOps(url, monthStr) {
     updateAdminStatus('Importando Ops: Rec_Agent Performance...', 'loading');
     try {
+      // Build export URL — try with gid=0 first (QS_Sales is usually first tab)
       const csvUrl = this.toExportURL(url);
-      if (!csvUrl) throw new Error('URL invalida');
-      const resp  = await fetch(csvUrl);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      if (!csvUrl) throw new Error('URL invalida. Pega el link de edicion o compartido del Sheet.');
+      
+      // Fetch with no-cors won't work; Sheet must be public
+      let resp;
+      try {
+        resp = await fetch(csvUrl);
+      } catch(fetchErr) {
+        throw new Error('No se puede acceder al Sheet. Verifica: Archivo → Compartir → Cualquiera con el link → Lector → Publicar en la web.');
+      }
+      
+      if (resp.status === 401 || resp.status === 403) {
+        throw new Error('Sheet privado (403). Haz el Sheet publico: Compartir → Cualquiera con el link puede ver.');
+      }
+      if (!resp.ok) throw new Error(`Error HTTP ${resp.status} al leer el Sheet.`);
+      
       const text  = await resp.text();
+      // Check if we got HTML instead of CSV (happens when sheet is private)
+      if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+        throw new Error('El Sheet requiere login. Ve a Archivo → Compartir → Publicar en la web → CSV → Publicar. Usa ese link.');
+      }
       const rows  = this.parseOpsCSV(text, monthStr);
-      if (!rows.length) throw new Error('No se encontraron filas validas');
+      if (!rows.length) throw new Error('CSV leido pero sin filas validas. Verifica que la pestaña QS_Sales tiene datos.');
       DataEngine.mergeMonth(monthStr, rows, 'ops');
       // Update links config
       if (!DataEngine._linksConfig[monthStr]) DataEngine._linksConfig[monthStr] = {};
@@ -1596,19 +1613,55 @@ function renderAdmin(){
       const mData=cfg[mo]||{};
       const loaded=mData.loaded?'✓':'-';
       const updated=mData.updated?mData.updated.slice(0,10):'--';
-      return `<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:10px">
+      // Determine month status
+      const hasEmbedded = DataEngine.rows.filter(r=>r.month===mo).length > 0;
+      const isLive = mo === APP_STATE.currentMonth;
+      const isFuture = mo > (APP_STATE.currentMonth||'2026-05');
+      const hasImported = mData.loaded;
+      
+      // Color scheme per state
+      let borderColor, statusBadge, inputDisabled;
+      if (hasEmbedded && !hasImported) {
+        // Has embedded data — locked (historical)
+        borderColor = 'var(--grn)';
+        statusBadge = '<span style="background:#f0fdf4;color:#166534;border:1px solid #86efac;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">✓ Datos embebidos</span>';
+        inputDisabled = 'opacity:0.5;pointer-events:none';
+      } else if (hasImported) {
+        // Imported via Admin
+        borderColor = 'var(--grn)';
+        statusBadge = '<span style="background:#f0fdf4;color:#166534;border:1px solid #86efac;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">✓ Importado · '+updated+'</span>';
+        inputDisabled = '';
+      } else if (isLive) {
+        // Current month — active
+        borderColor = '#4f46e5';
+        statusBadge = '<span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">⚡ Mes activo — pega el link aqui</span>';
+        inputDisabled = '';
+      } else if (isFuture) {
+        // Future month
+        borderColor = 'var(--bd)';
+        statusBadge = '<span style="font-size:10px;color:var(--tx3)">Pendiente</span>';
+        inputDisabled = 'opacity:0.4;pointer-events:none';
+      } else {
+        // Past month without data
+        borderColor = '#d97706';
+        statusBadge = '<span style="background:#fffbeb;color:#854d0e;border:1px solid #fde68a;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">⚠ Sin datos</span>';
+        inputDisabled = '';
+      }
+      
+      return `<div style="background:var(--s2);border:2px solid ${borderColor};border-radius:10px;padding:14px;margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <p style="font-size:13px;font-weight:700;color:var(--txt)">${MES_ES[mo]||mo} 2026</p>
-          <span style="font-size:10px;color:${mData.loaded?'var(--grn)':'var(--tx3)'}">${loaded} actualizado: ${updated}</span>
+          ${statusBadge}
         </div>
-        <div style="display:grid;gap:8px">
+        <div style="display:grid;gap:8px;${hasEmbedded&&!hasImported?'display:none':''}">
           <div>
             <div class="kl" style="margin-bottom:3px">🔗 Link Google Sheets — Ops: Rec_Agent Performance</div>
             <p style="font-size:10px;color:var(--tx3);margin:2px 0 5px">Lee automaticamente: QS_Sales · QS_Calls · QS_Staff · QS_ER · PAYROLL · RESUMEN · Front_Commisions</p>
-            <div style="display:flex;gap:6px">
+            <div style="display:flex;gap:6px;${inputDisabled}">
               <input type="text" id="lnk-ops-${mo}" value="${mData.ops||''}" placeholder="https://docs.google.com/spreadsheets/d/..." style="flex:1;padding:6px 10px;border:1px solid var(--bd);border-radius:7px;font-size:11px;font-family:var(--font);outline:none">
               <button onclick="adminImportOps('${mo}')" class="btn-pdf" style="padding:5px 12px;font-size:11px;white-space:nowrap">↓ Cargar</button>
             </div>
+            ${hasEmbedded&&!hasImported?'<p style="font-size:10px;color:var(--grn);margin-top:4px">✓ Este mes tiene datos historicos embebidos. Solo carga si quieres actualizar con datos nuevos.</p>':''}
           </div>
         </div>
       </div>`;
@@ -1668,7 +1721,7 @@ function adminSaveLinks(){
 
 function adminImportOps(mo){
   const inp=$(`lnk-ops-${mo}`);if(!inp||!inp.value.trim()){updateAdminStatus('Pega un link de Google Sheets primero.','error');return;}
-  ImporterEngine.importOps(inp.value.trim(),mo).then(n=>{ renderAdmin(); }).catch(()=>{});
+  ImporterEngine.importOps(inp.value.trim(),mo).then(()=>{ renderAdmin(); }).catch(e=>{ updateAdminStatus('Error: '+e.message+'. Verifica que el Sheet sea publico (Compartir → Cualquiera con el link → Lector).','error'); renderAdmin(); });
 }
 function adminImportAdh(mo){
   const inp=$(`lnk-adh-${mo}`);if(!inp||!inp.value.trim()){updateAdminStatus('Pega un link primero.','error');return;}
