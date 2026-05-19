@@ -734,220 +734,174 @@ const HistoryEngine = {
 //  IMPORTER ENGINE — Google Sheets CSV / JSON → DataEngine
 // ────────────────────────────────────────────────────────────────
 const ImporterEngine = {
-  // Convert any Google Sheets URL to a CSV export URL
-  toExportURL(url, sheetName = '') {
-    if (!url) return null;
-    // Already export URL
-    if (url.includes('export?format=csv')) return url;
-    // Extract spreadsheet ID
-    const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]{25,})/);
-    if (!idMatch) return null;
-    const id = idMatch[1];
-    // Extract GID (sheet tab id)
-    const gidMatch = url.match(/gid=(\d+)/);
-    const gid = gidMatch ? gidMatch[1] : '0';
-    return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
+
+  /* ── helpers ── */
+  _extractSheetId(url) {
+    const m = url.match(/\/d\/e\/([^/]+)/) || url.match(/\/d\/([^/]+)/);
+    return m ? m[1] : null;
   },
 
-  // Load a Google Sheet tab by name (gets sheet list first)
-  async fetchSheetByName(baseUrl, sheetName) {
-    // Build gid from sheet list — requires fetching /pub?output=csv won't give tab list
-    // So we use the export URL with the gid the user provides, or we try tab index approach
-    const csvUrl = this.toExportURL(baseUrl);
-    if (!csvUrl) throw new Error('URL de Google Sheets invalida');
-    const resp = await fetch(csvUrl);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status} — Verifica que la hoja sea publica`);
-    return resp.text();
+  _isPublished(url) {
+    return url.includes('/pub') || url.includes('output=csv') || url.includes('/d/e/');
   },
 
-  async importOps(url, monthStr) {
-    updateAdminStatus('Importando Ops: Rec_Agent Performance...', 'loading');
+  _buildCsvUrl(sheetId, gid, isPublished) {
+    if (isPublished) {
+      return `https://docs.google.com/spreadsheets/d/e/${sheetId}/pub?gid=${gid}&single=true&output=csv`;
+    } else {
+      return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+    }
+  },
+
+  _detectTab(headers) {
+    const h = headers.map(c => c.toLowerCase().replace(/[\s_\-]/g, ''));
+    const has = (...keys) => keys.every(k => h.some(col => col.includes(k)));
+    if (has('finalrevenuecc'))                              return 'QS_Sales';
+    if (has('talktime') || has('call2min'))                 return 'QS_Calls';
+    if (has('staffhours') || has('oncall'))                 return 'QS_Staff';
+    if (has('callsetapasderiesgo') || has('saludoexpert'))  return 'QS_ER';
+    if (has('usdrevenueamount'))                            return 'QS_Pay_Billing';
+    if (has('adhtotal') || has('llegadastarde'))            return 'RESUMEN';
+    if (has('rango') && has('comisionusd'))                 return 'Front_Commisions';
+    if (has('diasmes') || (h.some(c=>c.includes('fes')) && h.some(c=>c.includes('sus')))) return 'PAYROLL';
+    return null;
+  },
+
+  async _fetchCSV(url, timeoutMs = 8000) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
-      // Build export URL — try with gid=0 first (QS_Sales is usually first tab)
-      const csvUrl = this.toExportURL(url);
-      if (!csvUrl) throw new Error('URL invalida. Pega el link de edicion o compartido del Sheet.');
-      
-      // Fetch with no-cors won't work; Sheet must be public
-      let resp;
-      try {
-        resp = await fetch(csvUrl);
-      } catch(fetchErr) {
-        throw new Error('No se puede acceder al Sheet. Verifica: Archivo → Compartir → Cualquiera con el link → Lector → Publicar en la web.');
-      }
-      
-      if (resp.status === 401 || resp.status === 403) {
-        throw new Error('Sheet privado (403). Haz el Sheet publico: Compartir → Cualquiera con el link puede ver.');
-      }
-      if (!resp.ok) throw new Error(`Error HTTP ${resp.status} al leer el Sheet.`);
-      
-      const text  = await resp.text();
-      // Check if we got HTML instead of CSV (happens when sheet is private)
-      if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
-        throw new Error('El Sheet requiere login. Ve a Archivo → Compartir → Publicar en la web → CSV → Publicar. Usa ese link.');
-      }
-      const rows  = this.parseOpsCSV(text, monthStr);
-      if (!rows.length) throw new Error('CSV leido pero sin filas validas. Verifica que la pestaña QS_Sales tiene datos.');
-      DataEngine.mergeMonth(monthStr, rows, 'ops');
-      // Update links config
-      if (!DataEngine._linksConfig[monthStr]) DataEngine._linksConfig[monthStr] = {};
-      DataEngine._linksConfig[monthStr].ops = url;
-      DataEngine._linksConfig[monthStr].loaded = true;
-      DataEngine._linksConfig[monthStr].updated = new Date().toISOString();
-      DataEngine.saveLinksConfig();
-      updateAdminStatus(`Ops cargado: ${rows.length} filas para ${MES_ES[monthStr]||monthStr}`, 'ok');
-      if (monthStr === APP_STATE.currentMonth) AutoRefresh.start(monthStr, 'ops');
-      update();
-      return rows.length;
-    } catch(e) {
-      updateAdminStatus('Error importando Ops: ' + e.message, 'error');
-      throw e;
-    }
+      const res = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!res.ok) return null;
+      const text = await res.text();
+      if (text.trimStart().startsWith('<')) return null;
+      return text;
+    } catch { clearTimeout(timer); return null; }
   },
 
-  async importAdherencia(url, monthStr) {
-    updateAdminStatus('Importando Adherencia...', 'loading');
-    try {
-      const csvUrl = this.toExportURL(url);
-      if (!csvUrl) throw new Error('URL invalida');
-      const resp = await fetch(csvUrl);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const text = await resp.text();
-      const rows = this.parseAdherenciaCSV(text, monthStr);
-      DataEngine.mergeMonth(monthStr, rows, 'adherencia');
-      if (!DataEngine._linksConfig[monthStr]) DataEngine._linksConfig[monthStr] = {};
-      DataEngine._linksConfig[monthStr].adherencia = url;
-      DataEngine.saveLinksConfig();
-      updateAdminStatus(`Adherencia cargada: ${rows.length} registros`, 'ok');
-      if (monthStr === APP_STATE.currentMonth) AutoRefresh.start(monthStr, 'adherencia');
-      if (APP_STATE.currentView === 'adherencia') update();
-      return rows.length;
-    } catch(e) {
-      updateAdminStatus('Error importando Adherencia: ' + e.message, 'error');
-      throw e;
-    }
-  },
-
-  async importCommissions(url, monthStr) {
-    updateAdminStatus('Importando Comisiones (Front Comisiones)...', 'loading');
-    try {
-      const csvUrl = this.toExportURL(url);
-      if (!csvUrl) throw new Error('URL invalida');
-      const resp = await fetch(csvUrl);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const text = await resp.text();
-      const rows = this.parseCommissionsCSV(text, monthStr);
-      DataEngine.mergeMonth(monthStr, rows, 'commissions');
-      updateAdminStatus(`Comisiones cargadas: ${rows.length} registros`, 'ok');
-      return rows.length;
-    } catch(e) {
-      updateAdminStatus('Error importando Comisiones: ' + e.message, 'error');
-      throw e;
-    }
-  },
-
-  // ── PARSERS ──
-  parseOpsCSV(text, monthStr) {
-    const lines = text.trim().split('\n').filter(l=>l.trim());
-    if (lines.length < 2) return [];
-    const headers = splitLine(lines[0]).map(h=>h.trim().replace(/"/g,'').toLowerCase());
-    const MAP = {
-      'agent_payment':'agent','agent name':'agent','nombre':'agent',
-      'salesforce_payment_date__c':'date','datetimemx':'date',
-      'final revenue_cc':'revenue','final_revenue_cc':'revenue','revenue':'revenue',
-      'final cash_cc':'cash','final_cash_cc':'cash','cash':'cash',
-      'final sales_cc':'sales','final_sales_cc':'sales','sales_cc':'sales',
-      'refunds':'refunds',
-      'call>2min':'calls_2m','call 2-5 min':'calls_25','call 5-10 min':'calls_510','call>10min':'calls_10',
-      'talk time':'talk_time','talk_time':'talk_time',
-      'staffhours':'staff_h','oncall':'oncall','%oncall':'occupancy',
-      'sumnot ready':'not_ready','sumnotready':'not_ready',
-      'acw time_cc':'acw','meal_cc':'meal_cc','training_cc':'training','break_cc':'break_t',
-    };
-    const rows = [];
-    for (let i = 1; i < lines.length; i++) {
-      const vals = splitLine(lines[i]);
-      if (vals.length < 3) continue;
-      const raw = {};
-      headers.forEach((h,idx)=>{ const v=(vals[idx]||'').replace(/"/g,'').trim(); raw[MAP[h]||h.replace(/[\s\-]/g,'_')]=(isNaN(v)||v==='')?v:Number(v); });
-      if (!raw.agent || !raw.date) continue;
-      const dt = new Date(raw.date);
-      if (isNaN(dt)) continue;
-      const ds = dt.toISOString().slice(0,10), mo = ds.slice(0,7);
-      const wn = isoWeek(dt), wk = `2026-W${String(wn).padStart(2,'0')}`;
-      rows.push({
-        agent:String(raw.agent).trim(), supervisor:'--', date:ds, month:mo, week:wk, week_of_year:wk,
-        dow:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dt.getDay()], year:String(dt.getFullYear()),
-        revenue:+(raw.revenue||0), cash:+(raw.cash||0), sales:+(raw.sales||0), refunds:+(raw.refunds||0),
-        calls_2m:+(raw.calls_2m||0), calls_25:+(raw.calls_25||0), calls_510:+(raw.calls_510||0), calls_10:+(raw.calls_10||0),
-        talk_time:+(raw.talk_time||0), staff_h:+(raw.staff_h||0), oncall:+(raw.oncall||0),
-        not_ready:+(raw.not_ready||0), acw:+(raw.acw||0), training:+(raw.training||0), break_t:+(raw.break_t||0),
-        occupancy:+(raw.occupancy||0), cr:0, aht:0,
-      });
-    }
-    // Compute derived fields
-    rows.forEach(r => {
-      r.cr  = sd(r.sales, r.calls_2m);
-      r.aht = sd(r.talk_time, r.calls_2m);
-      if (!r.occupancy) r.occupancy = sd(r.oncall, r.staff_h);
+  _parseCSVText(text) {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return { headers: [], rows: [] };
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+    const rows = lines.slice(1).map(line => {
+      const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = vals[i] ?? '');
+      return obj;
     });
-    return rows;
+    return { headers, rows };
   },
 
-  parseAdherenciaCSV(text, monthStr) {
-    const lines = text.trim().split('\n').filter(l=>l.trim());
-    if (lines.length < 2) return [];
-    const headers = splitLine(lines[0]).map(h=>h.trim().replace(/"/g,'').toLowerCase());
-    const rows = [];
-    for (let i = 1; i < lines.length; i++) {
-      const vals = splitLine(lines[i]);
-      const raw = {};
-      headers.forEach((h,idx)=>{ const v=(vals[idx]||'').replace(/"/g,'').trim(); raw[h.replace(/[\s\-]/g,'_')]=isNaN(v)||v===''?v:Number(v); });
-      if (!raw.supervisor && !raw.agent && !raw.nombre) continue;
-      rows.push({
-        agent:    raw.agent || raw.nombre || raw.asesor || '--',
-        supervisor: raw.supervisor || '--',
-        month:    monthStr,
-        horas_plan:   +(raw.horas_plan||raw.horas_planificadas||0),
-        horas_reales: +(raw.horas_reales||raw.horas_trabajadas||0),
-        adh_pct:      +(raw.adh_pct||raw.adherencia||raw['%adh']||0),
-        llegadas_tarde:+(raw.llegadas_tarde||raw.tardanzas||0),
-        ausencias:    +(raw.ausencias||0),
-        oncall:       +(raw.oncall||raw.tiempo_conectado||0),
-        occupancy:    +(raw.occupancy||raw.occupancy_pct||0),
-        breaks:       +(raw.breaks||raw.break||0),
-      });
+  async importOps(rawUrl, month, supervisor) {
+    if (!rawUrl || !rawUrl.trim()) {
+      updateAdminStatus('❌ Pega un link de Google Sheets', 'error'); return;
     }
-    return rows;
-  },
-
-  parseCommissionsCSV(text, monthStr) {
-    const lines = text.trim().split('\n').filter(l=>l.trim());
-    if (lines.length < 2) return [];
-    const headers = splitLine(lines[0]).map(h=>h.trim().replace(/"/g,'').toLowerCase());
-    const rows = [];
-    for (let i = 1; i < lines.length; i++) {
-      const vals = splitLine(lines[i]);
-      const raw = {};
-      headers.forEach((h,idx)=>{ const v=(vals[idx]||'').replace(/"/g,'').trim(); raw[h.replace(/[\s\-]/g,'_')]=isNaN(v)||v===''?v:Number(v); });
-      if (!raw.agent && !raw.asesor && !raw.nombre) continue;
-      rows.push({
-        agent:      raw.agent || raw.asesor || raw.nombre || '--',
-        month:      monthStr,
-        comision:   +(raw.comision||raw.commission||raw.total_comision||0),
-        ventas:     +(raw.ventas||raw.sales||0),
-        cash:       +(raw.cash||0),
-        tasa:       +(raw.tasa||raw.rate||0),
-        bono:       +(raw.bono||raw.bonus||0),
-      });
+    const sheetId = this._extractSheetId(rawUrl.trim());
+    if (!sheetId) {
+      updateAdminStatus('❌ Link inválido — no se detectó ID del sheet', 'error'); return;
     }
-    return rows;
+    const isPublished = this._isPublished(rawUrl);
+    updateAdminStatus(`🔍 Detectado: ${isPublished ? 'link publicado' : 'link de edición'} · Escaneando tabs…`, 'info', 0);
+
+    const MAX_GID = 20;
+    const found   = {};
+    const needed  = new Set(['QS_Sales','QS_Calls','QS_Staff','QS_ER','QS_Pay_Billing','RESUMEN','Front_Commisions','PAYROLL']);
+
+    /* ── Fase 1: escaneo GID 0→20 ── */
+    for (let gid = 0; gid <= MAX_GID; gid++) {
+      const pct = Math.round((gid / MAX_GID) * 60);
+      updateAdminStatus(
+        `📡 Escaneando GID ${gid}/${MAX_GID} · ${Object.keys(found).length} tabs encontradas`,
+        'scanning', pct
+      );
+      const url  = this._buildCsvUrl(sheetId, gid, isPublished);
+      const text = await this._fetchCSV(url);
+      if (!text) continue;
+      const { headers, rows } = this._parseCSVText(text);
+      if (headers.length < 2) continue;
+      const tabName = this._detectTab(headers);
+      if (tabName && !found[tabName]) {
+        found[tabName] = { gid, headers, rows };
+        updateAdminStatus(
+          `✅ GID ${gid} → <strong>${tabName}</strong> (${rows.length} filas)`,
+          'found', pct
+        );
+      }
+      if (Object.keys(found).length >= needed.size) break;
+    }
+
+    if (Object.keys(found).length === 0) {
+      updateAdminStatus('❌ No se encontraron tabs reconocibles (GIDs 0-20)', 'error'); return;
+    }
+
+    /* ── Fase 2: parse + merge ── */
+    const tabParsers = {
+      'QS_Sales':         d => this.parseQsSales(d.rows, month, supervisor),
+      'QS_Calls':         d => this.parseQsCalls(d.rows, month, supervisor),
+      'QS_Staff':         d => this.parseQsStaff(d.rows, month, supervisor),
+      'QS_ER':            d => this.parseQsER(d.rows, month, supervisor),
+      'QS_Pay_Billing':   d => this.parseQsPayBilling(d.rows, month, supervisor),
+      'RESUMEN':          d => this.parseResumen(d.rows, month, supervisor),
+      'Front_Commisions': d => this.parseCommissionsCSV(d.rows, month, supervisor),
+      'PAYROLL':          d => this.parseAdherenciaCSV(d.rows, month, supervisor),
+    };
+
+    const tabNames = Object.keys(found);
+    for (let i = 0; i < tabNames.length; i++) {
+      const name = tabNames[i];
+      const pct  = 60 + Math.round(((i + 1) / tabNames.length) * 40);
+      updateAdminStatus(
+        `⚙️ Parseando <strong>${name}</strong> (${i+1}/${tabNames.length})…`,
+        'parsing', pct
+      );
+      try {
+        if (tabParsers[name]) tabParsers[name](found[name]);
+      } catch(e) {
+        updateAdminStatus(`⚠️ Error en ${name}: ${e.message}`, 'warn', pct);
+      }
+    }
+
+    Store.set('last_import_url', rawUrl);
+    Store.set('last_import_ts',  Date.now());
+
+    const missing = [...needed].filter(t => !found[t]);
+    updateAdminStatus(
+      `✅ Importación completa · ${tabNames.length} tabs cargadas${missing.length ? ' · ⚠️ Faltaron: ' + missing.join(', ') : ''}`,
+      'success', 100
+    );
   },
-};
 
+  /* ── parsers ── */
+  parseQsSales(rows, month, sup) {
+    DataEngine.mergeMonth(month, sup, 'sales', rows);
+  },
+  parseQsCalls(rows, month, sup) {
+    DataEngine.mergeMonth(month, sup, 'calls', rows);
+  },
+  parseQsStaff(rows, month, sup) {
+    DataEngine.mergeMonth(month, sup, 'staff', rows);
+  },
+  parseQsER(rows, month, sup) {
+    DataEngine._er(month, sup, rows);
+  },
+  parseQsPayBilling(rows, month, sup) {
+    DataEngine.mergeMonth(month, sup, 'billing', rows);
+  },
+  parseResumen(rows, month, sup) {
+    DataEngine._adherencia(month, sup, rows);
+  },
+  parseCommissionsCSV(rows, month, sup) {
+    DataEngine._commissions(month, sup, rows);
+  },
+  parseAdherenciaCSV(rows, month, sup) {
+    DataEngine._adherencia(month, sup, rows, true);
+  },
+  parseOpsCSV(rows, month, sup) {
+    DataEngine.mergeMonth(month, sup, 'ops', rows);
+  },
+};;
 
-// ────────────────────────────────────────────────────────────────
-//  AUTO-REFRESH ENGINE — live accumulation from Google Sheets
-// ────────────────────────────────────────────────────────────────
 const AutoRefresh = {
   // Daily refresh window: 12:00 PM – 1:00 PM every day
   WINDOW_H_START: 12,
@@ -1036,6 +990,7 @@ const AutoRefresh = {
   },
 };
 
+
 function _showRefreshBadge(monthStr, state) {
   const b = $('live-refresh-badge'); if (!b) return;
   b.style.display = 'flex';
@@ -1051,6 +1006,7 @@ function _showRefreshBadge(monthStr, state) {
     b.textContent = '↻ Live · ' + (MES_ES[monthStr]||monthStr);
   }
 }
+
 
 
 // ────────────────────────────────────────────────────────────────
@@ -1759,13 +1715,21 @@ function adminClearImported(){
   DataEngine._agents=null;DataEngine._rows=[];DataEngine._erRows=[];DataEngine._adherencia={};DataEngine._commissions={};
   DataEngine.loadAll().then(()=>{ update(); renderAdmin(); });
 }
-function updateAdminStatus(msg,state){
-  const el=$('admin-status');if(!el)return;
-  el.style.display='block';
-  el.textContent=msg;
-  el.style.background=state==='ok'?'#f0fdf4':state==='error'?'#fef2f2':state==='loading'?'#eff6ff':'#f1f5f9';
-  el.style.color=state==='ok'?'#166534':state==='error'?'#991b1b':state==='loading'?'#1d4ed8':'#475569';
-  el.style.border='1px solid '+(state==='ok'?'#86efac':state==='error'?'#fca5a5':state==='loading'?'#bfdbfe':'#e2e8f0');
+function updateAdminStatus(msg, type = 'info', pct = null) {
+  const el = document.getElementById('admin-status');
+  if (!el) return;
+  const colors = {
+    info:'#3b82f6', scanning:'#f59e0b', found:'#10b981',
+    parsing:'#8b5cf6', warn:'#f97316', error:'#ef4444', success:'#22c55e'
+  };
+  const color = colors[type] || colors.info;
+  const barHtml = pct !== null
+    ? `<div style="margin-top:6px;background:#1e293b;border-radius:4px;height:6px;overflow:hidden;">
+         <div style="height:100%;width:${pct}%;background:${color};transition:width .4s ease;border-radius:4px;"></div>
+       </div>
+       <div style="font-size:10px;color:#64748b;margin-top:2px;">${pct}%</div>`
+    : '';
+  el.innerHTML = `<div style="border-left:3px solid ${color};padding:8px 12px;background:#0f172a;border-radius:4px;font-size:12px;color:#e2e8f0;">${msg}${barHtml}</div>`;
 }
 
 // ────────────────────────────────────────────────────────────────
