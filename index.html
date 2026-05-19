@@ -1194,7 +1194,11 @@ function updateHero(rows){
   const tR=agg(rows,'revenue'),tCl=agg(rows,'calls_2m'),tS=agg(rows,'sales'),tSt=agg(rows,'staff_h');
   const sc=(APP_STATE.viewMode==='agent')?(DataEngine.agents[APP_STATE.currentAgent||'']||{}).score:null;
   let _cv=null;
-  if(APP_STATE.viewMode==='agent'&&APP_STATE.currentAgent){const _cag=APP_STATE.currentAgent;if(APP_STATE.currentPeriod==='month'){const _r=DataEngine.getCommission(_cag,APP_STATE.currentMonth);_cv=_r?(_r.comision_usd||0):null;}else if(APP_STATE.currentPeriod==='year'){let _y=0,_f=false;DataEngine.months.forEach(m=>{const _r=DataEngine.getCommission(_cag,m);if(_r){_y+=_r.comision_usd||0;_f=true;}});_cv=_f?_y:null;}}
+  if(APP_STATE.viewMode==='agent'&&APP_STATE.currentAgent){const _cag=APP_STATE.currentAgent;
+    if(APP_STATE.currentPeriod==='month'){const _r=DataEngine.getCommission(_cag,APP_STATE.currentMonth);_cv=_r?(_r.comision_usd||0):null;}
+    // Show YTD if year view OR current month has no data
+    if(_cv===null||APP_STATE.currentPeriod==='year'){let _y=0,_f=false;DataEngine.months.forEach(m=>{const _r=DataEngine.getCommission(_cag,m);if(_r){_y+=_r.comision_usd||0;_f=true;}});if(_f)_cv=_y;}
+  }
   const _cr2=sd(tS,tCl),_asp=sd(tR,tS),_sph=sd(tS,tSt);
   const _hi=[{l:'Revenue',v:F.usd(tR)},{l:'CR%',v:F.pct(_cr2)},{l:'ASP',v:F.usd(_asp)},{l:'SPH',v:F.dec(_sph,3)},sc!=null?{l:'Score',v:Math.round(sc*100)+'%'}:{l:'Calls>2m',v:F.num(tCl)}];
   if(_cv!=null)_hi.push({l:'Comision',v:F.usd(_cv)});
@@ -1241,6 +1245,8 @@ function renderOverview(rows,allRows){
   const cr=sd(tS,tCl),aht=sd(tTk,tCl),asp=sd(tR,tS),sph=sd(tS,tSt),rev2mc=sd(tR,tCl),revSt=sd(tR,tSt);
   // Commission for agent (if available)
   const comm=APP_STATE.viewMode==='agent'?DataEngine.getCommission(APP_STATE.currentAgent,APP_STATE.currentMonth):null;
+  const hasAnyComm=APP_STATE.viewMode==='agent'&&!!APP_STATE.currentAgent&&
+    DataEngine.months.some(m=>(DataEngine.commissions[m]||[]).some(r=>r.agent===APP_STATE.currentAgent||(r.agent&&APP_STATE.currentAgent&&r.agent.split(' ')[0]===APP_STATE.currentAgent.split(' ')[0])));
   kpis('kpi-ov',[
     {l:'Revenue',    v:F.usd(tR),     s:F.usd(tC)+' cash',         c:'#4f46e5'},
     {l:'Ventas',     v:F.num(tS),     s:'Refund cases: '+tRef,       c:'#16a34a'},
@@ -1251,13 +1257,13 @@ function renderOverview(rows,allRows){
     {l:'SPH',        v:F.dec(sph,3), s:'ventas/hora staff',         c:'#0891b2'},
     {l:'Rev/2MC',    v:F.usd(rev2mc),s:'revenue por call>2m',       c:'#16a34a'},
     {l:'Rev/Staff',  v:F.usd(revSt), s:'revenue por hora staff',    c:'#d97706'},
-    comm?{l:'Comision',v:F.usd(comm.comision),s:'mes actual',       c:'#7c3aed'}:{l:'Refund Cases',v:String(tRef),s:'eventos cancelacion',c:tRef>5?'#dc2626':'#16a34a'},
+    hasAnyComm?(comm?{l:'Comision',v:F.usd(comm.comision_usd||0),s:F.pct(comm.pct_comision||0)+' · Rango '+(comm.rango||'--'),c:'#7c3aed'}:{l:'Comision YTD',v:'ver graficas abajo',s:'sin datos este mes',c:'#7c3aed'}):{l:'Refund Cases',v:String(tRef),s:'eventos cancelacion',c:tRef>5?'#dc2626':'#16a34a'},
   ]);
   // Commission panel for agent view
   const commPanel = $('comm-panel');
   if (commPanel) {
     const showPeriod=APP_STATE.currentPeriod==='month'||APP_STATE.currentPeriod==='year';
-    if(comm&&APP_STATE.viewMode==='agent'&&showPeriod){
+    if(hasAnyComm&&showPeriod){
       commPanel.style.display='block';
       // charts rendered above
       const _cms=DataEngine.months,_cag2=APP_STATE.currentAgent;
