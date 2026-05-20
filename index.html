@@ -1824,10 +1824,10 @@ function renderAdmin(){
         <div style="display:grid;gap:8px;${hasEmbedded&&!hasImported&&!isLive?'display:none':''}">
           <div>
             <div class="kl" style="margin-bottom:3px">🔗 Link Google Sheets — Ops: Rec_Agent Performance</div>
-            <p style="font-size:10px;color:var(--tx3);margin:2px 0 5px">Lee automaticamente: QS_Sales · QS_Calls · QS_Staff · QS_ER · PAYROLL · RESUMEN · Front_Commisions</p>
+            <p style="font-size:10px;color:var(--tx3);margin:2px 0 5px">Pega cualquier link CSV publicado — detecta las 8 pestanas automaticamente: QS_Sales · QS_Calls · QS_Staff · QS_ER · QS_Pay_Billing · PAYROLL · RESUMEN · Front_Commisions</p>
             <div style="display:flex;gap:6px;${inputDisabled}">
-              <input type="text" id="lnk-ops-${mo}" value="${mData.ops||''}" placeholder="https://docs.google.com/spreadsheets/d/..." style="flex:1;padding:6px 10px;border:1px solid var(--bd);border-radius:7px;font-size:11px;font-family:var(--font);outline:none">
-              <button onclick="adminImportOps('${mo}')" class="btn-pdf" style="padding:5px 12px;font-size:11px;white-space:nowrap">↓ Cargar</button>
+              <input type="text" id="lnk-ops-${mo}" value="${mData.ops||''}" placeholder="https://docs.google.com/...pub?gid=...&output=csv" style="flex:1;padding:6px 10px;border:1px solid var(--bd);border-radius:7px;font-size:11px;font-family:var(--font);outline:none">
+              <button onclick="adminImportOps('${mo}')" class="btn-pdf" style="padding:5px 12px;font-size:11px;white-space:nowrap">↓ Cargar todas</button>
             </div>
             ${hasEmbedded&&!hasImported&&!isLive?'<p style="font-size:10px;color:var(--grn);margin-top:4px">✓ Este mes tiene datos historicos embebidos. Solo carga si quieres actualizar con datos nuevos.</p>':''}
           </div>
