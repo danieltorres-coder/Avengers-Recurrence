@@ -826,7 +826,7 @@ const ImporterEngine = {
       if (tabs['QS_Sales']) {
         const rows = this.parseQsSales(tabs['QS_Sales'], monthStr);
         if (rows.length) { DataEngine.mergeMonth(monthStr, rows, 'ops'); totalRows += rows.length; }
-        updateAdminStatus(`QS_Sales: ${rows.length} filas`, 'loading');
+        updateAdminStatus('Leyendo pestañas... QS_Sales: ' + rows.length + ' filas ✓', 'loading');
       }
 
       // Parse QS_Calls
@@ -881,10 +881,19 @@ const ImporterEngine = {
       DataEngine._linksConfig[monthStr].tabs_found = found;
       DataEngine.saveLinksConfig();
 
-      const tabList = found.join(', ');
-      updateAdminStatus(`✓ Importado (${found.length}/8 pestañas): ${tabList} · ${totalRows} filas`, 'ok');
+      // Find last date in imported data
+      const importedRows = DataEngine.rows.filter(r=>r.month===monthStr);
+      const lastDate = importedRows.map(r=>r.date).filter(Boolean).sort().pop() || '--';
+      const tabList = found.join(' · ');
+      
+      updateAdminStatus(
+        '✓ Importado correctamente · ' + found.length + '/8 pestañas · ' + totalRows + ' filas · Ultimo registro: ' + lastDate
+        + ' \n  Pestañas: ' + tabList,
+        'ok'
+      );
       if (monthStr === APP_STATE.currentMonth) AutoRefresh.start(monthStr, 'ops');
       update();
+      setTimeout(_checkStaleAlert, 300);  // refresh stale alert
       return totalRows;
 
     } catch(e) {
@@ -1779,6 +1788,9 @@ function renderAdmin(){
       const mData=cfg[mo]||{};
       const loaded=mData.loaded?'✓':'-';
       const updated=mData.updated?mData.updated.slice(0,10):'--';
+      // Count rows for this month in current data
+      const monthRowCount = DataEngine.rows.filter(r=>r.month===mo).length;
+      const lastImportedDate = DataEngine.rows.filter(r=>r.month===mo).map(r=>r.date).filter(Boolean).sort().pop()||'--';
       // Determine month status
       const hasEmbedded = DataEngine.rows.filter(r=>r.month===mo).length > 0;
       // isLive = last month with data (the one being actively updated)
@@ -1792,12 +1804,12 @@ function renderAdmin(){
       if (hasEmbedded && !hasImported && !isLive) {
         // Has embedded data — locked (historical)
         borderColor = 'var(--grn)';
-        statusBadge = '<span style="background:#f0fdf4;color:#166534;border:1px solid #86efac;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">✓ Datos embebidos</span>';
+        statusBadge = '<span style="background:#f0fdf4;color:#166534;border:1px solid #86efac;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">✓ Datos embebidos · '+monthRowCount+' filas</span>';
         inputDisabled = 'opacity:0.5;pointer-events:none';
       } else if (hasImported) {
         // Imported via Admin
         borderColor = 'var(--grn)';
-        statusBadge = '<span style="background:#f0fdf4;color:#166534;border:1px solid #86efac;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">✓ Importado · '+updated+'</span>';
+        statusBadge = '<span style="background:#f0fdf4;color:#166534;border:1px solid #86efac;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">✓ Importado · '+updated+' · '+monthRowCount+' filas · Ultimo: '+lastImportedDate+'</span>';
         inputDisabled = '';
       } else if (isLive) {
         // Current month — active
