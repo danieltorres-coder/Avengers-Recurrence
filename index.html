@@ -1857,12 +1857,10 @@ function _renderLiveControlGrid() {
   el.innerHTML = '<div style="background:var(--s2);border:1px solid var(--bd2);border-radius:10px;padding:14px">'
     +'<div class="ct" style="margin-bottom:8px">&#9889; Live Accumulation — Diario 12:00 PM</div>'
     +'<p style="font-size:11px;color:var(--tx2);margin-bottom:12px;line-height:1.5">'
-    +'El dashboard se actualiza <b>automaticamente entre 12:00 y 1:00 PM</b> cada dia, acumulando datos sin borrar el historico.'
+    +'El dashboard se actualiza <b>automaticamente entre 12:00 y 1:00 PM</b> cada dia. Incluye: QS_Sales · QS_Calls · QS_Staff · QS_ER · RESUMEN · Front_Commisions.'
     +'</p>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
-    +card('ops','Ops',st.ops_active,st.ops_status,st.ops_last)
-    +card('adherencia','Adherencia',st.adh_active,st.adh_status,st.adh_last)
-    +'</div></div>';
+    +card('ops','Ops: Rec_Agent Performance',st.ops_active,st.ops_status,st.ops_last)
+    +'</div>';
 }
 
 
