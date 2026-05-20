@@ -597,6 +597,9 @@ const DataEngine = {
     if (!Object.keys(this._linksConfig).length) {
       try { const r = await fetch('./data/links_config.json'); if(r.ok) this._linksConfig = (await r.json()).months || {}; } catch {}
     }
+    // Pre-configure Mayo 2026 link if not set
+    if (!this._linksConfig['2026-05']) this._linksConfig['2026-05'] = {};
+    if (!this._linksConfig['2026-05'].ops) this._linksConfig['2026-05'].ops = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRSjwO0xnGgznTpxsOSlQI1LOQ8M6EegNB4Tvem40GSQ6l-_nDejkXxxshhPnGQ_LXl2Xpx2St705P/pub?gid=1051796517&single=true&output=csv';
   },
 
   _expandRows(h) {
@@ -621,9 +624,25 @@ const DataEngine = {
   // ── MERGE new month data (from importer) ──
   mergeMonth(monthStr, newRows, type = 'ops') {
     if (type === 'ops') {
-      // Remove existing rows for that month
-      this._rows = this._rows.filter(r => r.month !== monthStr);
-      this._rows.push(...newRows);
+      // Smart merge: group by agent+date, overlay new fields onto existing rows
+      // This preserves calls/staff fields when only sales data is imported
+      const existing = this._rows.filter(r => r.month !== monthStr);
+      // Build a map of existing May rows by agent+date
+      const mayRows  = this._rows.filter(r => r.month === monthStr);
+      const rowMap   = {};
+      mayRows.forEach(r => { const k = r.agent+'|'+r.date; rowMap[k] = {...r}; });
+      // Merge new rows onto existing (overlay fields)
+      newRows.forEach(r => {
+        const k = r.agent+'|'+r.date;
+        if (rowMap[k]) {
+          // Overlay new fields onto existing row
+          Object.assign(rowMap[k], r);
+        } else {
+          rowMap[k] = {...r};
+        }
+      });
+      const merged = Object.values(rowMap);
+      this._rows = [...existing, ...merged];
       // Save to localStorage
       const keys = this._rows.length ? Object.keys(this._rows[0]) : [];
       const compressed = { keys, rows: this._rows.map(r => keys.map(k=>r[k])) };
@@ -822,47 +841,72 @@ const ImporterEngine = {
 
       let totalRows = 0;
 
-      // Parse QS_Sales
+      // Parse all tabs and merge intelligently
+      // Step 1: Parse QS_Sales (base rows with agent+date+revenue)
+      let salesRows = [], callsRows = [], staffRows = [], erRows = [], billingRows = [];
+      
       if (tabs['QS_Sales']) {
-        const rows = this.parseQsSales(tabs['QS_Sales'], monthStr);
-        if (rows.length) { DataEngine.mergeMonth(monthStr, rows, 'ops'); totalRows += rows.length; }
-        updateAdminStatus('Leyendo pestañas... QS_Sales: ' + rows.length + ' filas ✓', 'loading');
+        salesRows = this.parseQsSales(tabs['QS_Sales'], monthStr);
+        totalRows += salesRows.length;
+        updateAdminStatus('Leyendo... QS_Sales: ' + salesRows.length + ' filas ✓', 'loading');
       }
-
-      // Parse QS_Calls
       if (tabs['QS_Calls']) {
-        const rows = this.parseQsCalls(tabs['QS_Calls'], monthStr);
-        if (rows.length) { DataEngine.mergeMonth(monthStr, rows, 'calls'); totalRows += rows.length; }
-        updateAdminStatus(`QS_Calls: ${rows.length} filas`, 'loading');
+        callsRows = this.parseQsCalls(tabs['QS_Calls'], monthStr);
+        totalRows += callsRows.length;
+        updateAdminStatus('Leyendo... QS_Calls: ' + callsRows.length + ' filas ✓', 'loading');
       }
-
-      // Parse QS_Staff
       if (tabs['QS_Staff']) {
-        const rows = this.parseQsStaff(tabs['QS_Staff'], monthStr);
-        if (rows.length) { DataEngine.mergeMonth(monthStr, rows, 'staff'); totalRows += rows.length; }
-        updateAdminStatus(`QS_Staff: ${rows.length} filas`, 'loading');
+        staffRows = this.parseQsStaff(tabs['QS_Staff'], monthStr);
+        totalRows += staffRows.length;
+        updateAdminStatus('Leyendo... QS_Staff: ' + staffRows.length + ' filas ✓', 'loading');
       }
-
-      // Parse QS_ER
       if (tabs['QS_ER']) {
-        const rows = this.parseQsER(tabs['QS_ER'], monthStr);
-        if (rows.length) { DataEngine._er = (DataEngine._er||[]).filter(r=>r.month!==monthStr).concat(rows); }
-        updateAdminStatus(`QS_ER: ${rows.length} filas`, 'loading');
+        erRows = this.parseQsER(tabs['QS_ER'], monthStr);
+        DataEngine._erRows = (DataEngine._erRows||[]).filter(r=>r.month!==monthStr).concat(erRows);
+        updateAdminStatus('Leyendo... QS_ER: ' + erRows.length + ' filas ✓', 'loading');
       }
-
-      // Parse QS_Pay_Billing
       if (tabs['QS_Pay_Billing']) {
-        const rows = this.parseQsPayBilling(tabs['QS_Pay_Billing'], monthStr);
-        if (rows.length) { DataEngine.mergeMonth(monthStr, rows, 'billing'); }
-        updateAdminStatus(`QS_Pay_Billing: ${rows.length} filas`, 'loading');
+        billingRows = this.parseQsPayBilling(tabs['QS_Pay_Billing'], monthStr);
+        updateAdminStatus('Leyendo... QS_Pay_Billing: ' + billingRows.length + ' filas ✓', 'loading');
       }
 
-      // Parse RESUMEN + PAYROLL → adherencia
+      // Step 2: Build combined rows map (agent+date as key)
+      const combinedMap = {};
+      const addToMap = (rows) => rows.forEach(r => {
+        const k = (r.agent||'')+'|'+(r.date||'');
+        if (!combinedMap[k]) combinedMap[k] = { agent:r.agent, date:r.date, month:r.month };
+        Object.assign(combinedMap[k], r);
+      });
+      // Sales first (base), then overlay calls and staff
+      addToMap(salesRows);
+      addToMap(callsRows);
+      addToMap(staffRows);
+      addToMap(billingRows);
+
+      const combinedRows = Object.values(combinedMap).filter(r => r.agent && r.date);
+      if (combinedRows.length) {
+        // Add week/dow fields
+        combinedRows.forEach(r => {
+          const dt = new Date(r.date);
+          if (!isNaN(dt)) {
+            r.dow = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dt.getDay()];
+            r.year = r.date.slice(0,4);
+            const startOfYear = new Date(dt.getFullYear(), 0, 1);
+            const weekNum = Math.ceil(((dt - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+            r.week = 'W' + String(weekNum).padStart(2,'0');
+            r.week_of_year = r.year + '-' + r.week;
+          }
+        });
+        DataEngine.mergeMonth(monthStr, combinedRows, 'ops');
+      }
+
+      // Parse RESUMEN → adherencia
       if (tabs['RESUMEN']) {
         const rows = this.parseResumen(tabs['RESUMEN'], monthStr);
         if (!DataEngine._adherencia) DataEngine._adherencia = {};
         DataEngine._adherencia[monthStr] = rows;
-        updateAdminStatus(`RESUMEN: ${rows.length} agentes`, 'loading');
+        Store.set('adherencia', DataEngine._adherencia);
+        updateAdminStatus('Leyendo... RESUMEN: ' + rows.length + ' agentes ✓', 'loading');
       }
 
       // Parse Front_Commisions
@@ -870,7 +914,8 @@ const ImporterEngine = {
         const rows = this.parseCommissionsCSV(tabs['Front_Commisions'], monthStr);
         if (!DataEngine._commissions) DataEngine._commissions = {};
         DataEngine._commissions[monthStr] = rows;
-        updateAdminStatus(`Front_Commisions: ${rows.length} agentes`, 'loading');
+        Store.set('commissions', DataEngine._commissions);
+        updateAdminStatus('Leyendo... Front_Commisions: ' + rows.length + ' agentes ✓', 'loading');
       }
 
       // Save config
@@ -1964,6 +2009,23 @@ async function init(){
   AutoRefresh.restoreFromConfig();
   update();
   setTimeout(_checkStaleAlert, 600);
+  // Auto-import if data is stale and link is configured
+  setTimeout(async () => {
+    const mo = APP_STATE.currentMonth;
+    const cfg = DataEngine.linksConfig[mo] || {};
+    if (!cfg.ops) return;
+    const lastDate = DataEngine.rows.filter(r=>r.month===mo).map(r=>r.date).filter(Boolean).sort().pop();
+    const daysSince = lastDate ? Math.round((new Date() - new Date(lastDate)) / 86400000) : 999;
+    if (daysSince > 0) {
+      console.log('[AutoImport] Stale data (' + daysSince + ' days), importing ' + mo + '...');
+      updateAdminStatus && updateAdminStatus('Auto-importando datos de ' + (MES_ES[mo]||mo) + '...', 'loading');
+      try {
+        await ImporterEngine.importOps(cfg.ops, mo);
+        update(); _checkStaleAlert();
+        console.log('[AutoImport] Done');
+      } catch(e) { console.warn('[AutoImport]', e.message); }
+    }
+  }, 3000);
 }
 
 function _populateSelects(){
