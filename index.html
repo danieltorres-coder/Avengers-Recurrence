@@ -757,16 +757,28 @@ const ImporterEngine = {
   // ── Tab fingerprint detection ──────────────────────────────
   // Each tab has unique columns — detect by header keywords
   _detectTab(headers) {
-    const h = headers.map(x=>x.toLowerCase().replace(/[\s"]/g,''));
-    const has = (...kws) => kws.every(k => h.some(x=>x.includes(k)));
-    if (has('final_revenue_cc') || has('final revenue_cc') || has('salesforce_payment_id'))   return 'QS_Sales';
-    if (has('call>2min') || has('call2-5min') || has('talktime') || has('call>5min'))          return 'QS_Calls';
-    if (has('staffhours') || has('oncall') || has('staffhour'))                                return 'QS_Staff';
-    if (has('calls_etapasderiesgo') || has('saludoexpertname') || has('cortedellamada'))       return 'QS_ER';
-    if (has('usd_revenue_amount') || (has('cash') && has('folio') && !has('agent_team')))      return 'QS_Pay_Billing';
-    if (has('dias_mes') || has('adhtotal') || has('llegadastarde') || has('adh total'))        return 'RESUMEN';
-    if (has('staffhours') && has('x') && has('fes') && has('sus'))                            return 'PAYROLL';
-    if (has('rango') && has('comisionusd') || has('comision usd') || has('pct_comision'))      return 'Front_Commisions';
+    // Normalize: lowercase, remove spaces, accents, quotes
+    const norm = x => x.toLowerCase()
+      .replace(/[\s"']/g,'')
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e')
+      .replace(/[íìï]/g,'i').replace(/[óòö]/g,'o')
+      .replace(/[úùü]/g,'u').replace(/[ñ]/g,'n');
+    const h = headers.map(norm);
+    const has = (...kws) => kws.every(k => h.some(x=>x.includes(norm(k))));
+    const any = (...kws) => kws.some(k => h.some(x=>x.includes(norm(k))));
+    if (any('salesforce_payment_id','final_revenue_cc','finalrevenue'))           return 'QS_Sales';
+    if (any('call>2min','call2min','talktime','callid'))                           return 'QS_Calls';
+    if (has('staffhours') && any('oncall','notready','acwtime'))                   return 'QS_Staff';
+    if (any('calls_etapasderiesgo','saludoexpertname','cortedellamada','etapas'))  return 'QS_ER';
+    if (any('usd_revenue_amount') || (has('folio') && has('cash') && has('payment'))) return 'QS_Pay_Billing';
+    // RESUMEN: has DIAS MES or AGENT + SUPERVISOR in adherencia context
+    if (any('diasmes','llegadastarde','adhtotal','adhsin','adherencia'))            return 'RESUMEN';
+    if (has('dias') && has('mes') && has('agent'))                                 return 'RESUMEN';
+    // PAYROLL: has X, FES, AI, AJ, SUS columns
+    if (any('nombre') && has('fes') && any('sus','suspensiones'))                  return 'PAYROLL';
+    // Front_Commisions: has Rango + Comision (with or without accent)
+    if (any('rango') && any('comision','comisión','comisionusd','comisiónusd','%comision')) return 'Front_Commisions';
+    if (any('nombre') && any('antiguedad','antigüedad') && any('rango'))           return 'Front_Commisions';
     return null;
   },
 
@@ -822,9 +834,9 @@ const ImporterEngine = {
         const text = await this._fetchTab(sheetInfo, gid);
         const lines = text.trim().split('\n');
         if (lines.length < 2) continue;
-        // Try first 3 rows for headers
+        // Try first 6 rows for headers (RESUMEN has header on row 2, Front_Commisions on row 2)
         let tabName = null;
-        for (let ri = 0; ri < Math.min(3, lines.length); ri++) {
+        for (let ri = 0; ri < Math.min(6, lines.length); ri++) {
           const headers = lines[ri].split(',').map(h=>h.replace(/"/g,'').trim());
           tabName = this._detectTab(headers);
           if (tabName) break;
