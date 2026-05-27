@@ -1043,35 +1043,52 @@ const ImporterEngine = {
     const lines = text.trim().split('\n').filter(l=>l.trim());
     if (lines.length < 2) return [];
     const headers = splitLine(lines[0]).map(h=>h.replace(/"/g,'').trim().toLowerCase());
-    const get = (raw, ...keys) => { for(const k of keys){ const v=raw[k]; if(v!==undefined&&v!=='')return v; } return null; };
-    const rows = [];
+
+    // QS_Sales has ONE ROW PER SALE — must group by agent+date and SUM
+    const aggMap = {};
+
     for (let i=1; i<lines.length; i++) {
       const vals = splitLine(lines[i]);
       const raw  = {};
       headers.forEach((h,j)=>{ raw[h]=(vals[j]||'').replace(/"/g,'').trim(); });
-      const agent    = raw['agent_payment']||raw['agent name']||raw['nombre']||'';
-      const supervisor = raw['supervisor']||raw['agent_seg_cc']||raw['supervisor_name']||DataEngine.agents[agent]?.supervisor||'';
+
+      const agent = raw['agent_payment']||raw['agent name']||raw['nombre']||'';
+      const supRaw = raw['supervisor']||raw['agent_seg_cc']||raw['supervisor_name']||'';
       const date  = raw['salesforce_payment_date__c']||raw['datetimemx']||'';
       if (!agent||!date) continue;
       const dt = new Date(date); if (isNaN(dt)) continue;
       const ds = dt.toISOString().slice(0,10);
       const mo = ds.slice(0,7); if (mo !== monthStr) continue;
+
       const rev  = parseFloat(raw['final_revenue_cc']||raw['final revenue_cc']||raw['revenue']||0)||0;
       const cash = parseFloat(raw['final_cash_cc']||raw['final cash_cc']||raw['cash']||0)||0;
       const sales= parseFloat(raw['final_sales_cc']||raw['final sales_cc']||raw['sales_cc']||0)||0;
       const refs = parseFloat(raw['refunds']||0)||0;
-      // Compute temporal grouping fields
-      const _dt2=new Date(ds+'T12:00:00');
-      const _dow=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][_dt2.getDay()];
-      const _yr=ds.slice(0,4);
-      const _soy=new Date(_dt2.getFullYear(),0,1);
-      const _wn=Math.ceil(((_dt2-_soy)/86400000+_soy.getDay()+1)/7);
-      const _wk='W'+String(_wn).padStart(2,'0');
-      const _woy=_yr+'-'+_wk;
-      rows.push({ agent, supervisor, date:ds, month:monthStr, week:_wk, week_of_year:_woy, dow:_dow, year:_yr,
-        revenue:rev, cash, sales, refunds:refs });
+
+      const k = agent + '|' + ds;
+      if (!aggMap[k]) {
+        // First time this agent+date — compute temporal fields
+        const _dt2 = new Date(ds+'T12:00:00');
+        const _dow = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][_dt2.getDay()];
+        const _yr  = ds.slice(0,4);
+        const _soy = new Date(_dt2.getFullYear(),0,1);
+        const _wn  = Math.ceil(((_dt2-_soy)/86400000+_soy.getDay()+1)/7);
+        const _wk  = 'W'+String(_wn).padStart(2,'0');
+        const _woy = _yr+'-'+_wk;
+        const supervisor = supRaw || DataEngine.agents[agent]?.supervisor || '';
+        aggMap[k] = {
+          agent, supervisor, date:ds, month:monthStr,
+          week:_wk, week_of_year:_woy, dow:_dow, year:_yr,
+          revenue:0, cash:0, sales:0, refunds:0
+        };
+      }
+      // ACCUMULATE — this is the key fix
+      aggMap[k].revenue += rev;
+      aggMap[k].cash    += cash;
+      aggMap[k].sales   += sales;
+      aggMap[k].refunds += refs;
     }
-    return rows;
+    return Object.values(aggMap);
   },
 
   parseQsCalls(text, monthStr) {
