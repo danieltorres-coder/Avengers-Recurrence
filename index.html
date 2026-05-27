@@ -1019,14 +1019,17 @@ const ImporterEngine = {
       const lastDate = importedRows.map(r=>r.date).filter(Boolean).sort().pop() || '--';
       const tabList = found.join(' · ');
       
+      // Clear cached callRows so it's rebuilt from new data on next access
+      DataEngine._callRows = null;
+      
       updateAdminStatus(
         '✓ Importado correctamente · ' + found.length + '/8 pestañas · ' + totalRows + ' filas · Ultimo registro: ' + lastDate
-        + ' \n  Pestañas: ' + tabList,
+        + ' | Pestañas: ' + tabList,
         'ok'
       );
       if (monthStr === APP_STATE.currentMonth) AutoRefresh.start(monthStr, 'ops');
       update();
-      setTimeout(_checkStaleAlert, 300);  // refresh stale alert
+      setTimeout(_checkStaleAlert, 300);
       return totalRows;
 
     } catch(e) {
@@ -1046,7 +1049,8 @@ const ImporterEngine = {
       const vals = splitLine(lines[i]);
       const raw  = {};
       headers.forEach((h,j)=>{ raw[h]=(vals[j]||'').replace(/"/g,'').trim(); });
-      const agent = raw['agent_payment']||raw['agent name']||raw['nombre']||'';
+      const agent    = raw['agent_payment']||raw['agent name']||raw['nombre']||'';
+      const supervisor = raw['supervisor']||raw['agent_seg_cc']||raw['supervisor_name']||DataEngine.agents[agent]?.supervisor||'';
       const date  = raw['salesforce_payment_date__c']||raw['datetimemx']||'';
       if (!agent||!date) continue;
       const dt = new Date(date); if (isNaN(dt)) continue;
@@ -1056,7 +1060,16 @@ const ImporterEngine = {
       const cash = parseFloat(raw['final_cash_cc']||raw['final cash_cc']||raw['cash']||0)||0;
       const sales= parseFloat(raw['final_sales_cc']||raw['final sales_cc']||raw['sales_cc']||0)||0;
       const refs = parseFloat(raw['refunds']||0)||0;
-      rows.push({ agent, date:ds, month:monthStr, revenue:rev, cash, sales, refunds:refs });
+      // Compute temporal grouping fields
+      const _dt2=new Date(ds+'T12:00:00');
+      const _dow=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][_dt2.getDay()];
+      const _yr=ds.slice(0,4);
+      const _soy=new Date(_dt2.getFullYear(),0,1);
+      const _wn=Math.ceil(((_dt2-_soy)/86400000+_soy.getDay()+1)/7);
+      const _wk='W'+String(_wn).padStart(2,'0');
+      const _woy=_yr+'-'+_wk;
+      rows.push({ agent, supervisor, date:ds, month:monthStr, week:_wk, week_of_year:_woy, dow:_dow, year:_yr,
+        revenue:rev, cash, sales, refunds:refs });
     }
     return rows;
   },
@@ -1076,14 +1089,20 @@ const ImporterEngine = {
       const dt = new Date(date); if (isNaN(dt)) continue;
       const ds = dt.toISOString().slice(0,10);
       const mo = ds.slice(0,7); if (mo !== monthStr) continue;
+      const _dt3=new Date(ds+'T12:00:00');
+      const _dow3=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][_dt3.getDay()];
+      const _yr3=ds.slice(0,4);
+      const _soy3=new Date(_dt3.getFullYear(),0,1);
+      const _wn3=Math.ceil(((_dt3-_soy3)/86400000+_soy3.getDay()+1)/7);
+      const _wk3='W'+String(_wn3).padStart(2,'0');
+      const _woy3=_yr3+'-'+_wk3;
       rows.push({
-        agent, date:ds, month:monthStr,
+        agent, date:ds, month:monthStr, week:_wk3, week_of_year:_woy3, dow:_dow3, year:_yr3,
         calls_2m:   parseFloat(raw['call>2min']||raw['call2min']||0)||0,
         calls_25:   parseFloat(raw['call 2-5 min']||raw['call2-5min']||0)||0,
         calls_510:  parseFloat(raw['call 5-10 min']||raw['call5-10min']||0)||0,
         calls_10:   parseFloat(raw['call>10min']||raw['call10min']||0)||0,
         talk_time:  parseFloat(raw['talk time']||raw['talk_time']||0)||0,
-        // Campaign and Region — field has typo+space in original CSV
         campaign:   raw['campaing_details']||raw['campaign_details']||raw['campaign']||'',
         region:     raw['region usa/latam']||raw['region']||'',
       });
@@ -1106,8 +1125,15 @@ const ImporterEngine = {
       const dt = new Date(date); if (isNaN(dt)) continue;
       const ds = dt.toISOString().slice(0,10);
       const mo = ds.slice(0,7); if (mo !== monthStr) continue;
+      const _dt4=new Date(ds+'T12:00:00');
+      const _dow4=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][_dt4.getDay()];
+      const _yr4=ds.slice(0,4);
+      const _soy4=new Date(_dt4.getFullYear(),0,1);
+      const _wn4=Math.ceil(((_dt4-_soy4)/86400000+_soy4.getDay()+1)/7);
+      const _wk4='W'+String(_wn4).padStart(2,'0');
+      const _woy4=_yr4+'-'+_wk4;
       rows.push({
-        agent, date:ds, month:monthStr,
+        agent, date:ds, month:monthStr, week:_wk4, week_of_year:_woy4, dow:_dow4, year:_yr4,
         staff_h:   parseFloat(raw['staffhours']||0)||0,
         oncall:    parseFloat(raw['oncall']||0)||0,
         occupancy: parseFloat(raw['%oncall']||raw['oncall%']||0)||0,
@@ -2062,6 +2088,7 @@ function adminSyncNow(mo) {
     .then(() => {
       const secs = ((Date.now()-t0)/1000).toFixed(1);
       Store.set('ar_last_' + mo + '_ops', Date.now());
+      DataEngine._callRows = null;  // refresh call data
       _renderLiveControlGrid();
       _checkStaleAlert();
       update();
