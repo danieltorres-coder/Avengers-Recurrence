@@ -480,6 +480,9 @@ const MES_ES   = {'2026-01':'Enero','2026-02':'Febrero','2026-03':'Marzo','2026-
 // ────────────────────────────────────────────────────────────────
 //  APP_STATE — single source of truth
 // ────────────────────────────────────────────────────────────────
+// Dashboard version — change this to force cache clear on all browsers
+const APP_VERSION = '20260527_0156';
+
 const APP_STATE = {
   currentView:        'overview',
   currentPeriod:      'month',
@@ -535,6 +538,18 @@ const DataEngine = {
 
   // ── LOAD ALL ──
   async loadAll() {
+    // VERSION CHECK: if dashboard was updated, clear all user caches
+    // This ensures all 30 users always see fresh data after a deploy
+    const storedVersion = Store.get('app_version', null);
+    if (storedVersion !== APP_VERSION) {
+      console.log('[DataEngine] New version detected, clearing cache...');
+      // Clear all data caches but keep user preferences
+      ['history_2026','agents_meta','commissions','adherencia','links_config'].forEach(k => {
+        try { localStorage.removeItem('avr4_' + k); } catch{}
+      });
+      Store.set('app_version', APP_VERSION);
+      console.log('[DataEngine] Cache cleared for version', APP_VERSION);
+    }
     await Promise.all([
       this._loadAgents(),
       this._loadHistory(),
@@ -1747,25 +1762,33 @@ function renderCalls(rows, allRows) {
     crFiltered = cr.filter(r => (r.campaign||'') === _callsTab);
   }
 
-  // ── Step 4: Aggregate crFiltered → agent+date rows for Series ──
-  // One row per agent+date with summed call metrics
-  const aggMap = {};
-  crFiltered.forEach(r => {
-    const k = r.agent + '|' + r.date;
-    if (!aggMap[k]) aggMap[k] = {
-      agent:r.agent, date:r.date, month:r.month,
-      // Preserve non-call fields from main rows
-      ...(rows.find(mr => mr.agent===r.agent && mr.date===r.date)||{}),
-      call_id:0, calls_2m:0, calls_25:0, calls_510:0, calls_10:0, talk_time:0
-    };
-    aggMap[k].call_id  += r.call_id  || 0;
-    aggMap[k].calls_2m += r.calls_2m || 0;
-    aggMap[k].calls_25 += r.calls_25 || 0;
-    aggMap[k].calls_510+= r.calls_510|| 0;
-    aggMap[k].calls_10 += r.calls_10 || 0;
-    aggMap[k].talk_time+= r.talk_time|| 0;
-  });
-  const fRows = Object.values(aggMap);
+  // ── Step 4: Build fRows ──
+  // If CALLS_RAW has data: aggregate crFiltered (has call_id+campaign+region)
+  // If not (e.g. Mayo): fall back to main rows which have calls_2m aggregated
+  let fRows;
+  if (crFiltered.length > 0) {
+    const aggMap = {};
+    crFiltered.forEach(r => {
+      const k = r.agent + '|' + r.date;
+      if (!aggMap[k]) aggMap[k] = {
+        agent:r.agent, date:r.date, month:r.month,
+        ...(rows.find(mr=>mr.agent===r.agent&&mr.date===r.date)||{}),
+        call_id:0, calls_2m:0, calls_25:0, calls_510:0, calls_10:0, talk_time:0
+      };
+      aggMap[k].call_id  += r.call_id  || 0;
+      aggMap[k].calls_2m += r.calls_2m || 0;
+      aggMap[k].calls_25 += r.calls_25 || 0;
+      aggMap[k].calls_510+= r.calls_510|| 0;
+      aggMap[k].calls_10 += r.calls_10 || 0;
+      aggMap[k].talk_time+= r.talk_time|| 0;
+    });
+    fRows = Object.values(aggMap);
+  } else if (_callsTab === 'all') {
+    // No CALLS_RAW for this period (Mayo+) — use main rows as fallback
+    fRows = rows.filter(r => (r.calls_2m||0) > 0 || (r.talk_time||0) > 0);
+  } else {
+    fRows = [];  // campaign filter requested but no data for this period
+  }
 
   // ── Step 5: KPI totals ──
   const sum = (field) => fRows.reduce((s,r) => s + (r[field]||0), 0);
@@ -1811,23 +1834,18 @@ function renderCalls(rows, allRows) {
   }], v => v + 's');
 
   // Chart 3: Total CALL ID por período (todas las duraciones)
-  const callIdRows = (() => {
-    const aggId={};
-    cr.forEach(r=>{  // cr = scoped, unfiltered by campaign (always show totals)
-      const k=r.agent+'|'+r.date;
-      if(!aggId[k]) aggId[k]={agent:r.agent,date:r.date,month:r.month,call_id:0};
-      aggId[k].call_id+=r.call_id||0;
-    });
-    return Object.values(aggId);
-  })();
+  const callIdRows = cr.length>0
+    ? (()=>{const a={};cr.forEach(r=>{const k=r.agent+'|'+r.date;if(!a[k])a[k]={...r,call_id:0};a[k].call_id+=r.call_id||0;});return Object.values(a);})()
+    : fRows.map(r=>({...r,call_id:r.calls_2m||0}));
   const callIdS = Series.get(callIdRows,'call_id');
   mkBar('c-c-total', callIdS.labels, callIdS.data, '#64748b', v=>F.num(v));
 
   // Chart 4: Distribución por campaña (donut — always shows all campaigns)
   const campNames = ['CallMeNow','Inbound','Manual','Others'];
-  const campVals  = campNames.map(c => cr.filter(r=>r.campaign===c).reduce((s,r)=>s+(r.calls_2m||0),0));
-  mkDonut('c-c-camp', campNames, campVals,
-    ['rgba(59,130,246,.8)','rgba(124,58,237,.8)','rgba(22,163,74,.8)','rgba(217,119,6,.8)']);
+  if (cr.length > 0) {
+    const campVals = campNames.map(c=>cr.filter(r=>r.campaign===c).reduce((s,r)=>s+(r.calls_2m||0),0));
+    mkDonut('c-c-camp', campNames, campVals, ['rgba(59,130,246,.8)','rgba(124,58,237,.8)','rgba(22,163,74,.8)','rgba(217,119,6,.8)']);
+  } else { mkDonut('c-c-camp',['Sin datos'],[1],['#e2e8f0']); }
 
   // Mix donut (subsets)
   mkDonut('c-c-mix', ['2-5min','5-10min','>10min'],
@@ -2371,14 +2389,18 @@ async function init(){
     if (!cfg.ops) return;
     const lastDate = DataEngine.rows.filter(r=>r.month===mo).map(r=>r.date).filter(Boolean).sort().pop();
     const daysSince = lastDate ? Math.round((new Date() - new Date(lastDate)) / 86400000) : 999;
-    if (daysSince > 0) {
-      console.log('[AutoImport] Stale data (' + daysSince + ' days), importing ' + mo + '...');
-      updateAdminStatus && updateAdminStatus('Auto-importando datos de ' + (MES_ES[mo]||mo) + '...', 'loading');
-      try {
-        await ImporterEngine.importOps(cfg.ops, mo);
-        update(); _checkStaleAlert();
-        console.log('[AutoImport] Done');
-      } catch(e) { console.warn('[AutoImport]', e.message); }
+    // Always import on load if link is configured
+    // This ensures all 30 users always see the latest Sheet data
+    console.log('[AutoImport] Importing fresh data for ' + mo + '...');
+    updateAdminStatus && updateAdminStatus('Cargando datos actualizados...', 'loading');
+    try {
+      await ImporterEngine.importOps(cfg.ops, mo);
+      update(); _checkStaleAlert();
+      updateAdminStatus && updateAdminStatus('', 'ok');
+      console.log('[AutoImport] Done · last date: ' + (DataEngine.rows.filter(r=>r.month===mo).map(r=>r.date).filter(Boolean).sort().pop()||'?'));
+    } catch(e) {
+      console.warn('[AutoImport] Failed:', e.message);
+      update(); // Show embedded data as fallback
     }
   }, 3000);
 }
