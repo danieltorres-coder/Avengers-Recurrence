@@ -1068,7 +1068,7 @@ const ImporterEngine = {
       headers.forEach((h,j)=>{ raw[h]=(vals[j]||'').replace(/"/g,'').trim(); });
 
       const agent = raw['agent_payment']||raw['agent name']||raw['nombre']||'';
-      const supRaw = raw['supervisor']||raw['agent_seg_cc']||raw['supervisor_name']||'';
+      const supRaw = raw['supervisor']||raw['supervisor_name']||'';
       const date  = raw['salesforce_payment_date__c']||raw['datetimemx']||'';
       if (!agent||!date) continue;
       const dt = new Date(date); if (isNaN(dt)) continue;
@@ -1449,13 +1449,20 @@ function _checkStaleAlert() {
   el.style.border = '1px solid';
   if (diffDays === 0) {
     el.style.background='#f0fdf4';el.style.borderColor='#86efac';el.style.color='#166534';
-    el.innerHTML = '<span style="font-size:16px">✅</span><span>Datos <b>actualizados al dia</b> · Ultimo registro: <b>'+lastDate+'</b></span>';
+    setTimeout(()=>{el.style.display='none';},5000);  // auto-hide after 5s when up to date
+    el.innerHTML = '<span style="font-size:16px">✅</span><span>Datos al día · <b>'+lastDate+'</b></span>';
   } else if (diffDays === 1) {
-    el.style.background='#fffbeb';el.style.borderColor='#fde68a';el.style.color='#854d0e';
-    el.innerHTML = '<span style="font-size:16px">⚠️</span><span>Ultimo registro: <b>'+lastDate+'</b> · <b>1 dia sin actualizar</b> · Proximo refresh hoy 12 PM</span>';
+    el.style.background='#f0fdf4';el.style.borderColor='#86efac';el.style.color='#166534';
+    const _dt2=new Date(lastDate+'T12:00:00');
+    const _mes2=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][_dt2.getMonth()];
+    el.innerHTML = '<span style="font-size:16px">✅</span><span>Último dato: <b>'+_dt2.getDate()+' '+_mes2+' '+_dt2.getFullYear()+'</b></span>';
   } else {
     el.style.background='#fef2f2';el.style.borderColor='#fca5a5';el.style.color='#991b1b';
-    el.innerHTML = '<span style="font-size:16px">🔴</span><span>Ultimo registro: <b>'+lastDate+'</b> · <b>'+diffDays+' dias sin datos nuevos</b> · Verifica el link en ⚙ Admin</span>';
+    // Format date nicely
+    const _dt=new Date(lastDate+'T12:00:00');
+    const _mes=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][_dt.getMonth()];
+    const _fechaBonita=_dt.getDate()+' '+_mes+' '+_dt.getFullYear();
+    el.innerHTML = '<span style="font-size:16px">📅</span><span>Último dato disponible: <b>'+_fechaBonita+'</b></span>';
   }
 }
 
@@ -1471,7 +1478,7 @@ const Q = {
     const mo=APP_STATE.currentMonth, wk=APP_STATE.currentWeek;
     switch(APP_STATE.currentPeriod) {
       case 'month': return r.month===mo;
-      case 'week':  return true;
+      case 'week':  return (r.week_of_year||'')===APP_STATE.currentWeek;
       case 'day':   return true;  // show all months, _byD groups by day-of-month
       case 'dow':   return r.month===mo;
       default:      return true;
@@ -1641,7 +1648,7 @@ function renderOverview(rows,allRows){
     {l:'SPH',        v:F.dec(sph,3), s:'ventas/hora staff',         c:'#0891b2'},
     {l:'Rev/2MC',    v:F.usd(rev2mc),s:'revenue por call>2m',       c:'#16a34a'},
     {l:'Rev/Staff',  v:F.usd(revSt), s:'revenue por hora staff',    c:'#d97706'},
-    hasAnyComm?(comm?{l:'Comision',v:F.usd(comm.comision_usd||0),s:F.pct(comm.pct_comision||0)+' · Rango '+(comm.rango||'--'),c:'#7c3aed'}:{l:'Comision YTD',v:'ver graficas abajo',s:'sin datos este mes',c:'#7c3aed'}):{l:'Refund Cases',v:String(tRef),s:'eventos cancelacion',c:tRef>5?'#dc2626':'#16a34a'},
+    hasAnyComm?(comm?{l:'Comision',v:F.usd(comm.comision_usd||0),s:F.pct(comm.pct_comision||0)+' · Rango '+(comm.rango||'--'),c:'#7c3aed'}:{l:'Comision',v:'--',s:'sin datos este mes',c:'#7c3aed'}):{l:'Refund Cases',v:String(tRef),s:'eventos cancelacion',c:tRef>5?'#dc2626':'#16a34a'},
   ]);
   // Commission panel for agent view
   const commPanel = $('comm-panel');
@@ -1792,22 +1799,32 @@ function renderCalls(rows, allRows) {
 
   // ── Step 5: KPI totals ──
   const sum = (field) => fRows.reduce((s,r) => s + (r[field]||0), 0);
-  const cId  = sum('call_id');
   const c2   = sum('calls_2m');
   const c25  = sum('calls_25');
   const c510 = sum('calls_510');
   const c10  = sum('calls_10');
   const talk = sum('talk_time');
   const aht  = c2 > 0 ? Math.round(talk / c2) : 0;
-  const cShort = Math.max(0, cId - c2);
+
+  // call_id only exists in CALLS_RAW (Ene-Abr)
+  // For periods without CALLS_RAW, use calls_2m as total and estimate short calls
+  const hasCR  = cr.length > 0;
+  const cId    = hasCR ? sum('call_id') : c2;
+  const cShort = hasCR ? Math.max(0, cId - c2) : 0;
 
   kpis('kpi-cl', [
-    {l:'Total Llamadas', v:F.num(cId),   s:'CALL ID · todas las duraciones',       c:'#64748b'},
-    {l:'Calls <2min',    v:F.num(cShort),s:F.pct(cId>0?cShort/cId:0)+' del total', c:'#f59e0b'},
-    {l:'Calls >2min',    v:F.num(c2),    s:F.pct(cId>0?c2/cId:0)+' del total',     c:'#0891b2'},
-    {l:'Calls 5-10m',    v:F.num(c510),  s:F.pct(c2>0?c510/c2:0)+' de >2min',      c:'#7c3aed'},
-    {l:'Calls >10m',     v:F.num(c10),   s:F.pct(c2>0?c10/c2:0)+' de >2min',       c:'#16a34a'},
-    {l:'AHT',            v:F.mmss(aht),  s:'promedio/llamada',                      c:'#dc2626'},
+    hasCR
+      ? {l:'Total Llamadas', v:F.num(cId),   s:'CALL ID · todas las duraciones', c:'#64748b'}
+      : {l:'Calls >2min',    v:F.num(c2),    s:'total calificadas',               c:'#0891b2'},
+    hasCR
+      ? {l:'Calls <2min',    v:F.num(cShort),s:F.pct(cId>0?cShort/cId:0)+' del total', c:'#f59e0b'}
+      : {l:'Calls 5-10m',    v:F.num(c510),  s:F.pct(c2>0?c510/c2:0)+' de >2min',      c:'#7c3aed'},
+    {l:'Calls >2min',    v:F.num(c2),
+      s: hasCR ? F.pct(cId>0?c2/cId:0)+' del total' : 'total calificadas',
+      c:'#0891b2'},
+    {l:'Calls 5-10m',    v:F.num(c510),  s:F.pct(c2>0?c510/c2:0)+' de >2min', c:'#7c3aed'},
+    {l:'Calls >10m',     v:F.num(c10),   s:F.pct(c2>0?c10/c2:0)+' de >2min',  c:'#16a34a'},
+    {l:'AHT',            v:F.mmss(aht),  s:'promedio/llamada',                  c:'#dc2626'},
   ]);
 
   // ── Step 6: Charts — all use fRows (filtered+aggregated) ──
@@ -1841,11 +1858,12 @@ function renderCalls(rows, allRows) {
   mkBar('c-c-total', callIdS.labels, callIdS.data, '#64748b', v=>F.num(v));
 
   // Chart 4: Distribución por campaña (donut — always shows all campaigns)
+  // Campaign donut — single call, adapts to data availability
   const campNames = ['CallMeNow','Inbound','Manual','Others'];
-  if (cr.length > 0) {
-    const campVals = campNames.map(c=>cr.filter(r=>r.campaign===c).reduce((s,r)=>s+(r.calls_2m||0),0));
-    mkDonut('c-c-camp', campNames, campVals, ['rgba(59,130,246,.8)','rgba(124,58,237,.8)','rgba(22,163,74,.8)','rgba(217,119,6,.8)']);
-  } else { mkDonut('c-c-camp',['Sin datos'],[1],['#e2e8f0']); }
+  const campVals  = cr.length > 0
+    ? campNames.map(c=>cr.filter(r=>r.campaign===c).reduce((s,r)=>s+(r.calls_2m||0),0))
+    : [0,0,0,0];
+  mkDonut('c-c-camp', campNames, campVals, ['rgba(59,130,246,.8)','rgba(124,58,237,.8)','rgba(22,163,74,.8)','rgba(217,119,6,.8)']);
 
   // Mix donut (subsets)
   mkDonut('c-c-mix', ['2-5min','5-10min','>10min'],
