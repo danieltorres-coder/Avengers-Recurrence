@@ -799,7 +799,7 @@ const HistoryEngine = {
     if(vd.length){ const b=vd.reduce((a,c)=>c.avg_revenue>a.avg_revenue?c:a); ins.push({t:'i',msg:'Mejor dia revenue: <b>'+DOW_FULL[b.dow]+'</b> — $'+Math.round(b.avg_revenue)+'/dia.'}); if(vd.length>1){const w=vd.reduce((a,c)=>c.avg_revenue<a.avg_revenue?c:a);if(w.dow!==b.dow)ins.push({t:'w',msg:'Menor revenue: <b>'+DOW_FULL[w.dow]+'</b> ($'+Math.round(w.avg_revenue)+'/dia).'});} const bCR=vd.reduce((a,c)=>c.cr>a.cr?c:a);ins.push({t:'i',msg:'Mayor CR los <b>'+DOW_FULL[bCR.dow]+'</b> ('+(bCR.cr*100).toFixed(1)+'%)'});}
     if(monthly.length>=2){const l=monthly[monthly.length-1],p=monthly[monthly.length-2];const d=l.revenue-p.revenue;if(d>0)ins.push({t:'o',msg:'Revenue subio $'+Math.round(d)+' vs '+(MES_ES[p.month]||p.month)+'.'});else if(d<0)ins.push({t:'w',msg:'Revenue bajo $'+Math.round(Math.abs(d))+' vs '+(MES_ES[p.month]||p.month)+'.'});}
     const avgOcc=monthly.filter(m=>m.occ>0).reduce((s,m)=>s+m.occ,0)/(monthly.filter(m=>m.occ>0).length||1);
-    if(avgOcc<0.60)ins.push({t:'w',msg:'Occupancy '+(avgOcc*100).toFixed(1)+'% bajo meta 60%.'});else if(avgOcc>=0.80)ins.push({t:'o',msg:'Occupancy excelente: '+(avgOcc*100).toFixed(1)+'%.'});
+    if(avgOcc>0&&avgOcc<0.60)ins.push({t:'w',msg:'Occupancy '+(avgOcc*100).toFixed(1)+'% bajo meta 60%.'});else if(avgOcc>=0.80)ins.push({t:'o',msg:'Occupancy excelente: '+(avgOcc*100).toFixed(1)+'%.'});
     return ins.slice(0,6);
   },
   _coaching(h) {
@@ -807,7 +807,7 @@ const HistoryEngine = {
     const avgCR=active.reduce((s,m)=>s+m.cr,0)/active.length,avgOcc=active.reduce((s,m)=>s+m.occ,0)/active.length;
     const avgCalls=active.reduce((s,m)=>s+m.calls_2m,0)/active.length;
     if(avgCR<0.07)tips.push({t:'b',msg:'CR '+(avgCR*100).toFixed(1)+'% muy bajo. Objetivo 10%+.'});else if(avgCR<0.10)tips.push({t:'w',msg:'CR '+(avgCR*100).toFixed(1)+'% cerca de meta.'});else tips.push({t:'o',msg:'CR '+(avgCR*100).toFixed(1)+'% sobre meta.'});
-    if(avgOcc<0.55)tips.push({t:'b',msg:'Occupancy '+(avgOcc*100).toFixed(0)+'% — reduce breaks no programados.'});else if(avgOcc<0.65)tips.push({t:'w',msg:'Occupancy '+(avgOcc*100).toFixed(0)+'% — meta: 65%+.'});
+    if(avgOcc>0&&avgOcc<0.55)tips.push({t:'b',msg:'Occupancy '+(avgOcc*100).toFixed(0)+'% — reduce breaks no programados.'});else if(avgOcc>0&&avgOcc<0.65)tips.push({t:'w',msg:'Occupancy '+(avgOcc*100).toFixed(0)+'% — meta: 65%+.'});
     if(avgCalls<80)tips.push({t:'w',msg:'Promedio '+Math.round(avgCalls)+' calls/mes — volumen bajo.'});
     const good=active.filter(m=>m.cr>=0.10).length;
     if(good/active.length>=0.8)tips.push({t:'o',msg:'Alta consistencia: '+good+'/'+active.length+' meses CR >= 10%.'});else if(good/active.length<0.4)tips.push({t:'w',msg:'Inconsistencia: '+good+'/'+active.length+' meses sobre meta.'});
@@ -1648,7 +1648,7 @@ function renderOverview(rows,allRows){
     {l:'SPH',        v:F.dec(sph,3), s:'ventas/hora staff',         c:'#0891b2'},
     {l:'Rev/2MC',    v:F.usd(rev2mc),s:'revenue por call>2m',       c:'#16a34a'},
     {l:'Rev/Staff',  v:F.usd(revSt), s:'revenue por hora staff',    c:'#d97706'},
-    hasAnyComm?(comm?{l:'Comision',v:F.usd(comm.comision_usd||0),s:F.pct(comm.pct_comision||0)+' · Rango '+(comm.rango||'--'),c:'#7c3aed'}:{l:'Comision',v:'--',s:'sin datos este mes',c:'#7c3aed'}):{l:'Refund Cases',v:String(tRef),s:'eventos cancelacion',c:tRef>5?'#dc2626':'#16a34a'},
+    hasAnyComm?(comm?{l:'Comision '+(APP_STATE.currentPeriod==='year'?'YTD':(MES_ES[APP_STATE.currentMonth]||'')),v:F.usd(comm.comision_usd||0),s:F.pct(comm.pct_comision||0)+' · Rango '+(comm.rango||'--'),c:'#7c3aed'}:{l:'Comision',v:'--',s:'sin datos este mes',c:'#7c3aed'}):{l:'Refund Cases',v:String(tRef),s:'eventos cancelacion',c:tRef>5?'#dc2626':'#16a34a'},
   ]);
   // Commission panel for agent view
   const commPanel = $('comm-panel');
@@ -1812,19 +1812,22 @@ function renderCalls(rows, allRows) {
   const cId    = hasCR ? sum('call_id') : c2;
   const cShort = hasCR ? Math.max(0, cId - c2) : 0;
 
+  // Build KPI list depending on data availability
+  // Always show same 6 KPIs regardless of data source
+  // When CALLS_RAW not available (Mayo+): use calls_2m as total, estimate <2min
+  const _totalCalls  = hasCR ? cId  : c2;
+  const _totalLabel  = hasCR ? 'CALL ID · todas las duraciones' : 'calls >2min · sin CALL ID';
+  const _shortCalls  = hasCR ? cShort : 0;
+  const _shortLabel  = hasCR ? F.pct(_totalCalls>0?_shortCalls/_totalCalls:0)+' del total' : 'sin datos CALL ID este mes';
+  const _shortColor  = hasCR ? '#f59e0b' : '#94a3b8';
+
   kpis('kpi-cl', [
-    hasCR
-      ? {l:'Total Llamadas', v:F.num(cId),   s:'CALL ID · todas las duraciones', c:'#64748b'}
-      : {l:'Calls >2min',    v:F.num(c2),    s:'total calificadas',               c:'#0891b2'},
-    hasCR
-      ? {l:'Calls <2min',    v:F.num(cShort),s:F.pct(cId>0?cShort/cId:0)+' del total', c:'#f59e0b'}
-      : {l:'Calls 5-10m',    v:F.num(c510),  s:F.pct(c2>0?c510/c2:0)+' de >2min',      c:'#7c3aed'},
-    {l:'Calls >2min',    v:F.num(c2),
-      s: hasCR ? F.pct(cId>0?c2/cId:0)+' del total' : 'total calificadas',
-      c:'#0891b2'},
-    {l:'Calls 5-10m',    v:F.num(c510),  s:F.pct(c2>0?c510/c2:0)+' de >2min', c:'#7c3aed'},
-    {l:'Calls >10m',     v:F.num(c10),   s:F.pct(c2>0?c10/c2:0)+' de >2min',  c:'#16a34a'},
-    {l:'AHT',            v:F.mmss(aht),  s:'promedio/llamada',                  c:'#dc2626'},
+    {l:'Total Llamadas', v:F.num(_totalCalls), s:_totalLabel,                               c:'#64748b'},
+    {l:'Calls <2min',    v:hasCR?F.num(_shortCalls):'N/D', s:_shortLabel,                   c:_shortColor},
+    {l:'Calls >2min',    v:F.num(c2),  s:(hasCR?F.pct(_totalCalls>0?c2/_totalCalls:0):'100')+' del total', c:'#0891b2'},
+    {l:'Calls 5-10m',    v:F.num(c510),s:F.pct(c2>0?c510/c2:0)+' de >2min',                c:'#7c3aed'},
+    {l:'Calls >10m',     v:F.num(c10), s:F.pct(c2>0?c10/c2:0)+' de >2min',                 c:'#16a34a'},
+    {l:'AHT',            v:F.mmss(aht),s:'promedio/llamada',                                c:'#dc2626'},
   ]);
 
   // ── Step 6: Charts — all use fRows (filtered+aggregated) ──
@@ -1845,10 +1848,11 @@ function renderCalls(rows, allRows) {
     const c2D   = Series.get(fRows,'calls_2m').data;
     return {labels:lbl, data:talkD.map((t,i) => c2D[i]>0 ? Math.round(t/c2D[i]) : 0)};
   })();
+  // AHT Y-axis: show in mm:ss format, not $
   mkLine('c-c-aht', ahtSeries.labels, [{
     data:ahtSeries.data, borderColor:'#d97706', backgroundColor:'rgba(217,119,6,.08)',
     fill:true, tension:.4, pointRadius:3, borderWidth:2, showLabels:true
-  }], v => v + 's');
+  }], v => { const m=Math.floor(v/60); const s=Math.round(v%60); return m+'m'+(s>0?s+'s':''); });
 
   // Chart 3: Total CALL ID por período (todas las duraciones)
   const callIdRows = cr.length>0
@@ -2101,18 +2105,18 @@ function renderRanking(){
     const cl=ar.reduce((s,r)=>s+(r.calls_2m||0),0);
     const sh=ar.reduce((s,r)=>s+(r.staff_h||0),0);
     const cm=DataEngine.getCommission(ag,APP_STATE.currentMonth);
-    _rmap[ag]={agent:ag,supervisor:m.supervisor||(ar[0]?.supervisor||''),segmento:m.segmento||'',tenure_seg:m.tenure_seg||'',ingreso:m.ingreso||'',score:m.score||null,
+    _rmap[ag]={agent:ag,supervisor:m.supervisor||(ar[0]?.supervisor||''),segmento:m.segmento||'',tenure_seg:m.tenure_seg||'',meses:m.meses||0,fecha_ingreso:m.fecha_ingreso||m.ingreso||'',ingreso:m.ingreso||'',score:m.score||null,
       revenue:rv,cash:ca,sales:sl,cr:sl/Math.max(cl,1),asp:rv/Math.max(sl,1),sph:sl/Math.max(sh,1),
       rev_per_call:rv/Math.max(cl,1),rev_per_staff:rv/Math.max(sh,1),comision_usd:cm?(cm.comision_usd||0):0};
   });
   let data=Object.values(_rmap).filter(r=>r.cash>0||r.sales>0);
   if(supF)data=data.filter(r=>r.supervisor===supF);
   data.sort((a,b)=>((b[sortF]||0)-(a[sortF]||0)));
-  const _rmo=APP_STATE.currentMonth;const _rper=APP_STATE.currentPeriod==='year'?'YTD 2026':(MES_ES[_rmo]||_rmo)+' 2026';const lbl=$('rank-lbl');if(lbl)lbl.textContent=_rper+' · '+data.length+' asesores';
+  const _rmo=APP_STATE.currentMonth;const _rper=APP_STATE.currentPeriod==='year'?'YTD 2026':(MES_ES[_rmo]||_rmo)+' 2026';const lbl=$('rank-lbl');if(lbl)lbl.textContent=_rper+' · '+(data.length===1?'1 asesor':data.length+' asesores');
   const segSt={'VIP+':'background:#ede9fe;color:#5b21b6;border:1px solid #ddd6fe','Black+':'background:#f1f5f9;color:#334155;border:1px solid #e2e8f0','Black':'background:#f8fafc;color:#475569;border:1px solid #e2e8f0','VIP':'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe'};
   const tenSt={'Antiguo':'background:#dcfce7;color:#166534;border:1px solid #86efac','Medio Nuevo':'background:#fef9c3;color:#854d0e;border:1px solid #fde68a','Nuevo':'background:#fee2e2;color:#991b1b;border:1px solid #fecaca'};
   const body=$('rank-body');if(!body)return;
-  body.innerHTML=data.map((r,i)=>{const rank=i+1,rc=rank<=3?'r'+rank:'rn',sc=r.score!=null?Math.round(r.score*100):null,scCol=sc!=null?scC(r.score):'#94a3b8';const sst=segSt[r.segmento]||'background:var(--s2);color:var(--tx3)',tst=tenSt[r.tenure_seg]||'background:var(--s2);color:var(--tx3)';const agEsc=r.agent.replace(/"/g,'&quot;');const comm=DataEngine.getCommission(r.agent,APP_STATE.currentMonth);return '<tr><td><span class="rank-badge '+rc+'">'+rank+'</span></td><td style="font-weight:600;color:var(--ind);cursor:pointer" data-agent="'+agEsc+'" onclick="openAgent(this.dataset.agent)">'+r.agent+'</td><td style="color:var(--tx2)">'+r.supervisor+'</td><td><span class="seg-badge" style="'+sst+'">'+(r.segmento||'--')+'</span></td><td><span class="seg-badge" style="'+tst+'">'+(r.tenure_seg||'--')+' '+r.meses+'m</span></td><td style="font-family:var(--mono);font-size:10px;color:var(--tx3)">'+(r.fecha_ingreso||'--')+'</td><td style="font-family:var(--mono);font-weight:700;color:'+(rank<=3?'#4f46e5':'var(--tx2)')+'">'+F.usd(r.revenue)+'</td><td class="mono">'+F.usd(r.cash)+'</td><td class="mono">'+F.num(r.sales)+'</td><td style="font-family:var(--mono);font-weight:700;color:'+crC(r.cr)+'">'+F.pct(r.cr)+'</td><td class="mono">'+F.usd(r.asp)+'</td><td class="mono">'+F.dec(r.sph,3)+'</td><td class="mono">'+F.usd(r.rev_per_call)+'</td><td class="mono">'+F.usd(r.rev_per_staff)+'</td>'+(comm?'<td class="mono" style="color:#7c3aed;font-weight:700">'+F.usd(comm.comision_usd||0)+'</td>':'<td class="mono" style="color:var(--tx3)">--</td>')+'<td style="font-family:var(--mono);font-weight:700;color:'+scCol+'">'+(sc!=null?sc+'%':'--')+'</td></tr>';}).join('');
+  body.innerHTML=data.map((r,i)=>{const rank=i+1,rc=rank<=3?'r'+rank:'rn',sc=r.score!=null?Math.round(r.score*100):null,scCol=sc!=null?scC(r.score):'#94a3b8';const sst=segSt[r.segmento]||'background:var(--s2);color:var(--tx3)',tst=tenSt[r.tenure_seg]||'background:var(--s2);color:var(--tx3)';const agEsc=r.agent.replace(/"/g,'&quot;');const comm=DataEngine.getCommission(r.agent,APP_STATE.currentMonth);return '<tr><td><span class="rank-badge '+rc+'">'+rank+'</span></td><td style="font-weight:600;color:var(--ind);cursor:pointer" data-agent="'+agEsc+'" onclick="openAgent(this.dataset.agent)">'+r.agent+'</td><td style="color:var(--tx2)">'+r.supervisor+'</td><td><span class="seg-badge" style="'+sst+'">'+(r.segmento||'--')+'</span></td><td><span class="seg-badge" style="'+tst+'">'+(r.tenure_seg||'--')+(r.meses>0?' '+r.meses+'m':'')+'</span></td><td style="font-family:var(--mono);font-size:10px;color:var(--tx3)">'+(r.fecha_ingreso?(()=>{const _p=r.fecha_ingreso.split('-');return _p.length===3?_p[2]+'/'+_p[1]+'/'+_p[0]:r.fecha_ingreso;})():'--')+'</td><td style="font-family:var(--mono);font-weight:700;color:'+(rank<=3?'#4f46e5':'var(--tx2)')+'">'+F.usd(r.revenue)+'</td><td class="mono">'+F.usd(r.cash)+'</td><td class="mono">'+F.num(r.sales)+'</td><td style="font-family:var(--mono);font-weight:700;color:'+crC(r.cr)+'">'+F.pct(r.cr)+'</td><td class="mono">'+F.usd(r.asp)+'</td><td class="mono">'+F.dec(r.sph,3)+'</td><td class="mono">'+F.usd(r.rev_per_call)+'</td><td class="mono">'+F.usd(r.rev_per_staff)+'</td>'+(comm?'<td class="mono" style="color:#7c3aed;font-weight:700">'+F.usd(comm.comision_usd||0)+'</td>':'<td class="mono" style="color:var(--tx3)">--</td>')+'<td style="font-family:var(--mono);font-weight:700;color:'+scCol+'">'+(sc!=null?sc+'%':'--')+'</td></tr>';}).join('');
 }
 
 function openAgent(nombre){
@@ -2429,7 +2433,7 @@ function _populateSelects(){
     agSel.innerHTML='';
     DataEngine.agentList.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;agSel.appendChild(o);});
     if(APP_STATE.currentAgent)agSel.value=APP_STATE.currentAgent;
-    agSel.onchange=()=>{ APP_STATE.currentAgent=agSel.value; Store.set('state_agent',agSel.value); update(); };
+    agSel.onchange=()=>{ APP_STATE.currentAgent=agSel.value; Store.set('state_agent',agSel.value); const _ra=$('rank-sup');if(_ra)_ra.value=''; update(); };
   }
   const supSel=$('sel-sup');
   if(supSel){
