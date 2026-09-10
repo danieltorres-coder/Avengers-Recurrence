@@ -1,0 +1,1359 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operaciones Post-Venta · Vista WFM</title>
+</head>
+<body>
+
+<style>
+  :root{
+    color-scheme: light;
+    --page:#f9f9f7;
+    --surface:#fcfcfb;
+    --surface-raised:#ffffff;
+    --text-primary:#0b0b0b;
+    --text-secondary:#52514e;
+    --text-muted:#898781;
+    --grid:#e1e0d9;
+    --baseline:#c3c2b7;
+    --border:rgba(11,11,11,0.10);
+    --border-strong:rgba(11,11,11,0.16);
+    --series-1:#2a78d6;
+    --series-1-soft:rgba(42,120,214,0.14);
+    --series-2:#eb6834;
+    --series-2-soft:rgba(235,104,52,0.14);
+    --series-3:#1baf7a;
+    --series-3-soft:rgba(27,175,122,0.14);
+    --series-4:#7c5cff;
+    --series-4-soft:rgba(124,92,255,0.14);
+    --good:#006300;
+    --bad:#d84343;
+    --shadow: 0 1px 2px rgba(11,11,11,0.04), 0 8px 24px -12px rgba(11,11,11,0.10);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --page:#0d0d0d; --surface:#1a1a19; --surface-raised:#212120;
+      --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#898781;
+      --grid:#2c2c2a; --baseline:#383835;
+      --border:rgba(255,255,255,0.10); --border-strong:rgba(255,255,255,0.18);
+      --series-1:#3987e5; --series-1-soft:rgba(57,135,229,0.18);
+      --series-2:#d95926; --series-2-soft:rgba(217,89,38,0.18);
+      --series-3:#199e70; --series-3-soft:rgba(25,158,112,0.18);
+      --series-4:#8f74ff; --series-4-soft:rgba(143,116,255,0.18);
+      --good:#0ca30c; --bad:#e0605f;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --surface-raised:#212120;
+    --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#898781;
+    --grid:#2c2c2a; --baseline:#383835;
+    --border:rgba(255,255,255,0.10); --border-strong:rgba(255,255,255,0.18);
+    --series-1:#3987e5; --series-1-soft:rgba(57,135,229,0.18);
+    --series-2:#d95926; --series-2-soft:rgba(217,89,38,0.18);
+    --series-3:#199e70; --series-3-soft:rgba(25,158,112,0.18);
+    --series-4:#8f74ff; --series-4-soft:rgba(143,116,255,0.18);
+    --good:#0ca30c; --bad:#e0605f;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--page);color:var(--text-primary);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;font-size:14.5px;}
+  .wrap{max-width:1520px;margin:0 auto;padding:28px 24px 64px;}
+
+  .active-filter-banner{display:flex;align-items:center;gap:8px;background:var(--series-1-soft);border:1px solid var(--series-1);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text-primary);line-height:1.5;}
+  .active-filter-banner strong{color:var(--series-1);}
+
+  .tab-nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;border-bottom:2px solid var(--border);padding-bottom:0;}
+  .tab-btn{appearance:none;border:1px solid transparent;border-bottom:none;background:transparent;color:var(--text-secondary);font-family:inherit;font-size:13.5px;font-weight:600;padding:10px 16px;border-radius:10px 10px 0 0;cursor:pointer;transition:background .12s,color .12s;margin-bottom:-2px;}
+  .tab-btn:hover{color:var(--text-primary);background:var(--surface-raised);}
+  .tab-btn.active{color:var(--series-1);background:var(--surface);border-color:var(--border);border-bottom:2px solid var(--surface);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  /* Simulador */
+  .sim-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:14px;}
+  .sim-card{background:var(--surface-raised);border:1px solid var(--border);border-radius:12px;padding:16px;}
+  .sim-card h4{margin:0 0 10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px;}
+  .sim-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px;font-size:12.5px;color:var(--text-secondary);}
+  .sim-row input[type=number]{width:82px;background:var(--surface);border:1px solid var(--border-strong);border-radius:7px;padding:5px 8px;font-size:12.5px;color:var(--text-primary);font-family:inherit;text-align:right;}
+  .sim-out{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);}
+  .sim-out .big{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .sim-out .cmp{font-size:12px;color:var(--text-muted);margin-top:2px;}
+  .sim-note{font-size:12px;color:var(--text-muted);background:var(--surface);border:1px dashed var(--border);border-radius:10px;padding:12px 14px;margin-top:6px;}
+  .mixbar{display:flex;height:20px;border-radius:6px;overflow:hidden;border:1px solid var(--border);margin:4px 0;}
+  .mixbar span{display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;}
+  .lever-list{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;}
+  .lever-list li{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--series-3);border-radius:8px;padding:9px 12px;font-size:12.5px;line-height:1.5;color:var(--text-secondary);}
+  .lever-list li b{color:var(--text-primary);}
+  .changes-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  select.sort-select{background:var(--surface-raised);border:1px solid var(--border-strong);border-radius:8px;padding:6px 10px;font-size:12.5px;color:var(--text-primary);font-family:inherit;}
+
+  header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;margin-bottom:20px;}
+  header.top h1{font-size:22px;font-weight:700;margin:0 0 4px;letter-spacing:-0.01em;}
+  header.top p{margin:0;color:var(--text-secondary);font-size:13.5px;max-width:62ch;}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--text-secondary);background:var(--surface-raised);border:1px solid var(--border);padding:6px 10px;border-radius:999px;white-space:nowrap;}
+  .badge .dot{width:6px;height:6px;border-radius:50%;background:var(--series-3);}
+  .badge.warn .dot{background:var(--series-2);}
+
+  .banner{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--series-3);border-radius:10px;padding:12px 14px;margin-bottom:14px;color:var(--text-secondary);font-size:13px;line-height:1.55;}
+  .banner.good{border-left-color:var(--series-3);}
+  .banner strong{color:var(--text-primary);}
+  .banner svg{flex:none;margin-top:2px;}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);}
+  .panel + .panel{margin-top:16px;}
+  .panel h2{font-size:14.5px;font-weight:700;margin:0 0 12px;letter-spacing:.01em;color:var(--text-primary);}
+  .panel h2 small{font-weight:500;color:var(--text-muted);margin-left:6px;font-size:12px;}
+
+  .filters{margin-bottom:16px;}
+  .filter-row{display:flex;flex-direction:column;gap:10px;}
+  .filter-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);}
+  .pill-row{display:flex;flex-wrap:wrap;gap:6px;}
+  .pill{appearance:none;border:1px solid var(--border-strong);background:var(--surface-raised);color:var(--text-secondary);font-family:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;cursor:pointer;transition:background .12s,color .12s,border-color .12s;display:inline-flex;align-items:center;gap:6px;}
+  .pill:hover{border-color:var(--series-1);}
+  .pill.active{background:var(--series-1);border-color:var(--series-1);color:#fff;}
+  .pill .sw{width:8px;height:8px;border-radius:2px;flex:none;}
+  .pill.month{padding:6px 10px;}
+  .pill.month.partial{border-style:dashed;}
+  .search{flex:1;min-width:200px;background:var(--surface-raised);border:1px solid var(--border-strong);border-radius:8px;padding:7px 10px;font-size:12.5px;color:var(--text-primary);font-family:inherit;}
+  .search::placeholder{color:var(--text-muted);}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px;}
+  @media (max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr);}}
+  @media (max-width:640px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);}
+  .kpi .lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:8px;}
+  .kpi .val{font-size:22px;font-weight:700;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;color:var(--text-primary);}
+  .kpi .sub{font-size:11.5px;color:var(--text-secondary);margin-top:4px;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:700;padding:8px 10px;border-bottom:1px solid var(--border-strong);white-space:nowrap;}
+  thead th.num, tbody td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  thead th[data-key]{cursor:pointer;position:relative;}
+  thead th[data-key]:hover{color:var(--text-primary);}
+  thead th[data-key]::after{content:'↕';margin-left:5px;opacity:.32;font-size:9px;}
+  thead th[data-key].sort-desc::after{content:'▼';opacity:1;color:var(--series-1);}
+  thead th[data-key].sort-asc::after{content:'▲';opacity:1;color:var(--series-1);}
+  tbody td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text-primary);vertical-align:middle;}
+  tbody tr:hover{background:var(--series-1-soft);}
+  tbody tr.total-row{font-weight:700;background:var(--surface-raised);}
+  td.nm{max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .table-scroll{overflow-x:auto;}
+  .rate-pill{display:inline-block;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:700;background:var(--series-3-soft);color:var(--series-3);}
+  .rate-pill.mid{background:var(--series-2-soft);color:var(--series-2);}
+  .rate-pill.low{background:rgba(216,67,67,0.13);color:var(--bad);}
+  .empty-state{padding:30px;text-align:center;color:var(--text-muted);font-size:13px;}
+  .spark{display:block;}
+
+  .ag-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--text-secondary);white-space:nowrap;}
+  .ag-tag .sw{width:8px;height:8px;border-radius:2px;flex:none;}
+
+  .panel-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .panel-toolbar h2{margin:0;}
+  .btn-copy{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-strong);background:var(--surface-raised);color:var(--text-primary);font-family:inherit;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;}
+  .btn-copy:hover{border-color:var(--series-1);color:var(--series-1);}
+
+  /* agent-group cards */
+  .ag-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;}
+  .ag-card{border:1px solid var(--border);border-radius:12px;padding:14px 16px;background:var(--surface-raised);border-top:4px solid var(--series-1);}
+  .ag-card h3{font-size:13px;margin:0 0 10px;font-weight:700;display:flex;align-items:center;gap:7px;}
+  .ag-card .big{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .ag-card .mom{font-size:11px;margin-top:2px;margin-bottom:8px;}
+  .ag-card .funnel{display:flex;gap:10px;margin:10px 0;font-size:11px;color:var(--text-secondary);}
+  .ag-card .funnel b{color:var(--text-primary);display:block;font-size:13px;}
+  .ag-card svg.mini{width:100%;height:44px;display:block;margin-top:6px;}
+
+  .delta-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .delta-pill.down{background:rgba(216,67,67,0.13);color:var(--bad);}
+  .delta-pill.up{background:var(--series-3-soft);color:var(--series-3);}
+  .delta-pill.flat{background:var(--surface);color:var(--text-muted);border:1px solid var(--border);}
+  .na{color:var(--text-muted);font-size:11px;}
+
+  .heat{border-radius:4px;font-weight:600;}
+  .heat-na{color:var(--text-muted);font-weight:400;}
+  .idx-legend{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:11.5px;color:var(--text-muted);margin-top:12px;}
+  .idx-legend .bar{width:130px;height:8px;border-radius:4px;background:linear-gradient(90deg, hsla(0,70%,50%,0.5), hsla(65,70%,50%,0.5), hsla(130,70%,50%,0.5));}
+  h3.sub-h{font-size:12.5px;font-weight:700;color:var(--text-primary);margin:20px 0 10px;padding-top:16px;border-top:1px solid var(--border);}
+  h3.sub-h:first-of-type{margin-top:0;padding-top:0;border-top:none;}
+
+  /* alerts (reused pattern) */
+  .alerts-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+  .alerts-head h2{margin:0;}
+  .alerts-count{font-size:11.5px;font-weight:700;color:var(--text-secondary);background:var(--surface-raised);border:1px solid var(--border);padding:4px 10px;border-radius:999px;}
+  .alert-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  @media (max-width:980px){.alert-grid{grid-template-columns:1fr;}}
+  .alert-card{border-radius:12px;padding:14px 16px;border:1px solid var(--border);background:var(--surface-raised);}
+  .alert-card.sev-high{border-left:4px solid var(--bad);}
+  .alert-card.sev-med{border-left:4px solid var(--series-2);}
+  .alert-card.sev-info{border-left:4px solid var(--series-1);}
+  .alert-card .ahd{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;margin-bottom:4px;}
+  .alert-card .ahd .n{font-variant-numeric:tabular-nums;color:var(--text-muted);font-weight:600;}
+  .alert-card .adesc{font-size:11.5px;color:var(--text-secondary);margin-bottom:10px;line-height:1.5;}
+  .alert-card ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
+  .alert-card li{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 10px;font-size:12px;padding:6px 8px;background:var(--surface);border-radius:7px;border:1px solid var(--border);}
+  .alert-card li .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary);}
+  .alert-card li .mt{flex:none;color:var(--text-muted);font-variant-numeric:tabular-nums;font-size:11.5px;}
+  .alert-card li .diag{flex-basis:100%;color:var(--text-secondary);font-size:11px;line-height:1.4;padding-top:2px;border-top:1px dashed var(--border);margin-top:2px;}
+  .alert-empty{font-size:12px;color:var(--text-muted);padding:8px 0;}
+
+  .dq-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+  .dq-item{display:flex;justify-content:space-between;font-size:12px;padding:6px 10px;background:var(--surface-raised);border:1px solid var(--border);border-radius:8px;}
+
+  details.detail-toggle{margin-top:14px;}
+  details.detail-toggle summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--series-1);padding:6px 0;}
+  details.detail-toggle summary:hover{text-decoration:underline;}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--text-primary);color:var(--page);font-size:12.5px;font-weight:600;padding:10px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:50;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .copy-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:60;padding:20px;}
+  .copy-overlay[hidden]{display:none;}
+  .copy-box{background:var(--surface-raised);border-radius:12px;padding:18px;max-width:640px;width:100%;box-shadow:var(--shadow);}
+  .copy-box h3{margin:0 0 8px;font-size:14px;}
+  .copy-box p{margin:0 0 10px;font-size:12px;color:var(--text-secondary);}
+  .copy-box textarea{width:100%;height:160px;font-family:ui-monospace,monospace;font-size:11px;padding:8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--page);color:var(--text-primary);}
+
+  footer.foot{margin-top:28px;color:var(--text-muted);font-size:11.5px;line-height:1.6;border-top:1px solid var(--border);padding-top:14px;}
+</style>
+
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>Operaciones Post-Venta · Vista WFM</h1>
+      <p>Volumen, contacto y cierre por <strong>grupo de agentes</strong> (el pool que trabaja cada campaña en Five9) — pensado para decisiones de dotación: dónde subir, dónde bajar y qué monitorear.</p>
+    </div>
+    <span class="badge warn"><span class="dot"></span> Ene – Sep 2026 · Sep parcial</span>
+  </header>
+
+  <div class="banner">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
+    <div><strong>Qué cambió frente al dashboard anterior.</strong> Esta vista viene directo del Google Sheet "Post-Sales-Operations Calls" (hojas Year Calls, Year Calls 2 min y Year Ventas Cerradas, leídas en vivo el 9-sep-2026) y reemplaza "departamento" por <strong>grupo de agentes</strong> (AGENT GROUP): Bootcamp, Recurrence - VIP, Recurrence - VIP-Mas, Recurrence - Platinum, Recurrence - Black, Resurrection y Upsell — el pool real que Five9 usa para enrutar cada campaña. Se agregó <strong>septiembre</strong> (parcial, solo ~9 días) y una tercera métrica, <strong>Ventas Cerradas</strong>, que permite ver el embudo completo Llamada → Contacto (+2min) → Venta.</div>
+  </div>
+  <div class="banner good">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
+    <div><strong>Se resolvió el hueco de atribución de "Manual Outbound".</strong> En el dashboard anterior era una sola fila sin poder repartirse por operación. En esta hoja SÍ viene etiquetada por grupo de agentes (116.223 llamadas manuales en total, repartidas entre los 7 grupos) — el detalle está en la sección "Manual Outbound por grupo de agentes" más abajo.</div>
+  </div>
+
+  <div class="panel filters">
+    <h2>Filtros <small>el grupo de agentes manda; el buscador filtra por campaña o segmento (ltv_type)</small></h2>
+    <div class="filter-row">
+      <div class="filter-label">Grupo de agentes</div>
+      <div class="pill-row" id="agPills"></div>
+    </div>
+    <div class="filter-row" style="margin-top:14px;">
+      <div class="filter-label">Meses</div>
+      <div class="pill-row" id="monthPills"></div>
+    </div>
+    <div class="filter-row" style="margin-top:14px;">
+      <div class="filter-label">Buscar</div>
+      <input class="search" id="searchBox" placeholder="Buscar campaña o segmento (ltv_type)…">
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="lbl">Llamadas</div><div class="val" id="kpiCalls">–</div><div class="sub" id="kpiCallsSub">&nbsp;</div></div>
+    <div class="kpi"><div class="lbl">Contactos (+2min)</div><div class="val" id="kpi2min">–</div><div class="sub" id="kpi2minSub">&nbsp;</div></div>
+    <div class="kpi"><div class="lbl">Ventas cerradas</div><div class="val" id="kpiVentas">–</div><div class="sub" id="kpiVentasSub">&nbsp;</div></div>
+    <div class="kpi"><div class="lbl">Tasa de contacto</div><div class="val" id="kpiRateContacto">–</div><div class="sub">contacto ÷ llamadas</div></div>
+    <div class="kpi"><div class="lbl">Tasa de cierre</div><div class="val" id="kpiRateCierre">–</div><div class="sub">venta ÷ contacto</div></div>
+    <div class="kpi"><div class="lbl">Conversión total</div><div class="val" id="kpiRateConv">–</div><div class="sub">venta ÷ llamadas</div></div>
+  </div>
+
+  <div class="active-filter-banner" id="activeFilterBanner"></div>
+
+  <div class="tab-nav" id="tabNav">
+    <button class="tab-btn" data-tab="resumen">📊 Resumen</button>
+    <button class="tab-btn" data-tab="manual-inbound">📞 Manual e Inbound</button>
+    <button class="tab-btn" data-tab="oportunidades">🎯 Oportunidades (cambios mes a mes)</button>
+    <button class="tab-btn" data-tab="validar">🔍 Validar cambios</button>
+    <button class="tab-btn" data-tab="simulador">🧪 Simulador Septiembre</button>
+    <button class="tab-btn" data-tab="detalle">📋 Segmentos y detalle</button>
+  </div>
+
+  <div class="tab-panel" data-tab="resumen">
+  <div class="panel">
+    <h2>Volumen mensual por grupo de agentes <small>llamadas totales — para planear dotación</small></h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Grupo de agentes</th><th class="num">Ene</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Abr</th><th class="num">May</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">Sep*</th><th class="num">Total</th></tr></thead>
+        <tbody id="volByAgBody"></tbody>
+      </table>
+    </div>
+    <div class="alert-empty">*Septiembre es un mes parcial (~9 días) — no lo compares directo contra un mes completo.</div>
+  </div>
+
+  <div class="panel">
+    <h2>Grupos de agentes <small>tendencia mensual, cambio mes a mes (Jul→Ago, últimos 2 meses completos) y embudo — respeta el filtro de operación de arriba</small></h2>
+    <div class="ag-grid" id="agGrid"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Índice de tasa de contacto <small>Contactos (+2min) ÷ Llamadas totales, por grupo de agentes y mes — para ver dónde mejora o empeora el contacto</small></h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Grupo de agentes</th><th class="num">Ene</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Abr</th><th class="num">May</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">Sep*</th><th class="num">Jul→Ago</th></tr></thead>
+        <tbody id="idxContactoBody"></tbody>
+      </table>
+    </div>
+    <div class="idx-legend"><span>Peor</span><span class="bar"></span><span>Mejor</span><span style="margin-left:6px;">· la escala de color compara todos los grupos y meses juntos · "—" = menos de 10 llamadas ese mes (dato insuficiente)</span></div>
+  </div>
+
+  <div class="panel">
+    <h2>Índice de tasa de conversión (cierre) <small>Ventas cerradas ÷ Contactos (+2min), por grupo de agentes y mes — para comparar qué operación convierte mejor</small></h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Grupo de agentes</th><th class="num">Ene</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Abr</th><th class="num">May</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">Sep*</th><th class="num">Jul→Ago</th></tr></thead>
+        <tbody id="idxCierreBody"></tbody>
+      </table>
+    </div>
+    <div class="idx-legend"><span>Peor</span><span class="bar"></span><span>Mejor</span><span style="margin-left:6px;">· la escala de color compara todos los grupos y meses juntos · "—" = menos de 5 contactos ese mes (dato insuficiente)</span></div>
+  </div>
+  </div><!-- /tab-panel resumen -->
+
+  <div class="tab-panel" data-tab="oportunidades">
+  <div class="banner">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
+    <div><strong>Cómo leer esta pestaña.</strong> Cada tarjeta de "caída" o "subida" fuerte Jul→Ago trae un diagnóstico automático que cruza el cambio de volumen con el cambio de tasa de contacto — así se puede distinguir un problema de <strong>dotación/prioridad</strong> (bajó el volumen, el contacto se sostuvo) de un problema de <strong>calidad/guion</strong> (el volumen se sostuvo pero bajó el contacto). Usa el filtro de operación de arriba para ver esto por operación.</div>
+  </div>
+  <div class="panel">
+    <div class="alerts-head">
+      <h2>⚠️ Alertas <small>calculadas sobre todo el dataset (excluyendo septiembre por ser parcial)</small></h2>
+      <span class="alerts-count" id="alertsCount">–</span>
+    </div>
+    <div class="alert-grid" id="alertsGrid"></div>
+  </div>
+  </div><!-- /tab-panel oportunidades -->
+
+  <div class="tab-panel" data-tab="validar">
+  <div class="banner">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
+    <div><strong>Bitácora de validación.</strong> A diferencia de "Oportunidades" (que solo resume Jul→Ago), aquí está <strong>cada</strong> cambio mes a mes relevante (Ene→Feb hasta Jul→Ago, se excluye septiembre por ser parcial) de cada campaña × grupo de agentes, para que puedas revisarlo y confirmar si es real. Se marca cuando el volumen cambió 25% o más, la tasa de contacto 4 puntos o más, o la tasa de cierre 6 puntos o más (con un mínimo de 30 llamadas para evitar ruido de bajo volumen).</div>
+  </div>
+  <div class="panel">
+    <div class="changes-toolbar">
+      <h2 style="margin:0;">Cambios detectados <small id="changesCount"></small></h2>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input class="search" id="changesSearch" style="min-width:180px;" placeholder="Buscar campaña…">
+        <select class="sort-select" id="changesSort">
+          <option value="severity">Ordenar: más relevante primero</option>
+          <option value="volAsc">Ordenar: mayor caída de volumen</option>
+          <option value="volDesc">Ordenar: mayor subida de volumen</option>
+          <option value="rateAsc">Ordenar: mayor caída de contacto</option>
+          <option value="recent">Ordenar: más reciente primero</option>
+        </select>
+        <button class="btn-copy" id="copyChangesBtn">📋 Copiar (CSV)</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campaña</th><th>Grupo</th><th>Periodo</th><th style="min-width:260px;">Diagnóstico</th><th class="num">Llamadas (antes→después)</th><th class="num">Δ Volumen</th><th class="num">Contacto (antes→después)</th><th class="num">Δ pp</th><th class="num">Cierre (antes→después)</th><th class="num">Δ pp</th></tr></thead>
+        <tbody id="changesBody"></tbody>
+      </table>
+    </div>
+    <div class="alert-empty" id="changesEmpty" style="display:none;">No hay cambios que cumplan el criterio para esta operación.</div>
+  </div>
+  </div><!-- /tab-panel validar -->
+
+  <div class="tab-panel" data-tab="simulador">
+  <div class="banner">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
+    <div><strong>Análisis de palancas para septiembre.</strong> Septiembre lleva ~9 de ~30 días (30%). Aquí comparamos el ritmo real de septiembre contra agosto completo, proyectamos el cierre de mes al mismo ritmo, y desglosamos mezcla Manual vs. Inbound, composición del Inbound por subtipo, y mezcla de segmentos (ltv_type) — para decidir qué palanca mover. Selecciona una operación específica (no "Todos" ni "Recurrence (todos)") arriba para activar el simulador interactivo "¿qué pasaría si...?".</div>
+  </div>
+  <div id="simContent"></div>
+  </div><!-- /tab-panel simulador -->
+
+  <div class="tab-panel" data-tab="manual-inbound">
+  <div class="panel">
+    <h2>Manual Outbound por grupo de agentes <small>enero–septiembre, ya se puede atribuir por grupo de agentes (antes era una sola fila sin desagregar)</small></h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Grupo de agentes</th><th class="num">Llamadas</th><th class="num">Contactos</th><th class="num">Tasa contacto</th><th class="num">Ventas</th><th class="num">Tasa cierre</th></tr></thead>
+        <tbody id="manualBody"></tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h">Volumen mensual (Manual Outbound)</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Grupo de agentes</th><th class="num">Ene</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Abr</th><th class="num">May</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">Sep*</th><th class="num">Total</th></tr></thead>
+        <tbody id="manualVolBody"></tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h">Tasa de contacto mensual (Manual Outbound)</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Grupo de agentes</th><th class="num">Ene</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Abr</th><th class="num">May</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">Sep*</th></tr></thead>
+        <tbody id="manualContactoBody"></tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h">Tasa de cierre mensual (Manual Outbound)</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Grupo de agentes</th><th class="num">Ene</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Abr</th><th class="num">May</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">Sep*</th></tr></thead>
+        <tbody id="manualCierreBody"></tbody>
+      </table>
+    </div>
+    <div class="alert-empty">*Septiembre es un mes parcial (~9 días). Una tasa de cierre en 0% un mes no siempre es alarma — revisa el volumen de contactos de ese mes antes de sacar conclusiones (celdas "—" ya indican volumen insuficiente).</div>
+  </div>
+
+  <div class="panel">
+    <h2>Inbound por operación <small>campañas cuyo nombre contiene "Inbound", agrupadas por el AGENT GROUP real de cada una — ya no por inferencia de nombre</small></h2>
+    <div class="banner good" style="margin-bottom:14px;">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
+      <div><strong>Mejora frente al dashboard anterior.</strong> Antes el Inbound por operación se armaba adivinando la operación a partir del nombre de la campaña. Ahora usa el grupo de agentes real de Five9. <strong>Recurrence - Platinum</strong> y <strong>Recurrence - Black</strong> no tienen campañas Inbound en esta hoja, por eso no aparecen en las tablas de abajo.</div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Grupo de agentes</th><th class="num">Llamadas</th><th class="num">Contactos</th><th class="num">Tasa contacto</th><th class="num">Ventas</th><th class="num">Tasa cierre</th></tr></thead>
+        <tbody id="inboundBody"></tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h">Volumen mensual (Inbound)</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Grupo de agentes</th><th class="num">Ene</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Abr</th><th class="num">May</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">Sep*</th><th class="num">Total</th></tr></thead>
+        <tbody id="inboundVolBody"></tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h">Tasa de contacto mensual (Inbound)</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Grupo de agentes</th><th class="num">Ene</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Abr</th><th class="num">May</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">Sep*</th></tr></thead>
+        <tbody id="inboundContactoBody"></tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h">Tasa de cierre mensual (Inbound)</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Grupo de agentes</th><th class="num">Ene</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Abr</th><th class="num">May</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">Sep*</th></tr></thead>
+        <tbody id="inboundCierreBody"></tbody>
+      </table>
+    </div>
+    <div class="alert-empty">*Septiembre es un mes parcial (~9 días).</div>
+  </div>
+  </div><!-- /tab-panel manual-inbound -->
+
+  <div class="tab-panel" data-tab="detalle">
+  <div class="panel">
+    <h2>Segmentos (ltv_type) <small>qué segmento del ciclo de vida trae más volumen y mejor cierre, por grupo de agentes</small></h2>
+    <div class="banner" style="margin-bottom:14px;">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
+      <div><strong>Limpieza de datos aplicada.</strong> El archivo trae inconsistencias de mayúsculas/nombre en ltv_type — las uní bajo un solo valor: <span id="dqSummary"></span>. Dos valores no son un segmento real ("1" y "lo", posibles errores de captura) y quedan marcados como "Sin clasificar".</div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th data-key="ltvType">Segmento (ltv_type)</th><th data-key="agentGroup">Grupo de agentes</th><th class="num" data-key="calls">Llamadas</th><th class="num" data-key="rateContacto">Tasa contacto</th><th class="num" data-key="ventas">Ventas</th><th class="num" data-key="rateCierre">Tasa cierre</th></tr></thead>
+        <tbody id="ltvBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-toolbar">
+      <h2>Detalle por campaña <small id="tableScope"></small></h2>
+      <button class="btn-copy" id="copyTableBtn">📋 Copiar tabla (CSV)</button>
+    </div>
+    <div class="table-scroll">
+      <table id="campaignTable">
+        <thead>
+          <tr>
+            <th data-key="name">Campaña</th>
+            <th data-key="agentGroup">Grupo de agentes</th>
+            <th class="num" data-key="calls">Llamadas</th>
+            <th class="num" data-key="calls2min">Contactos</th>
+            <th class="num" data-key="rateContacto">Tasa contacto</th>
+            <th class="num" data-key="ventas">Ventas</th>
+            <th class="num" data-key="rateCierre">Tasa cierre</th>
+            <th>Tendencia</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="empty-state" id="emptyState" style="display:none;">No hay campañas que coincidan con los filtros actuales.</div>
+  </div>
+  </div><!-- /tab-panel detalle -->
+
+  <footer class="foot">
+    Fuente: Google Sheet "Post-Sales-Operations Calls" (hojas Year Calls, Year Calls 2 min, Year Ventas Cerradas), leído en vivo el <span id="exportDate"></span>. Herramienta de llamadas: Five9. "Grupo de agentes" = columna AGENT GROUP del archivo (el pool de agentes asignado a la campaña, no el nombre de la campaña en sí). Septiembre es un mes parcial. Panel autocontenido.
+  </footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="copy-overlay" id="copyOverlay" hidden>
+  <div class="copy-box">
+    <h3>Copiar tabla como CSV</h3>
+    <p>El portapapeles automático no está disponible aquí. Selecciona el texto (ya viene seleccionado) y usa Ctrl/Cmd+C para copiarlo.</p>
+    <textarea id="copyTextarea" readonly></textarea>
+    <button class="btn-copy" id="closeCopyOverlay">Cerrar</button>
+  </div>
+</div>
+
+<script>
+const WFM_DATA = {"months": ["January", "February", "March", "April", "May", "June", "July", "August", "September"], "monthsEs": ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep"], "agentGroups": ["Bootcamp", "Recurrence - VIP", "Recurrence - VIP-Mas", "Recurrence - Platinum", "Recurrence - Black", "Resurrection", "Upsell"], "campaigns": [{"name": "[Deleted]", "agentGroup": "Recurrence - VIP-Mas", "calls": [53461, 41994, 41807, 33264, 15118, 0, 0, 0, 0], "calls2min": [5279, 4724, 5390, 4799, 2656, 0, 0, 0, 0], "ventas": [309, 278, 332, 287, 186, 0, 0, 0, 0]}, {"name": "[Deleted]", "agentGroup": "Recurrence - VIP", "calls": [14349, 13519, 16674, 13564, 6108, 0, 0, 0, 0], "calls2min": [1815, 1782, 2291, 2242, 1148, 0, 0, 0, 0], "ventas": [109, 101, 130, 103, 59, 0, 0, 0, 0]}, {"name": "[Deleted]", "agentGroup": "Bootcamp", "calls": [2084, 5350, 12702, 15968, 14140, 11308, 7, 1, 0], "calls2min": [369, 1035, 2746, 3232, 3021, 2056, 1, 0, 0], "ventas": [1, 4, 8, 4, 5, 5, 0, 0, 0]}, {"name": "Resurrection_USA_Out_EOT_002", "agentGroup": "Resurrection", "calls": [6257, 4980, 5239, 5991, 10370, 7881, 9848, 5001, 2930], "calls2min": [291, 315, 358, 325, 345, 287, 424, 334, 201], "ventas": [19, 14, 20, 16, 19, 13, 35, 19, 14]}, {"name": "Resurrection_USA_Out_NoEOT_002", "agentGroup": "Resurrection", "calls": [7076, 6804, 5151, 5166, 10653, 7680, 8309, 3812, 2375], "calls2min": [225, 282, 230, 178, 218, 140, 201, 130, 100], "ventas": [18, 10, 6, 6, 6, 3, 12, 3, 4]}, {"name": "Resurrection_USA_Out_EOT_001", "agentGroup": "Resurrection", "calls": [5648, 5203, 5083, 5263, 6033, 7403, 6890, 4534, 1928], "calls2min": [262, 381, 391, 328, 309, 384, 397, 425, 146], "ventas": [18, 18, 27, 21, 13, 30, 32, 38, 5]}, {"name": "Manual Outbound", "agentGroup": "Upsell", "calls": [5406, 4515, 4475, 4546, 6502, 5215, 6117, 5421, 1814], "calls2min": [802, 721, 686, 690, 745, 702, 731, 725, 216], "ventas": [302, 274, 242, 223, 207, 194, 214, 213, 43]}, {"name": "Upsell_ALL_Out_Old", "agentGroup": "Upsell", "calls": [3357, 5379, 1812, 2133, 2798, 3054, 9042, 12206, 3060], "calls2min": [336, 536, 209, 204, 220, 321, 1196, 1601, 448], "ventas": [33, 14, 6, 3, 8, 10, 39, 49, 24]}, {"name": "Manual Outbound", "agentGroup": "Recurrence - VIP-Mas", "calls": [5594, 4512, 4560, 5176, 4600, 4185, 4344, 4540, 1201], "calls2min": [520, 445, 470, 536, 466, 469, 453, 430, 133], "ventas": [137, 117, 127, 153, 114, 131, 132, 121, 45]}, {"name": "Recurrence_USA-LATAM_Out_Tier4", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 3275, 10983, 11814, 8783, 2341], "calls2min": [0, 0, 0, 0, 464, 1388, 1408, 1162, 332], "ventas": [0, 0, 0, 0, 22, 80, 86, 74, 14]}, {"name": "[Deleted]", "agentGroup": "Resurrection", "calls": [22962, 7072, 5947, 7, 196, 0, 0, 0, 0], "calls2min": [1027, 618, 747, 7, 38, 0, 0, 0, 0], "ventas": [44, 10, 21, 1, 3, 0, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_Tier5", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 5866, 11131, 9326, 6737, 1573], "calls2min": [0, 0, 0, 0, 1083, 2094, 1754, 1327, 309], "ventas": [0, 0, 0, 0, 94, 164, 118, 70, 25]}, {"name": "Resurrection_USA_Out_NoEOT_001", "agentGroup": "Resurrection", "calls": [4330, 3644, 3903, 3890, 4784, 4539, 4484, 3156, 1100], "calls2min": [109, 156, 170, 162, 173, 127, 148, 136, 45], "ventas": [7, 12, 9, 8, 10, 13, 11, 11, 4]}, {"name": "Resurrection_USA_Out_Recovery", "agentGroup": "Resurrection", "calls": [0, 1918, 4938, 4910, 5006, 4507, 4141, 3726, 1444], "calls2min": [0, 207, 462, 381, 311, 273, 273, 288, 150], "ventas": [0, 6, 18, 17, 25, 9, 14, 14, 4]}, {"name": "Recurrence_USA-LATAM_Out_Tier2", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 2942, 3433, 5762, 7661, 0], "calls2min": [0, 0, 0, 0, 357, 416, 558, 765, 0], "ventas": [0, 0, 0, 0, 20, 13, 24, 24, 0]}, {"name": "Inbound_Sales_USA_Callbacks_Recurrence", "agentGroup": "Recurrence - VIP-Mas", "calls": [1806, 2027, 1914, 2343, 2195, 2250, 1743, 1917, 716], "calls2min": [527, 619, 607, 785, 715, 706, 523, 630, 207], "ventas": [70, 65, 73, 93, 84, 65, 44, 38, 26]}, {"name": "Recurrence_USA-LATAM_Out_Tier3", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 900, 5713, 3025, 4558, 2351], "calls2min": [0, 0, 0, 0, 116, 647, 348, 521, 238], "ventas": [0, 0, 0, 0, 5, 43, 15, 32, 9]}, {"name": "Upsell_USA_Out_Offer", "agentGroup": "Upsell", "calls": [1737, 2128, 1707, 1710, 1919, 1826, 1706, 2188, 645], "calls2min": [374, 415, 394, 330, 312, 334, 341, 443, 131], "ventas": [18, 19, 30, 17, 11, 11, 19, 19, 2]}, {"name": "Manual Outbound", "agentGroup": "Resurrection", "calls": [1878, 1645, 1679, 1799, 1542, 1917, 2277, 1180, 497], "calls2min": [190, 174, 186, 178, 147, 153, 161, 109, 42], "ventas": [53, 58, 51, 51, 39, 35, 41, 32, 12]}, {"name": "Recurrence_USA-LATAM_Out_Tier2", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 1644, 1225, 3493, 4566, 3242], "calls2min": [0, 0, 0, 0, 178, 185, 501, 709, 488], "ventas": [0, 0, 0, 0, 7, 13, 16, 14, 9]}, {"name": "Resurrection_USA_Out_BeforeEOT", "agentGroup": "Resurrection", "calls": [2874, 2449, 3073, 2797, 1443, 445, 396, 421, 78], "calls2min": [164, 263, 282, 219, 114, 21, 33, 29, 4], "ventas": [10, 13, 19, 8, 2, 1, 2, 5, 0]}, {"name": "Recurrence_ALL_Out_2DO_REG", "agentGroup": "Recurrence - VIP-Mas", "calls": [1104, 497, 1044, 4037, 1520, 1201, 1876, 1111, 261], "calls2min": [185, 124, 211, 466, 219, 176, 262, 192, 57], "ventas": [28, 20, 35, 50, 31, 21, 26, 23, 9]}, {"name": "Upsell_USA_Out_WelcomeCall", "agentGroup": "Upsell", "calls": [1534, 1444, 1362, 1302, 1610, 1411, 1492, 1934, 501], "calls2min": [334, 324, 328, 286, 321, 283, 360, 439, 106], "ventas": [72, 86, 59, 49, 57, 45, 69, 89, 21]}, {"name": "Inbound_Bau-USA_Upsell", "agentGroup": "Upsell", "calls": [0, 1, 2083, 1901, 1883, 1756, 1971, 2323, 588], "calls2min": [0, 0, 1763, 1648, 1601, 1524, 1743, 2001, 508], "ventas": [0, 0, 757, 726, 673, 578, 736, 828, 220]}, {"name": "Manual Outbound", "agentGroup": "Recurrence - VIP", "calls": [1702, 1268, 1485, 1434, 1271, 1163, 1652, 2054, 437], "calls2min": [199, 141, 144, 145, 129, 126, 171, 204, 36], "ventas": [67, 32, 44, 43, 39, 33, 53, 57, 7]}, {"name": "Recurrence_USA-LATAM_Out_Tier4", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 579, 2175, 2243, 3041, 704], "calls2min": [0, 0, 0, 0, 110, 319, 301, 408, 94], "ventas": [0, 0, 0, 0, 6, 19, 22, 23, 2]}, {"name": "Recurrence_USA-LATAM_Out_Tier5", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 1051, 2420, 1882, 2197, 498], "calls2min": [0, 0, 0, 0, 226, 531, 418, 431, 114], "ventas": [0, 0, 0, 0, 19, 46, 18, 33, 1]}, {"name": "SalesBootcamp_USA_Out_All_Clean", "agentGroup": "Bootcamp", "calls": [4727, 2115, 0, 0, 0, 0, 0, 0, 0], "calls2min": [86, 39, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 1, 0, 0, 0, 0, 0, 0, 0]}, {"name": "[Deleted]", "agentGroup": "Upsell", "calls": [3129, 3011, 413, 0, 1, 0, 0, 0, 0], "calls2min": [2730, 2599, 341, 0, 1, 0, 0, 0, 0], "ventas": [1220, 1076, 122, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_Recurrence", "agentGroup": "Recurrence - VIP", "calls": [470, 635, 659, 405, 604, 749, 1342, 1419, 241], "calls2min": [190, 205, 223, 159, 192, 242, 452, 461, 88], "ventas": [22, 18, 27, 21, 17, 19, 35, 41, 4]}, {"name": "Manual Outbound", "agentGroup": "Bootcamp", "calls": [153, 411, 543, 1187, 742, 680, 1418, 960, 226], "calls2min": [6, 36, 55, 112, 79, 86, 141, 116, 23], "ventas": [3, 2, 4, 5, 4, 7, 10, 10, 0]}, {"name": "Resurrection_MEX_Out_Recovery", "agentGroup": "Resurrection", "calls": [0, 914, 1198, 919, 975, 1097, 805, 283, 11], "calls2min": [0, 80, 104, 76, 52, 55, 48, 22, 2], "ventas": [0, 3, 4, 3, 1, 1, 0, 1, 0]}, {"name": "Recurrence_USA_Out_Tier4_FL", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 679, 1873, 1694, 1492, 401], "calls2min": [0, 0, 0, 0, 71, 235, 210, 196, 64], "ventas": [0, 0, 0, 0, 5, 8, 13, 12, 1]}, {"name": "Recurrence_USA_Out_Tier5_FL", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 882, 1920, 1532, 1164, 317], "calls2min": [0, 0, 0, 0, 174, 330, 281, 229, 58], "ventas": [0, 0, 0, 0, 11, 16, 12, 20, 8]}, {"name": "Resurrection_USA_Out_FreeDiplomado_Oferta", "agentGroup": "Resurrection", "calls": [548, 771, 648, 576, 609, 751, 904, 751, 223], "calls2min": [127, 181, 175, 139, 116, 113, 164, 180, 64], "ventas": [9, 13, 21, 10, 6, 6, 15, 12, 5]}, {"name": "Recurrence_USA_Out_Tier2_FL", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 799, 1104, 1696, 2044, 0], "calls2min": [0, 0, 0, 0, 97, 94, 160, 167, 0], "ventas": [0, 0, 0, 0, 3, 1, 5, 7, 0]}, {"name": "Resurrection_USA_Out_Cancelado", "agentGroup": "Resurrection", "calls": [567, 680, 719, 819, 751, 717, 583, 320, 117], "calls2min": [13, 26, 29, 29, 12, 18, 9, 19, 4], "ventas": [1, 0, 2, 1, 0, 3, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_Tier3", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 119, 1166, 592, 2161, 1082], "calls2min": [0, 0, 0, 0, 26, 140, 81, 238, 103], "ventas": [0, 0, 0, 0, 1, 5, 2, 12, 2]}, {"name": "Upsell_ALL_Out_CT2", "agentGroup": "Upsell", "calls": [434, 510, 687, 477, 854, 633, 731, 543, 145], "calls2min": [81, 107, 139, 109, 154, 132, 115, 104, 25], "ventas": [1, 10, 3, 6, 7, 6, 7, 3, 2]}, {"name": "Sales_MEX_Out_Beta_Tier3", "agentGroup": "Resurrection", "calls": [0, 0, 456, 2137, 1142, 273, 290, 68, 0], "calls2min": [0, 0, 32, 185, 131, 38, 33, 5, 0], "ventas": [0, 0, 1, 3, 2, 0, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_CallMeNow_EndOfTerm", "agentGroup": "Recurrence - VIP-Mas", "calls": [455, 437, 380, 483, 581, 777, 575, 501, 104], "calls2min": [128, 141, 116, 156, 182, 172, 151, 109, 28], "ventas": [19, 21, 11, 24, 43, 29, 25, 12, 3]}, {"name": "Recurrence_ALL_Out_2DO_REG", "agentGroup": "Recurrence - VIP", "calls": [263, 172, 313, 687, 437, 402, 1182, 696, 125], "calls2min": [63, 38, 71, 109, 88, 84, 205, 117, 23], "ventas": [4, 4, 9, 14, 3, 9, 20, 5, 1]}, {"name": "Bootcamp_USA_Out_ExpCleaning", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 1501, 767, 1416, 498], "calls2min": [0, 0, 0, 0, 0, 259, 135, 193, 51], "ventas": [0, 0, 0, 0, 0, 4, 3, 1, 0]}, {"name": "Recurrence_USA_Out_Tier2_FL", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 431, 427, 1021, 1378, 674], "calls2min": [0, 0, 0, 0, 47, 36, 125, 182, 104], "ventas": [0, 0, 0, 0, 1, 0, 5, 5, 2]}, {"name": "Upsell_LATAM_Out_WelcomeCall", "agentGroup": "Upsell", "calls": [464, 605, 525, 534, 569, 530, 478, 153, 21], "calls2min": [98, 115, 93, 117, 89, 134, 89, 30, 6], "ventas": [18, 16, 21, 13, 10, 7, 12, 3, 0]}, {"name": "Resurrection_USA_Out_FreeDiplomado_Activacion", "agentGroup": "Resurrection", "calls": [372, 193, 184, 694, 575, 560, 490, 501, 98], "calls2min": [31, 33, 13, 58, 32, 32, 33, 53, 15], "ventas": [0, 1, 0, 0, 0, 1, 1, 0, 0]}, {"name": "Sales_MEX_Out_Alpha_Tier3", "agentGroup": "Resurrection", "calls": [0, 0, 210, 595, 1057, 806, 808, 80, 0], "calls2min": [0, 0, 50, 172, 262, 210, 218, 27, 0], "ventas": [0, 0, 2, 7, 3, 6, 3, 1, 0]}, {"name": "Recurrence_USA_Out_Tier3_FL", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 211, 1256, 766, 918, 310], "calls2min": [0, 0, 0, 0, 32, 123, 92, 95, 25], "ventas": [0, 0, 0, 0, 4, 8, 6, 7, 1]}, {"name": "Upsell_LATAM_Out_Offer", "agentGroup": "Upsell", "calls": [522, 634, 403, 340, 404, 329, 273, 210, 1], "calls2min": [71, 91, 77, 77, 75, 87, 53, 32, 0], "ventas": [3, 7, 5, 2, 2, 3, 1, 0, 0]}, {"name": "Upsell_CallMeNow", "agentGroup": "Upsell", "calls": [323, 414, 434, 230, 264, 266, 514, 509, 143], "calls2min": [77, 83, 96, 58, 46, 74, 122, 112, 33], "ventas": [5, 14, 13, 8, 4, 7, 7, 5, 2]}, {"name": "Sales_MEX_Out_Beta_Tier2", "agentGroup": "Resurrection", "calls": [0, 0, 370, 1525, 623, 292, 243, 0, 0], "calls2min": [0, 0, 24, 122, 86, 44, 23, 0, 0], "ventas": [0, 0, 0, 0, 0, 1, 0, 0, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_Premium", "agentGroup": "Recurrence - VIP-Mas", "calls": [317, 314, 321, 429, 464, 430, 301, 326, 132], "calls2min": [88, 91, 102, 120, 144, 122, 78, 97, 34], "ventas": [6, 5, 10, 7, 10, 12, 5, 8, 4]}, {"name": "Sales_MEX_Out_Alpha_Tier2", "agentGroup": "Resurrection", "calls": [0, 0, 132, 698, 375, 976, 724, 0, 0], "calls2min": [0, 0, 21, 144, 96, 207, 199, 0, 0], "ventas": [0, 0, 2, 2, 5, 5, 5, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_CallMeNow_Ingles", "agentGroup": "Recurrence - VIP-Mas", "calls": [172, 381, 436, 439, 455, 320, 285, 258, 71], "calls2min": [47, 81, 111, 110, 121, 61, 65, 58, 16], "ventas": [4, 3, 7, 13, 14, 7, 1, 4, 2]}, {"name": "Upsell_USA_Out_WelcomeCall_FL", "agentGroup": "Upsell", "calls": [307, 337, 254, 215, 244, 227, 199, 333, 90], "calls2min": [54, 73, 62, 50, 48, 51, 49, 77, 17], "ventas": [11, 11, 8, 7, 10, 7, 7, 13, 6]}, {"name": "Sales_LATAM_Out_Alpha_Tier3", "agentGroup": "Resurrection", "calls": [0, 0, 259, 673, 229, 175, 709, 95, 0], "calls2min": [0, 0, 22, 67, 24, 18, 68, 4, 0], "ventas": [0, 0, 0, 1, 0, 0, 0, 0, 0]}, {"name": "Recurrence_MEX_Out_Tier4", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 195, 832, 522, 331, 184], "calls2min": [0, 0, 0, 0, 49, 154, 99, 72, 31], "ventas": [0, 0, 0, 0, 3, 10, 4, 3, 4]}, {"name": "Inbound_LastOffer_Upsell", "agentGroup": "Upsell", "calls": [0, 0, 141, 358, 335, 320, 336, 386, 90], "calls2min": [0, 0, 114, 296, 295, 268, 299, 344, 82], "ventas": [0, 0, 41, 109, 91, 88, 93, 97, 26]}, {"name": "Resurrection_LATAM_Out_Alpha_Leads", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 0, 1957, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 84, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_Oficios_26-32_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 1680, 7], "calls2min": [0, 0, 0, 0, 0, 0, 0, 428, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 4, 0]}, {"name": "Resurrection_USA_Out_CallMeNow", "agentGroup": "Resurrection", "calls": [329, 245, 297, 97, 197, 183, 150, 128, 50], "calls2min": [27, 21, 31, 11, 18, 9, 9, 14, 3], "ventas": [3, 3, 10, 3, 6, 3, 1, 4, 1]}, {"name": "Bootcamp_ALL_Out_Emprendimiento_26-32_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 1659, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 352, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 5, 0]}, {"name": "Sales_MEX_Out_Gamma_Tier3", "agentGroup": "Resurrection", "calls": [0, 0, 125, 1073, 265, 57, 33, 15, 0], "calls2min": [0, 0, 3, 38, 10, 3, 3, 2, 0], "ventas": [0, 0, 0, 1, 0, 1, 0, 0, 0]}, {"name": "SalesBootcamp_USA_Out_All_Clean_FL", "agentGroup": "Bootcamp", "calls": [941, 625, 0, 0, 0, 0, 0, 0, 0], "calls2min": [18, 8, 0, 0, 0, 0, 0, 0, 0], "ventas": [1, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_MEX_Out_Tier5", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 165, 612, 427, 244, 89], "calls2min": [0, 0, 0, 0, 42, 117, 108, 68, 27], "ventas": [0, 0, 0, 0, 2, 9, 10, 1, 0]}, {"name": "Recurrence_MEX_Out_Tier2", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 431, 560, 390, 138, 0], "calls2min": [0, 0, 0, 0, 61, 76, 76, 32, 0], "ventas": [0, 0, 0, 0, 3, 2, 5, 3, 0]}, {"name": "Recurrence_USA_Out_Tier4_FL", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 127, 384, 420, 478, 97], "calls2min": [0, 0, 0, 0, 17, 66, 58, 66, 23], "ventas": [0, 0, 0, 0, 1, 2, 2, 5, 0]}, {"name": "Recurrence_USA_Out_Tier5_FL", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 167, 467, 388, 401, 83], "calls2min": [0, 0, 0, 0, 31, 91, 78, 82, 13], "ventas": [0, 0, 0, 0, 1, 5, 5, 5, 1]}, {"name": "Bootcamp_ALL_Out_Bienestar_26-32_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 1504, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 355, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Sales_MEX_Out_Gamma_Tier2", "agentGroup": "Resurrection", "calls": [0, 0, 91, 127, 228, 1055, 2, 0, 0], "calls2min": [0, 0, 5, 7, 17, 80, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_Belleza_26-32_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 1419, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 215, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Bootcamp_ALL_Out_Belleza_26-32_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 1386, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 348, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Bootcamp_ALL_Out_Bienestar_26-32_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 1385, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 220, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_Gastronomia_26-32_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 1368, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 222, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 3, 0]}, {"name": "Recurrence_USA-LATAM_Out_Tier2", "agentGroup": "Recurrence - Black", "calls": [0, 0, 0, 0, 0, 0, 200, 1148, 0], "calls2min": [0, 0, 0, 0, 0, 0, 42, 215, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 5, 0]}, {"name": "Bootcamp_ALL_Out_Emprendimiento_26-32_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 1277, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 172, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 3, 0]}, {"name": "Inbound_Bau-LATAM_Upsell", "agentGroup": "Upsell", "calls": [0, 2, 289, 285, 191, 214, 215, 65, 12], "calls2min": [0, 0, 229, 251, 160, 176, 178, 48, 8], "ventas": [0, 0, 65, 63, 32, 33, 33, 9, 1]}, {"name": "Recurrence_ALL_Out_CallMeNow_Membership", "agentGroup": "Recurrence - VIP-Mas", "calls": [74, 140, 181, 207, 128, 168, 218, 125, 29], "calls2min": [13, 34, 35, 35, 25, 32, 31, 31, 9], "ventas": [3, 5, 5, 9, 5, 1, 7, 5, 1]}, {"name": "Bootcamp_ALL_Out_Hospitalidad_26-32_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 1222, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 174, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Recurrence_MEX_Out_Tier4", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 146, 323, 203, 398, 114], "calls2min": [0, 0, 0, 0, 35, 80, 57, 86, 44], "ventas": [0, 0, 0, 0, 1, 5, 5, 3, 0]}, {"name": "Recurrence_USA-LATAM_Out_CallMeNow_EndOfTerm", "agentGroup": "Recurrence - VIP", "calls": [99, 115, 94, 88, 139, 148, 224, 172, 37], "calls2min": [27, 41, 44, 33, 49, 42, 77, 53, 19], "ventas": [2, 7, 8, 6, 5, 4, 5, 8, 0]}, {"name": "Recurrence_MEX_Out_Tier3", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 98, 380, 176, 235, 174], "calls2min": [0, 0, 0, 0, 10, 59, 35, 45, 35], "ventas": [0, 0, 0, 0, 0, 2, 3, 2, 1]}, {"name": "SalesBootcamp_USA_Out_Alpha_Clean", "agentGroup": "Bootcamp", "calls": [574, 480, 0, 0, 0, 0, 0, 0, 0], "calls2min": [18, 18, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_Premium", "agentGroup": "Recurrence - VIP", "calls": [87, 99, 84, 82, 143, 155, 157, 159, 48], "calls2min": [28, 35, 24, 27, 51, 50, 56, 37, 11], "ventas": [1, 2, 2, 4, 3, 5, 3, 1, 0]}, {"name": "Recurrence_MEX_Out_Tier1", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 133, 47, 696, 115, 0], "calls2min": [0, 0, 0, 0, 13, 8, 96, 8, 0], "ventas": [0, 0, 0, 0, 0, 1, 6, 1, 0]}, {"name": "Recurrence_USA_Out_Tier3_FL", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 42, 243, 148, 408, 134], "calls2min": [0, 0, 0, 0, 5, 29, 10, 49, 16], "ventas": [0, 0, 0, 0, 0, 1, 0, 1, 0]}, {"name": "Bootcamp_ALL_Out_Oficios_26-31_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 969, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 289, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_Belleza_26-31_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 967, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 311, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 3, 0, 0]}, {"name": "Bootcamp_ALL_Out_Emprendimiento_26-31_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 949, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 241, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 2, 0, 0]}, {"name": "Bootcamp_ALL_Out_Gastronomia_26-31_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 939, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 188, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Bootcamp_ALL_Out_Bienestar_26-31_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 895, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 262, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_Emprendimiento_26-33_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 893], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 150], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_MEX_Out_Tier2", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 251, 217, 211, 114, 94], "calls2min": [0, 0, 0, 0, 51, 49, 31, 22, 28], "ventas": [0, 0, 0, 0, 2, 1, 1, 0, 1]}, {"name": "Bootcamp_ALL_Out_Gastronomia_26-32_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 884, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 96, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Resurrection_LATAM_Out_Beta_Leads", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 0, 879, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 70, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_Bienestar_26-31_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 862, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 164, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 2, 0, 0]}, {"name": "Sales_LATAM_Out_Beta_Tier3", "agentGroup": "Resurrection", "calls": [0, 0, 98, 471, 193, 24, 44, 26, 0], "calls2min": [0, 0, 16, 61, 20, 9, 4, 4, 0], "ventas": [0, 0, 0, 1, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_Tier1", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 78, 30, 196, 307, 234], "calls2min": [0, 0, 0, 0, 11, 9, 36, 73, 53], "ventas": [0, 0, 0, 0, 2, 0, 1, 1, 2]}, {"name": "Recurrence_USA_Out_Tier1_FL", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 125, 32, 158, 318, 195], "calls2min": [0, 0, 0, 0, 20, 4, 24, 59, 33], "ventas": [0, 0, 0, 0, 0, 0, 1, 1, 1]}, {"name": "Bootcamp_USA_Out_ExpCleaning_FL", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 618, 105, 79, 15], "calls2min": [0, 0, 0, 0, 0, 77, 18, 11, 1], "ventas": [0, 0, 0, 0, 0, 1, 0, 0, 0]}, {"name": "Sales_MEX_Out_Beta_Control", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 330, 419, 42, 0], "calls2min": [0, 0, 0, 0, 0, 25, 30, 4, 0], "ventas": [0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Bootcamp_ALL_Out_Emprendimiento_26-31_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 751, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 128, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Recurrence_MEX_Out_Tier3", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 61, 233, 92, 220, 138], "calls2min": [0, 0, 0, 0, 21, 48, 24, 47, 34], "ventas": [0, 0, 0, 0, 1, 1, 1, 4, 0]}, {"name": "Recurrence_USA-LATAM_Out_CallMeNow_Ingles", "agentGroup": "Recurrence - VIP", "calls": [32, 104, 97, 81, 103, 75, 113, 97, 29], "calls2min": [11, 32, 30, 24, 26, 21, 28, 28, 8], "ventas": [0, 1, 4, 4, 2, 2, 4, 1, 0]}, {"name": "Recurrence_MEX_Out_Tier5", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 112, 220, 141, 212, 36], "calls2min": [0, 0, 0, 0, 38, 63, 45, 63, 7], "ventas": [0, 0, 0, 0, 3, 2, 3, 4, 0]}, {"name": "Sales_MEX_Out_Alpha_Tier1", "agentGroup": "Resurrection", "calls": [0, 0, 36, 5, 23, 333, 282, 19, 0], "calls2min": [0, 0, 8, 3, 6, 89, 61, 5, 0], "ventas": [0, 0, 0, 0, 0, 1, 0, 0, 0]}, {"name": "Recurrence_USA_Out_AprendeEnglish", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 0, 0, 60, 468, 160], "calls2min": [0, 0, 0, 0, 0, 0, 30, 171, 49], "ventas": [0, 0, 0, 0, 0, 0, 1, 7, 0]}, {"name": "Inbound_Sales-Chat_Upsell", "agentGroup": "Upsell", "calls": [0, 1, 60, 90, 93, 125, 128, 148, 43], "calls2min": [0, 0, 46, 77, 74, 86, 108, 123, 38], "ventas": [0, 0, 17, 19, 23, 29, 40, 42, 16]}, {"name": "Bootcamp_ALL_Out_Gastronomia_26-31_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 686, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 106, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 3, 0, 0]}, {"name": "Bootcamp_ALL_Out_Gastronomia_26-33_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 678], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 94], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_Oficios_26-33_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 674], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 158], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 1]}, {"name": "Resurrection_LATAM_Out_CallMeNow_Leads", "agentGroup": "Resurrection", "calls": [72, 69, 129, 95, 42, 91, 97, 77, 0], "calls2min": [1, 4, 1, 3, 0, 4, 2, 4, 0], "ventas": [0, 0, 0, 0, 0, 0, 1, 1, 0]}, {"name": "Bootcamp_ALL_Out_Hospitalidad_26-31_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 652, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 117, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_LATAM_Out_Alpha_Tier2", "agentGroup": "Resurrection", "calls": [0, 0, 55, 266, 35, 64, 221, 10, 0], "calls2min": [0, 0, 3, 20, 3, 6, 22, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Alpha_005", "agentGroup": "Resurrection", "calls": [0, 521, 129, 0, 0, 0, 0, 0, 0], "calls2min": [0, 31, 7, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_CallMeNow_ClasesMagistrales", "agentGroup": "Recurrence - VIP-Mas", "calls": [90, 94, 97, 45, 68, 96, 68, 62, 23], "calls2min": [27, 25, 23, 15, 24, 20, 20, 17, 8], "ventas": [7, 3, 1, 0, 1, 5, 3, 1, 0]}, {"name": "Bootcamp_ALL_Out_Bienestar_26-33_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 632], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 140], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 1]}, {"name": "Bootcamp_ALL_Out_Belleza_26-31_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 618, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 118, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 2, 0, 0]}, {"name": "Bootcamp_ALL_Out_Emprendimiento_26-33_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 597], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 46], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_Hospitalidad_26-33_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 568], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 64], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 1]}, {"name": "Bootcamp_ALL_Out_Hospitalidad_26-32_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 562, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 51, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "SalesBootcamp_USA_Out_Alpha_Clean_Dia0", "agentGroup": "Bootcamp", "calls": [385, 168, 0, 0, 0, 0, 0, 0, 0], "calls2min": [26, 15, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_MEX_Out_Tier1", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 104, 18, 357, 63, 1], "calls2min": [0, 0, 0, 0, 16, 2, 65, 20, 0], "ventas": [0, 0, 0, 0, 0, 0, 2, 1, 0]}, {"name": "Inbound Aprende - USA", "agentGroup": "Recurrence - VIP-Mas", "calls": [53, 57, 57, 61, 80, 82, 54, 62, 18], "calls2min": [52, 54, 55, 59, 76, 81, 54, 60, 18], "ventas": [20, 24, 23, 19, 28, 32, 23, 19, 8]}, {"name": "Bootcamp_ALL_Out_Hospitalidad_26-31_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 518, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 52, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Recurrence_USA_Out_Tier1_FL", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 180, 47, 268, 16, 0], "calls2min": [0, 0, 0, 0, 16, 6, 24, 1, 0], "ventas": [0, 0, 0, 0, 1, 0, 1, 0, 0]}, {"name": "Bootcamp_ALL_Out_Gastronomia_26-33_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 510], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 48], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_Tier1", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 105, 63, 326, 16, 0], "calls2min": [0, 0, 0, 0, 27, 12, 51, 4, 0], "ventas": [0, 0, 0, 0, 0, 0, 5, 0, 0]}, {"name": "Bootcamp_ALL_Out_Belleza_26-33_002", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 500], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 129], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Alpha_Control", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 121, 319, 50, 0], "calls2min": [0, 0, 0, 0, 0, 26, 53, 9, 0], "ventas": [0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Sales_MEX_Out_Beta_Tier4", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 118, 369, 0, 0, 0], "calls2min": [0, 0, 0, 0, 12, 40, 0, 0, 0], "ventas": [0, 0, 0, 0, 1, 1, 0, 0, 0]}, {"name": "Recurrence_USA_Out_Tier2_FL", "agentGroup": "Recurrence - Black", "calls": [0, 0, 0, 0, 0, 0, 91, 380, 0], "calls2min": [0, 0, 0, 0, 0, 0, 19, 63, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_Promos", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 15, 6, 34, 80, 154, 77, 77, 26], "calls2min": [0, 9, 5, 10, 9, 28, 22, 16, 1], "ventas": [0, 3, 0, 1, 2, 3, 1, 1, 0]}, {"name": "Bootcamp_ALL_Out_Oficios_26-31_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 462, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 48, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Bootcamp_ALL_Out_CallMeNow_Antiguos", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 165, 144, 28, 120], "calls2min": [0, 0, 0, 0, 0, 5, 8, 2, 9], "ventas": [0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_Membership", "agentGroup": "Recurrence - VIP", "calls": [27, 27, 46, 48, 34, 50, 124, 90, 10], "calls2min": [4, 6, 10, 12, 8, 13, 23, 16, 4], "ventas": [1, 0, 0, 4, 2, 0, 4, 1, 1]}, {"name": "Bootcamp_ALL_Out_Oficios_26-32_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 439, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 49, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Bootcamp_ALL_Out_Bienestar_26-33_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 418], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 58], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_MEX_Out_NoEOT_002", "agentGroup": "Resurrection", "calls": [3, 49, 45, 52, 61, 63, 49, 45, 21], "calls2min": [0, 1, 7, 5, 5, 4, 2, 7, 3], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 1]}, {"name": "Bootcamp_ALL_Out_Belleza_26-33_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 367], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 56], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_CallMeNow_26-32_APRENDEAINVERTIR", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 346, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 21, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 2, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_ContenidoExtra", "agentGroup": "Recurrence - VIP-Mas", "calls": [1, 0, 31, 200, 96, 12, 0, 0, 0], "calls2min": [0, 0, 11, 34, 28, 1, 0, 0, 0], "ventas": [0, 0, 2, 3, 1, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Beta_Tier1", "agentGroup": "Resurrection", "calls": [0, 0, 140, 17, 15, 7, 17, 143, 0], "calls2min": [0, 0, 15, 4, 0, 1, 4, 13, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_MEX_Out_BeforeEOT", "agentGroup": "Resurrection", "calls": [0, 67, 40, 103, 38, 34, 15, 16, 2], "calls2min": [0, 6, 4, 8, 6, 1, 2, 3, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_Hospitalidad_26-33_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 300], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 21], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_LATAM_Out_Gamma_Tier3", "agentGroup": "Resurrection", "calls": [0, 0, 18, 138, 120, 4, 12, 7, 0], "calls2min": [0, 0, 0, 5, 9, 0, 1, 1, 0], "ventas": [0, 0, 0, 0, 1, 0, 0, 0, 0]}, {"name": "Inbound Aprende - LATAM", "agentGroup": "Resurrection", "calls": [21, 34, 53, 32, 37, 42, 59, 13, 0], "calls2min": [15, 15, 32, 17, 10, 18, 25, 5, 0], "ventas": [1, 1, 2, 3, 0, 0, 1, 1, 0]}, {"name": "Resurrection_LATAM_Out_Recovery", "agentGroup": "Resurrection", "calls": [0, 32, 68, 59, 60, 2, 44, 26, 0], "calls2min": [0, 6, 10, 3, 2, 0, 6, 3, 0], "ventas": [0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Sales_LATAM_Out_Beta_Tier2", "agentGroup": "Resurrection", "calls": [0, 0, 51, 149, 41, 12, 25, 3, 0], "calls2min": [0, 0, 3, 23, 7, 1, 4, 0, 0], "ventas": [0, 0, 0, 0, 1, 0, 0, 0, 0]}, {"name": "Resurrection_USA_Out_CallMeNow_FreeDiplomado_Contactado", "agentGroup": "Resurrection", "calls": [80, 51, 35, 15, 5, 14, 37, 31, 7], "calls2min": [7, 3, 5, 2, 2, 3, 1, 5, 0], "ventas": [2, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Manual Outbound", "agentGroup": "Recurrence - Black", "calls": [0, 0, 0, 0, 0, 0, 53, 221, 0], "calls2min": [0, 0, 0, 0, 0, 0, 3, 12, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_Oficios_26-33_001", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 270], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 22], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_USA_Out_CallMeNow_FreeDiplomado", "agentGroup": "Resurrection", "calls": [13, 47, 27, 18, 42, 9, 60, 34, 4], "calls2min": [2, 7, 1, 1, 7, 1, 2, 7, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_LATAM_Out_Alpha_Tier1", "agentGroup": "Resurrection", "calls": [0, 0, 28, 3, 26, 83, 109, 4, 0], "calls2min": [0, 0, 6, 1, 2, 2, 13, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Resurrection_MEX_Out_NoEOT_001", "agentGroup": "Resurrection", "calls": [11, 0, 12, 10, 36, 59, 48, 46, 20], "calls2min": [0, 0, 0, 3, 6, 1, 2, 2, 2], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_ROW_Out_Beta_Leads", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 0, 242, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 3, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_USA_Out_CallMeNow_FreeDiplomado_NoContactado", "agentGroup": "Resurrection", "calls": [35, 30, 36, 5, 61, 13, 20, 39, 3], "calls2min": [4, 4, 1, 0, 0, 0, 1, 0, 1], "ventas": [1, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_LATAM_Out_Alpha_Control", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 30, 180, 11, 0], "calls2min": [0, 0, 0, 0, 0, 3, 14, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Alpha_Tier4", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 104, 104, 0, 0, 0], "calls2min": [0, 0, 0, 0, 23, 28, 0, 0, 0], "ventas": [0, 0, 0, 0, 1, 0, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_CallMeNow_ClasesMagistrales", "agentGroup": "Recurrence - VIP", "calls": [20, 25, 17, 12, 12, 34, 28, 48, 10], "calls2min": [5, 8, 6, 5, 4, 4, 8, 18, 1], "ventas": [1, 0, 2, 0, 0, 0, 1, 0, 0]}, {"name": "Bootcamp_ALL_Out_CallMeNow_26-31_IADESDECERO", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 206, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 15, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_Tier2", "agentGroup": "Recurrence - Platinum", "calls": [0, 0, 0, 0, 0, 0, 5, 0, 196], "calls2min": [0, 0, 0, 0, 0, 0, 2, 0, 45], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 1]}, {"name": "Inbound Aprende - USA", "agentGroup": "Resurrection", "calls": [9, 20, 19, 19, 32, 24, 29, 34, 11], "calls2min": [8, 20, 18, 19, 30, 24, 29, 33, 11], "ventas": [2, 7, 7, 8, 11, 11, 9, 12, 4]}, {"name": "Resurrection_LATAM_Out_CallMeNow", "agentGroup": "Resurrection", "calls": [48, 14, 14, 44, 30, 20, 14, 8, 0], "calls2min": [5, 4, 2, 4, 3, 2, 2, 0, 0], "ventas": [0, 0, 0, 1, 0, 0, 0, 0, 0]}, {"name": "Resurrection_LATAM_Out_CallMeNow_FreeDiplomado_NoContactado", "agentGroup": "Resurrection", "calls": [13, 6, 51, 36, 10, 17, 25, 20, 0], "calls2min": [2, 2, 0, 3, 1, 2, 2, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound Aprende - USA", "agentGroup": "Recurrence - VIP", "calls": [12, 15, 19, 10, 26, 21, 31, 35, 6], "calls2min": [10, 15, 18, 10, 25, 21, 31, 35, 6], "ventas": [2, 6, 8, 4, 6, 6, 15, 12, 2]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_Promos", "agentGroup": "Recurrence - VIP", "calls": [0, 2, 1, 5, 26, 40, 36, 45, 9], "calls2min": [0, 2, 0, 2, 4, 10, 15, 4, 1], "ventas": [0, 0, 0, 0, 1, 3, 2, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_Tier1", "agentGroup": "Recurrence - Black", "calls": [0, 0, 0, 0, 0, 0, 55, 95, 0], "calls2min": [0, 0, 0, 0, 0, 0, 10, 30, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Alpha_Tier2_Bytecol", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 104, 45, 0], "calls2min": [0, 0, 0, 0, 0, 0, 6, 3, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_MEX_Out_FreeDiplomado_Oferta", "agentGroup": "Resurrection", "calls": [0, 33, 15, 7, 24, 13, 24, 25, 3], "calls2min": [0, 4, 3, 1, 6, 1, 3, 1, 1], "ventas": [0, 0, 0, 0, 0, 1, 0, 0, 0]}, {"name": "Resurrection_ROW_Out_Alpha_Leads", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 0, 140, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 4, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_LATAM_Out_EOT_001", "agentGroup": "Resurrection", "calls": [29, 54, 12, 5, 5, 6, 5, 6, 15], "calls2min": [2, 1, 1, 3, 0, 0, 0, 1, 4], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 3]}, {"name": "Resurrection_LATAM_Out_EOT_002", "agentGroup": "Resurrection", "calls": [70, 3, 7, 12, 9, 7, 12, 6, 6], "calls2min": [5, 0, 1, 1, 1, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA_Out_AprendeEnglish", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 0, 0, 12, 114, 0], "calls2min": [0, 0, 0, 0, 0, 0, 7, 51, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 3, 0]}, {"name": "Bootcamp_ALL_Out_CallMeNow_26-32_MKT", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 0, 110, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 11, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 2, 0]}, {"name": "Sales_MEX_Out_Gamma_Tier1", "agentGroup": "Resurrection", "calls": [0, 0, 19, 3, 9, 20, 58, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 3, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA_Out_Tier1_FL", "agentGroup": "Recurrence - Black", "calls": [0, 0, 0, 0, 0, 0, 21, 84, 0], "calls2min": [0, 0, 0, 0, 0, 0, 6, 15, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Upsell_Activacion_USA_Out_Guild", "agentGroup": "Upsell", "calls": [6, 44, 15, 11, 4, 15, 0, 8, 0], "calls2min": [1, 9, 1, 3, 2, 2, 0, 1, 0], "ventas": [0, 3, 0, 1, 2, 0, 0, 0, 0]}, {"name": "SalesBootcamp_USA_Out_Alpha_Clean_FL", "agentGroup": "Bootcamp", "calls": [49, 49, 0, 0, 0, 0, 0, 0, 0], "calls2min": [3, 2, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Resurrection_Upsell", "agentGroup": "Upsell", "calls": [0, 1, 3, 25, 20, 15, 12, 19, 3], "calls2min": [0, 0, 3, 16, 13, 11, 10, 18, 2], "ventas": [0, 0, 0, 1, 7, 2, 6, 6, 0]}, {"name": "Resurrection_LATAM_Out_NoEOT_001", "agentGroup": "Resurrection", "calls": [39, 6, 6, 9, 8, 8, 6, 6, 8], "calls2min": [3, 0, 1, 1, 3, 0, 0, 0, 1], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_LATAM_Out_NoEOT_002", "agentGroup": "Resurrection", "calls": [35, 12, 5, 10, 6, 10, 5, 8, 3], "calls2min": [2, 0, 1, 0, 0, 1, 1, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_ROW_Out_Gamma_Leads", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 0, 93, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 6, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_MEX_Out_FreeDiplomado_Activacion", "agentGroup": "Resurrection", "calls": [1, 41, 18, 4, 7, 5, 11, 4, 1], "calls2min": [0, 4, 3, 1, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Alpha_Tier2_Five9", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 55, 31, 0], "calls2min": [0, 0, 0, 0, 0, 0, 10, 2, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Resurrection_LATAM_Out_Gamma_Leads", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 0, 83, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 8, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_ROW_Out_Delta_Leads", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 0, 82, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 6, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_LATAM_Out_Delta_Leads", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 0, 80, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 3, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_LATAM_Out_BeforeEOT", "agentGroup": "Resurrection", "calls": [40, 23, 4, 2, 0, 0, 5, 0, 0], "calls2min": [2, 1, 1, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_CallMeNow_26-31_APRENDEAINVERTIR", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 72, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 4, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_LastOffer", "agentGroup": "Resurrection", "calls": [61, 10, 0, 0, 0, 0, 0, 0, 0], "calls2min": [7, 1, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound Sales - LATAM - MEX -  GoogleMyBusiness", "agentGroup": "Resurrection", "calls": [5, 4, 14, 12, 5, 9, 11, 7, 0], "calls2min": [3, 3, 10, 6, 3, 7, 6, 3, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_MEX_Out_Tier1", "agentGroup": "Recurrence - Black", "calls": [0, 0, 0, 0, 0, 0, 31, 34, 0], "calls2min": [0, 0, 0, 0, 0, 0, 7, 7, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Recurrence_MEX_Out_CallMeNow_SEPConocer", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 6, 6, 12, 11, 11, 16, 3, 0], "calls2min": [0, 3, 2, 3, 1, 2, 3, 0, 0], "ventas": [0, 0, 1, 0, 1, 0, 0, 0, 0]}, {"name": "Recurrence_USA_Out_Tier2_FL", "agentGroup": "Recurrence - Platinum", "calls": [0, 0, 0, 0, 0, 0, 7, 0, 57], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 14], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_Recurrence", "agentGroup": "Upsell", "calls": [4, 21, 10, 4, 1, 1, 2, 18, 2], "calls2min": [3, 21, 10, 4, 1, 1, 2, 18, 2], "ventas": [2, 4, 2, 2, 0, 0, 0, 6, 0]}, {"name": "Resurrection_MEX_Out_EOT_001", "agentGroup": "Resurrection", "calls": [3, 9, 4, 11, 8, 10, 8, 6, 4], "calls2min": [0, 1, 0, 0, 0, 2, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_CallMeNow_Journey", "agentGroup": "Recurrence - VIP-Mas", "calls": [7, 3, 10, 2, 7, 12, 9, 8, 0], "calls2min": [3, 0, 2, 1, 1, 5, 2, 3, 0], "ventas": [0, 0, 0, 0, 0, 1, 0, 1, 0]}, {"name": "Resurrection_MEX_Out_Cancelado", "agentGroup": "Resurrection", "calls": [2, 4, 7, 10, 10, 10, 8, 6, 1], "calls2min": [0, 1, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA_Out_Tier1_FL", "agentGroup": "Recurrence - Platinum", "calls": [0, 0, 0, 0, 0, 0, 7, 13, 37], "calls2min": [0, 0, 0, 0, 0, 0, 1, 3, 9], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_MEX_Out_EOT_002", "agentGroup": "Resurrection", "calls": [4, 7, 6, 5, 15, 7, 6, 4, 3], "calls2min": [1, 0, 0, 1, 1, 1, 1, 1, 1], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound Aprende - USA", "agentGroup": "Upsell", "calls": [16, 8, 2, 5, 0, 12, 8, 5, 0], "calls2min": [16, 8, 2, 5, 0, 12, 8, 5, 0], "ventas": [8, 3, 0, 2, 0, 5, 4, 3, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_ContenidoExtra", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 9, 31, 15, 0, 0, 0, 0], "calls2min": [0, 0, 3, 8, 4, 0, 0, 0, 0], "ventas": [0, 0, 0, 1, 2, 0, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_Tier1", "agentGroup": "Recurrence - Platinum", "calls": [0, 0, 0, 0, 0, 0, 13, 13, 29], "calls2min": [0, 0, 0, 0, 0, 0, 6, 3, 7], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound Aprende - LATAM", "agentGroup": "Recurrence - VIP-Mas", "calls": [7, 4, 11, 7, 5, 5, 11, 2, 2], "calls2min": [7, 4, 11, 7, 5, 5, 11, 2, 2], "ventas": [2, 1, 2, 1, 2, 1, 5, 0, 1]}, {"name": "SalesBootcamp_USA_Out_Alpha_Clean_FL_Dia0", "agentGroup": "Bootcamp", "calls": [32, 17, 0, 0, 0, 0, 0, 0, 0], "calls2min": [5, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [1, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Beta_Tier2_Five9", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 14, 33, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 5, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_LATAM_Out_Beta_Tier1", "agentGroup": "Resurrection", "calls": [0, 0, 11, 13, 7, 0, 5, 8, 0], "calls2min": [0, 0, 3, 6, 0, 0, 2, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_LATAM_Out_FreeDiplomado_Oferta", "agentGroup": "Resurrection", "calls": [14, 6, 1, 2, 7, 2, 5, 6, 1], "calls2min": [1, 0, 0, 0, 0, 1, 1, 2, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Alpha_Tier2_Khomp", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 28, 16, 0], "calls2min": [0, 0, 0, 0, 0, 0, 7, 6, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Beta_Tier2_Bytecol", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 2, 40, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 4, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_CallMeNow_26-31_CREANEGOCIO", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 41, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 8, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Beta_Tier2_Khomp", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 7, 34, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 2, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_LATAM_Out_Gamma_Tier2", "agentGroup": "Resurrection", "calls": [0, 0, 3, 4, 29, 5, 0, 0, 0], "calls2min": [0, 0, 0, 0, 1, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_LATAM_Out_Alpha_005", "agentGroup": "Resurrection", "calls": [0, 37, 0, 0, 0, 0, 0, 0, 0], "calls2min": [0, 2, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Delta_Tier3", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 17, 17, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_All", "agentGroup": "Upsell", "calls": [13, 3, 5, 1, 1, 4, 5, 0, 0], "calls2min": [13, 3, 5, 1, 1, 4, 5, 0, 0], "ventas": [6, 1, 3, 0, 0, 4, 5, 0, 0]}, {"name": "Sales_LATAM_Out_Gamma_Tier1", "agentGroup": "Resurrection", "calls": [0, 0, 0, 13, 13, 1, 5, 0, 0], "calls2min": [0, 0, 0, 4, 4, 1, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_LATAM_Out_CallMeNow_ChatBot_Leads", "agentGroup": "Resurrection", "calls": [0, 0, 2, 21, 5, 0, 0, 0, 0], "calls2min": [0, 0, 1, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_LATAM_Out_Beta_Control", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 2, 20, 5, 0], "calls2min": [0, 0, 0, 0, 0, 0, 4, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Manual Outbound", "agentGroup": "Recurrence - Platinum", "calls": [0, 0, 0, 0, 0, 0, 2, 1, 23], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 3], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 1]}, {"name": "Resurrection_LATAM_Out_FreeDiplomado_Activacion", "agentGroup": "Resurrection", "calls": [7, 3, 1, 2, 5, 0, 2, 6, 0], "calls2min": [0, 0, 0, 2, 2, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Gamma_Tier2_Bytecol", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 22, 4, 0], "calls2min": [0, 0, 0, 0, 0, 0, 3, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_ALL_Out_2DO_REG", "agentGroup": "Resurrection", "calls": [0, 0, 1, 1, 4, 3, 13, 2, 1], "calls2min": [0, 0, 1, 1, 4, 3, 13, 2, 1], "ventas": [0, 0, 1, 0, 0, 2, 1, 2, 0]}, {"name": "Inbound_Sales_USA_Callbacks_All", "agentGroup": "Bootcamp", "calls": [4, 0, 4, 6, 1, 3, 3, 2, 2], "calls2min": [4, 0, 4, 3, 1, 3, 3, 1, 2], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_CallMeNow_Journey", "agentGroup": "Recurrence - VIP", "calls": [2, 4, 6, 0, 0, 2, 8, 3, 0], "calls2min": [1, 3, 3, 0, 0, 1, 1, 1, 0], "ventas": [0, 0, 1, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Gamma_Tier2_Khomp", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 10, 14, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Gamma_Tier2_Five9", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 22, 2, 0], "calls2min": [0, 0, 0, 0, 0, 0, 4, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_Recurrence", "agentGroup": "Resurrection", "calls": [3, 2, 0, 5, 1, 4, 3, 3, 1], "calls2min": [2, 2, 0, 5, 1, 4, 3, 3, 1], "ventas": [2, 0, 0, 4, 0, 1, 2, 2, 0]}, {"name": "Sales_MEX_Out_Delta_Tier4", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 18, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 3, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_LATAM_Out_CallMeNow_FreeDiplomado_Contactado", "agentGroup": "Resurrection", "calls": [2, 0, 2, 8, 0, 3, 0, 0, 0], "calls2min": [1, 0, 0, 1, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound Aprende - LATAM", "agentGroup": "Recurrence - VIP", "calls": [1, 2, 2, 1, 1, 3, 1, 3, 1], "calls2min": [1, 2, 2, 1, 1, 3, 1, 3, 1], "ventas": [0, 1, 0, 1, 0, 2, 1, 1, 1]}, {"name": "Sales_USA_Out_Alpha_Personal_Tier2", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 2, 7, 6, 0, 0], "calls2min": [0, 0, 0, 0, 2, 7, 6, 0, 0], "ventas": [0, 0, 0, 0, 0, 5, 2, 0, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_Empleabilidad", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 0, 0, 0, 9, 5], "calls2min": [0, 0, 0, 0, 0, 0, 0, 6, 1], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_MEX_Out_CallMeNow_SEPConocer", "agentGroup": "Recurrence - VIP", "calls": [0, 1, 0, 5, 5, 0, 3, 0, 0], "calls2min": [0, 1, 0, 1, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound Aprende - USA", "agentGroup": "Bootcamp", "calls": [2, 0, 1, 1, 1, 3, 3, 2, 0], "calls2min": [2, 0, 1, 1, 1, 3, 3, 2, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_All", "agentGroup": "Recurrence - VIP-Mas", "calls": [2, 2, 2, 1, 2, 3, 0, 1, 0], "calls2min": [2, 2, 2, 1, 2, 3, 0, 1, 0], "ventas": [0, 1, 0, 0, 1, 1, 0, 1, 0]}, {"name": "Sales_USA_Out_Alpha_Personal_Tier1", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 7, 5, 0, 0], "calls2min": [0, 0, 0, 0, 0, 7, 5, 0, 0], "ventas": [0, 0, 0, 0, 0, 4, 4, 0, 0]}, {"name": "Servicio_ALL_Out_SolicitudSoporte", "agentGroup": "Recurrence - VIP-Mas", "calls": [2, 2, 2, 0, 1, 1, 2, 1, 1], "calls2min": [2, 2, 2, 0, 1, 1, 2, 1, 1], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Personal_Tier3", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 6, 6, 0, 0], "calls2min": [0, 0, 0, 0, 0, 6, 6, 0, 0], "ventas": [0, 0, 0, 0, 0, 3, 1, 0, 0]}, {"name": "Inbound Aprende - LATAM", "agentGroup": "Upsell", "calls": [5, 2, 0, 1, 2, 1, 0, 1, 0], "calls2min": [5, 2, 0, 1, 2, 1, 0, 1, 0], "ventas": [3, 0, 0, 1, 1, 0, 0, 0, 0]}, {"name": "Sales_LATAM_Out_Alpha_Tier4", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 5, 3, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_Recurrence", "agentGroup": "Bootcamp", "calls": [1, 1, 0, 1, 0, 2, 3, 0, 0], "calls2min": [1, 1, 0, 1, 0, 2, 3, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Delta_005", "agentGroup": "Upsell", "calls": [8, 0, 0, 0, 0, 0, 0, 0, 0], "calls2min": [8, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [4, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Servicio_ALL_Out_SolicitudSoporte", "agentGroup": "Recurrence - VIP", "calls": [1, 0, 0, 0, 1, 1, 2, 2, 0], "calls2min": [1, 0, 0, 0, 1, 1, 2, 2, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_ALLBeta", "agentGroup": "Upsell", "calls": [1, 0, 0, 0, 0, 2, 4, 0, 0], "calls2min": [1, 0, 0, 0, 0, 2, 3, 0, 0], "ventas": [0, 0, 0, 0, 0, 1, 2, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Personal_Control", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 4, 3, 0, 0], "calls2min": [0, 0, 0, 0, 0, 4, 3, 0, 0], "ventas": [0, 0, 0, 0, 0, 2, 2, 0, 0]}, {"name": "Inbound Sales - LATAM - MEX -  GoogleMyBusiness", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 1, 0, 2, 0, 2, 2, 0, 0], "calls2min": [0, 1, 0, 2, 0, 2, 2, 0, 0], "ventas": [0, 0, 0, 1, 0, 0, 0, 0, 0]}, {"name": "SalesBootcamp_USA_Out_30dias_Clean", "agentGroup": "Bootcamp", "calls": [3, 2, 0, 0, 0, 0, 0, 0, 0], "calls2min": [1, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Delta_Tier2_Khomp", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 5, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Gamma_Control", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 2, 3, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_LATAM_Out_Cancelado", "agentGroup": "Resurrection", "calls": [4, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Delta_Tier2_Bytecol", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 5, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_MEX_Out_Tier2", "agentGroup": "Recurrence - Platinum", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 4], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 1], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound Sales - LATAM - MEX-SEM", "agentGroup": "Resurrection", "calls": [2, 0, 0, 0, 1, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 1, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "LastOffer_USA_Out_Beta_002", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 0, 2, 2], "calls2min": [0, 0, 0, 0, 0, 0, 0, 2, 2], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 1]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_Emprendimiento", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 4], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 2], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_Empleabilidad", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 0, 0, 0, 2, 2], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 2], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 1]}, {"name": "Sales_LATAM_Out_Beta_Tier4", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 2, 2, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_All", "agentGroup": "Recurrence - VIP", "calls": [1, 0, 0, 0, 0, 0, 3, 0, 0], "calls2min": [1, 0, 0, 0, 0, 0, 3, 0, 0], "ventas": [1, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Sales_LATAM_Out_Gamma_Tier4", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 4, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_EndOfTerm", "agentGroup": "Recurrence - VIP-Mas", "calls": [1, 1, 0, 0, 0, 2, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Laboral_Tier2", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 3, 0, 0, 0, 0], "calls2min": [0, 0, 0, 0, 3, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 1, 0, 0, 0, 0]}, {"name": "Recurrence_ALL_Out_2DO_REG", "agentGroup": "Bootcamp", "calls": [1, 0, 0, 0, 1, 0, 1, 0, 0], "calls2min": [1, 0, 0, 0, 1, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Beta_Personal_Tier4_L2", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 1, 1, 1, 0], "calls2min": [0, 0, 0, 0, 0, 1, 1, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_Billing", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 2, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 2, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Sales_USA_Out_Beta_Personal_Tier3_L2", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 1, 2, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 2, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_All", "agentGroup": "Resurrection", "calls": [3, 0, 0, 0, 0, 0, 0, 0, 0], "calls2min": [2, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [1, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "LastOffer_USA_Out_Delta_FL_005", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 0, 2, 1], "calls2min": [0, 0, 0, 0, 0, 0, 0, 2, 1], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Sales_USA_Out_Beta_Personal_Tier4_L1", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 1, 2, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 2, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Sales_USA_Out_Beta_Personal_Tier1_L1", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 1, 1, 1, 0, 0], "calls2min": [0, 0, 0, 0, 1, 1, 1, 0, 0], "ventas": [0, 0, 0, 0, 1, 0, 1, 0, 0]}, {"name": "Recurrence_MEX_Out_Tier2", "agentGroup": "Recurrence - Black", "calls": [0, 0, 0, 0, 0, 0, 0, 3, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Personal_Tier4", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 1, 2, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 2, 0, 0], "ventas": [0, 0, 0, 0, 0, 1, 1, 0, 0]}, {"name": "Sales_MEX_Out_Delta_Tier1", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 3, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Personal_FL_Tier3", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 3, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 3, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 1, 0, 0, 0]}, {"name": "Sales_USA_Out_PreAlpha_Personal", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 1, 0, 2, 0, 0], "calls2min": [0, 0, 0, 0, 1, 0, 2, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Delta_Control", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 3, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_LATAM_Out_Delta_Control", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 2, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 2, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_EndOfTerm", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 0, 0, 0, 2, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Social_NPS", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 1, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 1, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_Emprendimiento", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 0, 0, 0, 2, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_PreAlpha_Laboral", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 1, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 1, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA_Out_Tier2_FL", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 1, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 1, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_LATAM_Out_Gamma_Control", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 2, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 2, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Personal_FL_Tier4", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 2, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 2, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Personal_Tier3", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 1, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA_Out_Tier4_FL", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 1, 1, 0, 0, 0], "calls2min": [0, 0, 0, 0, 1, 1, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Personal_Tier3", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 1, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 1, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 1, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Laboral_Tier4", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 1, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Servicio_ALL_Out_SolicitudSoporte", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 1, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 1, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Delta_Tier2_Five9", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 2, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_LATAM_Out_Delta_Tier2", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 2, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_ALL_Out_2DO_REG", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 1, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 1, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Gamma_Tier4", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 2, 0, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_ALLBeta", "agentGroup": "Resurrection", "calls": [0, 0, 0, 1, 0, 0, 0, 0, 1], "calls2min": [0, 0, 0, 1, 0, 0, 0, 0, 1], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 1]}, {"name": "LastOffer_USA_Out_Delta_005", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 0, 2, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 2, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_Billing", "agentGroup": "Recurrence - VIP", "calls": [0, 1, 0, 0, 1, 0, 0, 0, 0], "calls2min": [0, 1, 0, 0, 1, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 1, 0, 0, 0, 0]}, {"name": "Inbound Sales - LATAM - MEX -  GoogleMyBusiness", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 0, 1, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_LastOffer", "agentGroup": "Upsell", "calls": [0, 1, 0, 0, 0, 0, 0, 0, 0], "calls2min": [0, 1, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_Tier2", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_Premium", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_Tier5", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_MEX_Out_Alpha_Control", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 1, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_Bienestar_26-32_001", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "LastOffer_USA_Out_Gamma_002", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "[None]", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Prioritaria_Laboral", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 1, 0, 0, 0, 0], "calls2min": [0, 0, 0, 0, 1, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "SalesBootcamp_USA_Out_Alpha_Investments_FL", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_Tier5", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 1, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Delta_005", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 1, 0, 0, 0, 0], "calls2min": [0, 0, 0, 0, 1, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_LATAM_Out_Beta_Tier3", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 1, 0, 0, 0, 0], "calls2min": [0, 0, 0, 0, 1, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_Premium", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 1, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 1, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_Tier3", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 1], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 1], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Personal_Tier4", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 0, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Personal_FL_Tier2", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Upsell_ALL_Out_Old", "agentGroup": "Resurrection", "calls": [0, 0, 0, 1, 0, 0, 0, 0, 0], "calls2min": [0, 0, 0, 1, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Bau-USA_Upsell", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Bootcamp_ALL_Out_Belleza_26-32_002", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "SalesBootcamp_USA_Out_All_Clean", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Sales_USA_Out_Beta_Personal_FL_Tier3_L2", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 0, 1, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Billing_MEX_Out_Ismael_Preciado", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 0, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_USA_Out_FreeDiplomado_Oferta", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"name": "Sales_USA_Out_Prioritaria_Personal", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 1, 0, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_AlphaEarly_Personal_Tier2", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Personal_Control", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Personal_Tier4", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 1, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_PreAlpha_Laboral_FL", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 1, 0, 0, 0, 0], "calls2min": [0, 0, 0, 0, 1, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "SalesBootcamp_USA_Out_Alpha_Clean", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_Tier4", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "LastOffer_USA_Out_Beta_FL_001", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Sales_USA_Out_Alpha_Laboral_Tier3", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 1, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 1, 0, 0, 0]}, {"name": "Bootcamp_USA_Out_ExpCleaning_FL", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 1, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "LastOffer_USA_Out_Beta_FL_001", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Beta_Laboral_Tier3_L2", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 1, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_Campus_Premium", "agentGroup": "Upsell", "calls": [0, 1, 0, 0, 0, 0, 0, 0, 0], "calls2min": [0, 1, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 1, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_AlphaEarly_Laboral_Tier3", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 0, 1, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Beta_Personal_Tier1_L2", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 1, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Beta_Laboral_Control_L1", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_Billing", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 1, 0, 0, 0, 0], "calls2min": [0, 0, 0, 0, 1, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Billing_USA_Out_Abraham_Mendez", "agentGroup": "Resurrection", "calls": [0, 0, 0, 1, 0, 0, 0, 0, 0], "calls2min": [0, 0, 0, 1, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Laboral_Tier1", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 1, 0, 0, 0, 0], "calls2min": [0, 0, 0, 0, 1, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 1, 0, 0, 0, 0]}, {"name": "Social_NPS", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 0, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "LastOffer_USA_Out_Beta_FL_002", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 1], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 1], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 1]}, {"name": "Billing_USA_Out_Installments_30_General", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 0, 1, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 1, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "LastOffer_USA_Out_Gamma_001", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"name": "Billing_USA_Out_CallMeNow_Email", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 0, 0, 0, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Inbound_Sales_USA_Callbacks_ALLBeta", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 0, 0, 1, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Alpha_Promo_FL_Tier2", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 1], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 1], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_ALL_Out_CallMeNow_PremiumDocente", "agentGroup": "Recurrence - VIP", "calls": [0, 0, 1, 0, 0, 0, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Billing_USA_Out_CallMeNow_Email", "agentGroup": "Recurrence - VIP-Mas", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_MEX_Out_Tier5", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 1], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 1], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Beta_Personal_Tier3_L2", "agentGroup": "Bootcamp", "calls": [0, 0, 0, 0, 1, 0, 0, 0, 0], "calls2min": [0, 0, 0, 0, 1, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Billing_USA_Out_Ismael_Preciado", "agentGroup": "Recurrence - VIP", "calls": [0, 1, 0, 0, 0, 0, 0, 0, 0], "calls2min": [0, 1, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_MEX_Out_Tier1", "agentGroup": "Recurrence - Platinum", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 1], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Recurrence_USA-LATAM_Out_Tier2", "agentGroup": "Resurrection", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 1], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 1], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Sales_USA_Out_Delta_FL_005", "agentGroup": "Resurrection", "calls": [0, 0, 1, 0, 0, 0, 0, 0, 0], "calls2min": [0, 0, 1, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Resurrection_USA_Out_Recovery", "agentGroup": "Upsell", "calls": [0, 0, 0, 0, 1, 0, 0, 0, 0], "calls2min": [0, 0, 0, 0, 1, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}], "ltv": [{"agentGroup": "Resurrection", "ltvType": "Sin segmento (vacío)", "calls": [50586, 35390, 38989, 38476, 36849, 26501, 24602, 16443, 5007], "calls2min": [2271, 2557, 3209, 2739, 2021, 1730, 1773, 1175, 397], "ventas": [92, 70, 101, 87, 83, 57, 71, 73, 31]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "EOT", "calls": [12992, 14978, 17837, 17929, 13892, 14783, 11350, 7422, 1312], "calls2min": [1809, 2008, 2615, 2635, 2319, 2103, 1577, 973, 204], "ventas": [185, 144, 172, 153, 124, 79, 53, 44, 16]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "Sin segmento (vacío)", "calls": [33510, 18427, 13586, 7797, 5431, 4917, 5202, 5412, 2035], "calls2min": [2923, 1949, 1535, 1152, 963, 907, 873, 1040, 422], "ventas": [182, 152, 144, 177, 164, 154, 159, 159, 76]}, {"agentGroup": "Upsell", "ltvType": "Sin segmento (vacío)", "calls": [10350, 9238, 8108, 7433, 9260, 8466, 10110, 13980, 5987], "calls2min": [3398, 3234, 3033, 2797, 2737, 2838, 3289, 4396, 1460], "ventas": [1328, 1213, 1116, 1034, 953, 902, 1132, 1322, 359]}, {"agentGroup": "Resurrection", "ltvType": "EOT", "calls": [428, 386, 194, 1240, 9633, 15465, 17778, 10308, 5039], "calls2min": [86, 105, 71, 84, 502, 638, 784, 799, 370], "ventas": [40, 45, 37, 8, 8, 7, 8, 58, 24]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "ReEngaged_M1", "calls": [4714, 5523, 6807, 7380, 7649, 9044, 7929, 6669, 1343], "calls2min": [681, 829, 1088, 1103, 1212, 1128, 734, 472, 110], "ventas": [88, 98, 107, 115, 115, 90, 38, 19, 6]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "Engaged_M3", "calls": [2610, 2828, 3640, 4212, 5873, 8058, 8905, 8279, 1802], "calls2min": [466, 573, 749, 878, 1232, 1560, 1652, 1441, 317], "ventas": [66, 75, 106, 103, 151, 162, 139, 86, 24]}, {"agentGroup": "Recurrence - VIP", "ltvType": "EOT", "calls": [3366, 5066, 6845, 6939, 5361, 3759, 3706, 3733, 1347], "calls2min": [560, 756, 1040, 1142, 911, 647, 604, 600, 235], "ventas": [48, 45, 57, 50, 39, 28, 15, 18, 9]}, {"agentGroup": "Recurrence - VIP", "ltvType": "Sin segmento (vacío)", "calls": [9134, 5323, 4694, 2068, 1505, 1547, 2619, 3026, 668], "calls2min": [1099, 683, 609, 296, 277, 299, 540, 644, 136], "ventas": [74, 40, 61, 51, 50, 46, 72, 93, 10]}, {"agentGroup": "Upsell", "ltvType": "EOT", "calls": [3840, 5257, 3288, 3137, 3012, 2305, 2975, 1746, 115], "calls2min": [974, 1058, 799, 629, 505, 390, 321, 189, 18], "ventas": [249, 196, 150, 105, 72, 27, 8, 10, 2]}, {"agentGroup": "Bootcamp", "ltvType": "Sin segmento (vacío)", "calls": [7510, 4897, 1879, 1921, 1256, 2727, 2076, 2613, 788], "calls2min": [276, 318, 287, 263, 170, 341, 246, 284, 74], "ventas": [4, 2, 4, 4, 4, 4, 5, 10, 0]}, {"agentGroup": "Bootcamp", "ltvType": "EOT", "calls": [583, 1806, 4603, 5835, 4255, 3272, 1962, 1451, 301], "calls2min": [98, 370, 997, 1160, 936, 594, 410, 283, 54], "ventas": [1, 1, 4, 0, 0, 3, 4, 2, 0]}, {"agentGroup": "Bootcamp", "ltvType": "ReEngaged_M1", "calls": [214, 751, 2222, 3146, 3190, 2819, 2496, 3906, 1748], "calls2min": [49, 147, 502, 640, 636, 459, 399, 480, 198], "ventas": [0, 3, 1, 0, 0, 1, 3, 5, 0]}, {"agentGroup": "Recurrence - VIP", "ltvType": "ReEngaged_M1", "calls": [1253, 1687, 2536, 2539, 2376, 2045, 2595, 3456, 1977], "calls2min": [201, 309, 415, 438, 406, 280, 285, 325, 244], "ventas": [29, 38, 47, 38, 29, 17, 10, 10, 3]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "ReEngaged_M2", "calls": [2637, 2842, 2862, 2081, 1813, 2357, 2362, 2442, 496], "calls2min": [317, 314, 339, 301, 243, 239, 225, 246, 41], "ventas": [28, 22, 20, 18, 10, 6, 3, 7, 0]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "ReEngaged_M3", "calls": [2625, 2335, 1967, 680, 1637, 2682, 2770, 2937, 636], "calls2min": [215, 175, 146, 61, 165, 234, 207, 224, 40], "ventas": [13, 9, 3, 1, 8, 5, 7, 15, 2]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "Engaged_M1", "calls": [949, 1096, 1339, 1425, 1830, 2733, 3171, 3797, 1014], "calls2min": [137, 163, 229, 271, 388, 492, 574, 661, 152], "ventas": [19, 16, 36, 33, 44, 71, 69, 47, 10]}, {"agentGroup": "Recurrence - VIP", "ltvType": "Engaged_M3", "calls": [750, 749, 1273, 1333, 1806, 1933, 2546, 3606, 1316], "calls2min": [166, 151, 279, 362, 409, 421, 590, 666, 233], "ventas": [26, 15, 34, 37, 32, 37, 49, 36, 5]}, {"agentGroup": "Bootcamp", "ltvType": "Engaged_M3", "calls": [143, 414, 1142, 1760, 1896, 1696, 1815, 2990, 1303], "calls2min": [31, 95, 323, 503, 526, 422, 511, 692, 244], "ventas": [0, 1, 1, 0, 4, 2, 3, 6, 0]}, {"agentGroup": "Upsell", "ltvType": "Engaged_M1", "calls": [172, 373, 397, 623, 1058, 1399, 3276, 4280, 494], "calls2min": [26, 69, 113, 138, 205, 296, 662, 584, 54], "ventas": [7, 13, 18, 12, 30, 35, 56, 22, 1]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "Engaged_M2", "calls": [544, 669, 831, 1213, 1398, 1857, 2270, 2199, 435], "calls2min": [84, 106, 162, 215, 268, 343, 359, 376, 77], "ventas": [11, 10, 17, 29, 31, 37, 29, 22, 7]}, {"agentGroup": "Upsell", "ltvType": "ReEngaged_M1", "calls": [1109, 1489, 1243, 1310, 1587, 936, 1431, 883, 36], "calls2min": [226, 280, 264, 272, 266, 149, 127, 59, 7], "ventas": [52, 37, 42, 39, 24, 11, 4, 0, 0]}, {"agentGroup": "Bootcamp", "ltvType": "ReEngaged_M3", "calls": [206, 500, 1148, 1462, 1339, 988, 777, 1377, 570], "calls2min": [25, 47, 135, 143, 139, 88, 74, 137, 35], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Upsell", "ltvType": "Engaged_M3", "calls": [534, 1004, 639, 608, 1173, 965, 1731, 1513, 142], "calls2min": [124, 212, 156, 156, 200, 197, 311, 208, 20], "ventas": [34, 36, 22, 28, 38, 26, 28, 2, 0]}, {"agentGroup": "Recurrence - VIP", "ltvType": "ReEngaged_M3", "calls": [812, 1125, 1479, 899, 452, 620, 871, 1389, 649], "calls2min": [75, 85, 125, 79, 51, 73, 64, 154, 67], "ventas": [3, 3, 3, 0, 2, 2, 0, 1, 1]}, {"agentGroup": "Bootcamp", "ltvType": "ReEngaged_M2", "calls": [140, 442, 1006, 1317, 1196, 1037, 812, 1470, 623], "calls2min": [30, 79, 216, 238, 223, 152, 133, 199, 63], "ventas": [0, 0, 1, 0, 0, 0, 1, 3, 0]}, {"agentGroup": "Recurrence - VIP", "ltvType": "ReEngaged_M2", "calls": [738, 916, 1203, 941, 690, 570, 766, 1231, 673], "calls2min": [99, 131, 166, 126, 109, 82, 100, 162, 85], "ventas": [13, 14, 6, 10, 4, 4, 3, 4, 2]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "1er_Segment", "calls": [654, 546, 501, 553, 632, 922, 1122, 1628, 522], "calls2min": [58, 63, 68, 109, 145, 192, 245, 374, 117], "ventas": [3, 7, 12, 7, 18, 19, 40, 37, 8]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "Resurrection_NotDebtor", "calls": [908, 439, 594, 2045, 750, 528, 928, 673, 140], "calls2min": [86, 55, 70, 174, 73, 65, 100, 87, 29], "ventas": [2, 1, 0, 3, 1, 4, 7, 6, 8]}, {"agentGroup": "Bootcamp", "ltvType": "Engaged_M1", "calls": [81, 166, 567, 720, 709, 690, 833, 1687, 866], "calls2min": [18, 37, 149, 168, 176, 171, 218, 382, 145], "ventas": [0, 0, 1, 3, 0, 3, 5, 4, 1]}, {"agentGroup": "Recurrence - VIP", "ltvType": "Engaged_M1", "calls": [234, 330, 468, 462, 582, 600, 969, 1717, 660], "calls2min": [45, 66, 79, 96, 134, 150, 231, 357, 128], "ventas": [4, 7, 17, 8, 8, 17, 19, 18, 4]}, {"agentGroup": "Upsell", "ltvType": "1er_Segment", "calls": [79, 152, 136, 174, 277, 547, 1400, 1981, 188], "calls2min": [18, 29, 36, 55, 68, 111, 330, 347, 31], "ventas": [2, 4, 7, 7, 7, 12, 45, 8, 2]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "Graduated", "calls": [211, 209, 248, 343, 475, 768, 846, 994, 308], "calls2min": [25, 42, 55, 82, 120, 183, 213, 279, 81], "ventas": [4, 4, 8, 10, 9, 17, 23, 30, 4]}, {"agentGroup": "Resurrection", "ltvType": "Resurrection_Debtor", "calls": [813, 618, 401, 473, 734, 463, 492, 233, 129], "calls2min": [32, 31, 17, 13, 15, 5, 12, 6, 1], "ventas": [3, 0, 0, 1, 0, 1, 1, 1, 0]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "2do_Segmento", "calls": [225, 135, 217, 278, 493, 614, 710, 1103, 335], "calls2min": [33, 31, 44, 74, 98, 141, 194, 296, 76], "ventas": [3, 5, 3, 8, 13, 18, 18, 20, 1]}, {"agentGroup": "Recurrence - VIP", "ltvType": "Engaged_M2", "calls": [128, 231, 371, 335, 386, 504, 709, 944, 347], "calls2min": [18, 44, 60, 74, 80, 101, 155, 172, 69], "ventas": [2, 6, 7, 7, 9, 13, 17, 13, 1]}, {"agentGroup": "Bootcamp", "ltvType": "Engaged_M2", "calls": [31, 92, 284, 413, 404, 470, 535, 861, 380], "calls2min": [6, 23, 82, 96, 116, 91, 162, 189, 77], "ventas": [0, 0, 0, 1, 0, 2, 2, 1, 1]}, {"agentGroup": "Upsell", "ltvType": "Engaged_M2", "calls": [181, 240, 177, 281, 315, 327, 645, 483, 62], "calls2min": [29, 41, 42, 59, 55, 95, 92, 90, 7], "ventas": [6, 9, 9, 6, 8, 8, 4, 1, 0]}, {"agentGroup": "Upsell", "ltvType": "ReEngaged_M2", "calls": [404, 503, 251, 188, 251, 271, 387, 345, 22], "calls2min": [104, 91, 67, 37, 19, 11, 30, 18, 3], "ventas": [11, 13, 9, 2, 0, 0, 0, 0, 1]}, {"agentGroup": "Recurrence - VIP", "ltvType": "Resurrection_NotDebtor", "calls": [222, 161, 184, 409, 200, 238, 590, 346, 51], "calls2min": [33, 24, 28, 48, 29, 33, 76, 39, 7], "ventas": [2, 0, 2, 1, 0, 0, 5, 3, 0]}, {"agentGroup": "Upsell", "ltvType": "2do_Segmento", "calls": [81, 59, 88, 118, 227, 271, 706, 712, 48], "calls2min": [18, 7, 22, 25, 39, 64, 178, 142, 15], "ventas": [4, 0, 5, 5, 7, 11, 19, 13, 0]}, {"agentGroup": "Resurrection", "ltvType": "Engaged_M1", "calls": [90, 58, 110, 120, 89, 148, 561, 746, 336], "calls2min": [9, 13, 23, 31, 21, 33, 55, 47, 17], "ventas": [3, 4, 7, 15, 11, 19, 33, 7, 0]}, {"agentGroup": "Recurrence - VIP", "ltvType": "1er_Segment", "calls": [174, 165, 158, 142, 167, 180, 374, 664, 232], "calls2min": [22, 19, 17, 28, 48, 65, 102, 168, 65], "ventas": [3, 1, 0, 1, 8, 7, 19, 16, 3]}, {"agentGroup": "Resurrection", "ltvType": "1er_Segment", "calls": [316, 289, 265, 304, 233, 77, 268, 246, 123], "calls2min": [19, 18, 23, 28, 7, 9, 22, 15, 8], "ventas": [2, 1, 0, 4, 0, 4, 8, 1, 2]}, {"agentGroup": "Resurrection", "ltvType": "Resurrection_NotDebtor", "calls": [488, 318, 346, 224, 157, 80, 103, 74, 35], "calls2min": [17, 17, 11, 15, 13, 4, 10, 7, 3], "ventas": [0, 0, 0, 0, 0, 0, 1, 1, 0]}, {"agentGroup": "Bootcamp", "ltvType": "1er_Segment", "calls": [7, 49, 99, 198, 181, 176, 280, 512, 288], "calls2min": [2, 13, 35, 53, 56, 61, 84, 157, 83], "ventas": [1, 0, 0, 0, 0, 0, 5, 3, 0]}, {"agentGroup": "Resurrection", "ltvType": "ReEngaged_M1", "calls": [221, 166, 198, 215, 169, 205, 233, 223, 140], "calls2min": [47, 47, 67, 58, 45, 38, 36, 16, 1], "ventas": [21, 28, 39, 26, 23, 18, 16, 1, 0]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "Resurrection_Debtor", "calls": [227, 179, 144, 446, 134, 144, 257, 149, 64], "calls2min": [18, 20, 17, 31, 13, 13, 29, 14, 11], "ventas": [0, 1, 1, 1, 2, 1, 0, 2, 0]}, {"agentGroup": "Upsell", "ltvType": "ReEngaged_M3", "calls": [217, 445, 144, 138, 265, 182, 127, 109, 6], "calls2min": [27, 32, 10, 4, 12, 3, 5, 7, 2], "ventas": [2, 3, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "EOT_Membership", "calls": [121, 129, 175, 208, 209, 227, 209, 191, 38], "calls2min": [11, 22, 27, 38, 36, 41, 26, 24, 6], "ventas": [1, 1, 0, 2, 7, 3, 1, 1, 0]}, {"agentGroup": "Upsell", "ltvType": "Graduated", "calls": [81, 41, 108, 95, 153, 248, 385, 361, 31], "calls2min": [6, 9, 27, 25, 38, 63, 84, 70, 4], "ventas": [1, 4, 4, 5, 2, 10, 5, 3, 0]}, {"agentGroup": "Recurrence - VIP", "ltvType": "2do_Segmento", "calls": [40, 47, 57, 83, 135, 157, 236, 490, 181], "calls2min": [6, 14, 12, 27, 40, 51, 77, 131, 42], "ventas": [3, 2, 1, 2, 2, 6, 12, 14, 0]}, {"agentGroup": "Recurrence - VIP", "ltvType": "Graduated", "calls": [68, 51, 66, 107, 159, 162, 259, 414, 116], "calls2min": [12, 11, 12, 37, 51, 54, 81, 123, 37], "ventas": [0, 1, 0, 0, 2, 6, 7, 14, 0]}, {"agentGroup": "Bootcamp", "ltvType": "Graduated", "calls": [7, 23, 90, 140, 136, 131, 196, 329, 147], "calls2min": [1, 9, 26, 44, 44, 44, 58, 100, 29], "ventas": [0, 0, 0, 0, 0, 2, 2, 1, 0]}, {"agentGroup": "Resurrection", "ltvType": "Engaged_M3", "calls": [116, 135, 91, 101, 105, 163, 271, 158, 57], "calls2min": [25, 32, 30, 44, 26, 41, 53, 21, 2], "ventas": [13, 11, 15, 18, 12, 29, 28, 5, 0]}, {"agentGroup": "Bootcamp", "ltvType": "2do_Segmento", "calls": [8, 21, 61, 82, 143, 121, 149, 316, 186], "calls2min": [2, 4, 20, 22, 49, 47, 52, 117, 63], "ventas": [0, 0, 0, 0, 1, 0, 2, 2, 1]}, {"agentGroup": "Resurrection", "ltvType": "ReEngaged_M2", "calls": [112, 100, 75, 25, 53, 106, 123, 51, 28], "calls2min": [20, 17, 20, 8, 15, 11, 9, 4, 1], "ventas": [12, 8, 15, 7, 9, 4, 4, 1, 0]}, {"agentGroup": "Recurrence - Black", "ltvType": "ReEngaged_M1", "calls": [0, 0, 0, 0, 0, 0, 120, 539, 0], "calls2min": [0, 0, 0, 0, 0, 0, 23, 72, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"agentGroup": "Bootcamp", "ltvType": "EOT_Membership", "calls": [4, 34, 78, 109, 95, 95, 67, 128, 47], "calls2min": [2, 9, 27, 17, 26, 21, 17, 14, 5], "ventas": [0, 0, 0, 1, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - VIP", "ltvType": "Resurrection_Debtor", "calls": [61, 51, 59, 85, 52, 48, 141, 87, 22], "calls2min": [4, 7, 8, 12, 2, 7, 18, 14, 3], "ventas": [1, 0, 0, 0, 0, 0, 0, 1, 0]}, {"agentGroup": "Recurrence - Black", "ltvType": "EOT", "calls": [0, 0, 0, 0, 0, 0, 134, 447, 0], "calls2min": [0, 0, 0, 0, 0, 0, 25, 63, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"agentGroup": "Recurrence - VIP", "ltvType": "EOT_Membership", "calls": [43, 42, 73, 84, 78, 54, 67, 87, 37], "calls2min": [10, 10, 14, 12, 11, 7, 11, 11, 3], "ventas": [1, 0, 0, 0, 0, 0, 0, 1, 0]}, {"agentGroup": "Upsell", "ltvType": "Resurrection_NotDebtor", "calls": [110, 76, 28, 22, 65, 59, 73, 65, 17], "calls2min": [20, 15, 15, 13, 21, 17, 14, 14, 6], "ventas": [6, 4, 3, 4, 5, 5, 3, 5, 0]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "Smartbeemo", "calls": [152, 110, 85, 61, 40, 17, 25, 16, 8], "calls2min": [10, 5, 6, 9, 6, 2, 3, 5, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Resurrection", "ltvType": "Smartbeemo", "calls": [104, 62, 56, 95, 102, 3, 17, 8, 1], "calls2min": [2, 6, 3, 2, 3, 0, 0, 2, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"agentGroup": "Resurrection", "ltvType": "Engaged_M2", "calls": [37, 34, 41, 22, 18, 51, 81, 39, 18], "calls2min": [4, 4, 8, 5, 10, 16, 20, 7, 1], "ventas": [0, 0, 5, 3, 3, 8, 10, 3, 0]}, {"agentGroup": "Recurrence - Black", "ltvType": "Engaged_M3", "calls": [0, 0, 0, 0, 0, 0, 68, 264, 0], "calls2min": [0, 0, 0, 0, 0, 0, 19, 60, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 2, 0]}, {"agentGroup": "Resurrection", "ltvType": "Ingles", "calls": [35, 24, 42, 66, 96, 35, 8, 3, 1], "calls2min": [1, 0, 1, 3, 3, 1, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Resurrection", "ltvType": "Graduated", "calls": [31, 60, 79, 27, 34, 8, 20, 30, 15], "calls2min": [1, 7, 9, 4, 1, 4, 4, 8, 2], "ventas": [1, 1, 0, 2, 1, 1, 0, 5, 1]}, {"agentGroup": "Resurrection", "ltvType": "ReEngaged_M3", "calls": [45, 36, 8, 30, 34, 29, 38, 13, 1], "calls2min": [6, 3, 4, 10, 10, 2, 9, 3, 0], "ventas": [3, 1, 2, 3, 3, 1, 6, 1, 0]}, {"agentGroup": "Upsell", "ltvType": "EOT_Membership", "calls": [41, 64, 63, 35, 1, 5, 6, 7, 9], "calls2min": [28, 21, 10, 7, 0, 0, 0, 3, 1], "ventas": [4, 5, 7, 2, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "Ingles", "calls": [48, 37, 23, 81, 3, 15, 2, 18, 0], "calls2min": [5, 4, 2, 7, 0, 4, 0, 9, 0], "ventas": [0, 0, 0, 1, 0, 0, 0, 4, 0]}, {"agentGroup": "Resurrection", "ltvType": "2do_Segmento", "calls": [3, 2, 6, 13, 15, 3, 87, 67, 28], "calls2min": [1, 0, 4, 2, 3, 0, 17, 5, 2], "ventas": [1, 0, 2, 2, 2, 0, 5, 2, 0]}, {"agentGroup": "Recurrence - Black", "ltvType": "ReEngaged_M2", "calls": [0, 0, 0, 0, 0, 0, 11, 188, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 35, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Black", "ltvType": "ReEngaged_M3", "calls": [0, 0, 0, 0, 0, 0, 20, 145, 0], "calls2min": [0, 0, 0, 0, 0, 0, 3, 28, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - VIP", "ltvType": "Smartbeemo", "calls": [32, 34, 31, 16, 12, 4, 13, 10, 5], "calls2min": [5, 1, 4, 0, 5, 1, 2, 1, 1], "ventas": [1, 0, 0, 0, 0, 0, 0, 1, 0]}, {"agentGroup": "Recurrence - Black", "ltvType": "Sin segmento (vacío)", "calls": [0, 0, 0, 0, 0, 0, 34, 121, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 10, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Upsell", "ltvType": "Resurrection_Debtor", "calls": [13, 44, 9, 6, 33, 9, 14, 17, 7], "calls2min": [4, 8, 4, 6, 3, 6, 5, 7, 0], "ventas": [0, 1, 2, 3, 1, 0, 2, 2, 0]}, {"agentGroup": "Recurrence - Black", "ltvType": "Engaged_M1", "calls": [0, 0, 0, 0, 0, 0, 15, 119, 0], "calls2min": [0, 0, 0, 0, 0, 0, 5, 24, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"agentGroup": "Resurrection", "ltvType": "Re-Engage", "calls": [15, 18, 12, 20, 19, 13, 12, 6, 4], "calls2min": [0, 1, 0, 1, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Bootcamp", "ltvType": "Smartbeemo", "calls": [2, 1, 20, 9, 20, 14, 13, 28, 10], "calls2min": [0, 0, 2, 0, 1, 1, 1, 3, 2], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Bootcamp", "ltvType": "Resurrection_Debtor", "calls": [3, 6, 11, 17, 43, 6, 7, 16, 4], "calls2min": [0, 3, 2, 1, 7, 0, 2, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Platinum", "ltvType": "ReEngaged_M1", "calls": [0, 0, 0, 0, 0, 0, 8, 6, 98], "calls2min": [0, 0, 0, 0, 0, 0, 2, 0, 15], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Resurrection", "ltvType": "EOT_Membership", "calls": [6, 5, 5, 0, 24, 8, 35, 15, 5], "calls2min": [0, 2, 1, 0, 1, 0, 2, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Bootcamp", "ltvType": "Resurrection_NotDebtor", "calls": [15, 16, 14, 7, 6, 11, 14, 14, 5], "calls2min": [0, 0, 1, 1, 1, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Bootcamp", "ltvType": "Re-Engage", "calls": [1, 0, 9, 21, 10, 25, 6, 22, 8], "calls2min": [0, 0, 0, 0, 0, 3, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Black", "ltvType": "Engaged_M2", "calls": [0, 0, 0, 0, 0, 0, 21, 72, 0], "calls2min": [0, 0, 0, 0, 0, 0, 5, 25, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Upsell", "ltvType": "Smartbeemo", "calls": [48, 34, 0, 0, 6, 0, 1, 1, 0], "calls2min": [2, 2, 0, 0, 1, 0, 1, 1, 0], "ventas": [0, 1, 0, 0, 1, 0, 1, 1, 0]}, {"agentGroup": "Recurrence - Platinum", "ltvType": "EOT", "calls": [0, 0, 0, 0, 0, 0, 6, 4, 67], "calls2min": [0, 0, 0, 0, 0, 0, 2, 0, 19], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Platinum", "ltvType": "Engaged_M3", "calls": [0, 0, 0, 0, 0, 0, 6, 6, 55], "calls2min": [0, 0, 0, 0, 0, 0, 2, 1, 17], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 1]}, {"agentGroup": "Resurrection", "ltvType": "Resurrection_Cancelado", "calls": [24, 11, 7, 4, 9, 5, 2, 3, 2], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "Re-Engage", "calls": [16, 4, 8, 11, 14, 1, 6, 0, 1], "calls2min": [0, 1, 3, 1, 7, 0, 2, 0, 0], "ventas": [0, 1, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Bootcamp", "ltvType": "Ingles", "calls": [1, 0, 17, 6, 9, 6, 4, 10, 1], "calls2min": [0, 0, 2, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Upsell", "ltvType": "Ingles", "calls": [6, 38, 1, 0, 0, 0, 0, 0, 0], "calls2min": [0, 1, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - VIP", "ltvType": "Ingles", "calls": [8, 10, 8, 5, 1, 1, 2, 2, 0], "calls2min": [0, 2, 1, 0, 0, 0, 0, 1, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Platinum", "ltvType": "ReEngaged_M3", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 36], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 3], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Platinum", "ltvType": "ReEngaged_M2", "calls": [0, 0, 0, 0, 0, 0, 1, 0, 31], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 9], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Upsell", "ltvType": "Re-Engage", "calls": [0, 0, 0, 0, 24, 2, 3, 0, 0], "calls2min": [0, 0, 0, 0, 2, 1, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Platinum", "ltvType": "Engaged_M1", "calls": [0, 0, 0, 0, 0, 0, 4, 3, 22], "calls2min": [0, 0, 0, 0, 0, 0, 2, 1, 6], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Black", "ltvType": "EOT_Membership", "calls": [0, 0, 0, 0, 0, 0, 7, 20, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 4, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Black", "ltvType": "Graduated", "calls": [0, 0, 0, 0, 0, 0, 7, 17, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 8, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"agentGroup": "Recurrence - Black", "ltvType": "2do_Segmento", "calls": [0, 0, 0, 0, 0, 0, 10, 13, 0], "calls2min": [0, 0, 0, 0, 0, 0, 2, 6, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Black", "ltvType": "1er_Segment", "calls": [0, 0, 0, 0, 0, 0, 4, 18, 0], "calls2min": [0, 0, 0, 0, 0, 0, 1, 7, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"agentGroup": "Recurrence - VIP", "ltvType": "Re-Engage", "calls": [3, 2, 2, 4, 1, 2, 1, 3, 3], "calls2min": [1, 0, 0, 1, 0, 0, 0, 0, 1], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Platinum", "ltvType": "Engaged_M2", "calls": [0, 0, 0, 0, 0, 0, 4, 3, 14], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 4], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Platinum", "ltvType": "Sin segmento (vacío)", "calls": [0, 0, 0, 0, 0, 0, 2, 1, 14], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 3], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 1]}, {"agentGroup": "Recurrence - VIP-Mas", "ltvType": "Resurrection_Cancelado", "calls": [3, 2, 1, 1, 0, 0, 1, 0, 0], "calls2min": [2, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Platinum", "ltvType": "1er_Segment", "calls": [0, 0, 0, 0, 0, 0, 1, 2, 3], "calls2min": [0, 0, 0, 0, 0, 0, 0, 2, 2], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Platinum", "ltvType": "2do_Segmento", "calls": [0, 0, 0, 0, 0, 0, 0, 2, 4], "calls2min": [0, 0, 0, 0, 0, 0, 0, 1, 1], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - VIP", "ltvType": "Resurrection_Cancelado", "calls": [0, 0, 0, 2, 0, 0, 2, 0, 1], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Upsell", "ltvType": "Sin clasificar (valor invalido: \"1\")", "calls": [0, 5, 0, 0, 0, 0, 0, 0, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Platinum", "ltvType": "Graduated", "calls": [0, 0, 0, 0, 0, 0, 2, 0, 1], "calls2min": [0, 0, 0, 0, 0, 0, 1, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Platinum", "ltvType": "EOT_Membership", "calls": [0, 0, 0, 0, 0, 0, 0, 0, 2], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Recurrence - Black", "ltvType": "Resurrection_Debtor", "calls": [0, 0, 0, 0, 0, 0, 0, 2, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"agentGroup": "Upsell", "ltvType": "Sin clasificar (valor invalido: \"lo\")", "calls": [0, 0, 0, 0, 0, 0, 0, 1, 0], "calls2min": [0, 0, 0, 0, 0, 0, 0, 0, 0], "ventas": [0, 0, 0, 0, 0, 0, 0, 0, 0]}], "dataQuality": {"calls": {"first_segment": 61, "graduated": 23, "eot": 12, "1.0": 4, "lo": 1}, "calls2min": {"first_segment": 34, "graduated": 14, "eot": 5}, "ventas": {"first_segment": 6, "eot": 2}}};
+
+const MONTHS = WFM_DATA.months;
+const MONTHS_ES = WFM_DATA.monthsEs;
+const N_MONTHS = MONTHS.length; // 9
+const LAST_FULL = 7;  // August index — last complete month
+const PREV_FULL = 6;  // July index
+const SEPT_IDX = 8;
+const MIN_VOL = 50;
+
+const AGENT_COLORS = {
+  'Bootcamp': '#2a78d6',
+  'Recurrence - VIP': '#1baf7a',
+  'Recurrence - VIP-Mas': '#7c5cff',
+  'Recurrence - Platinum': '#c9a227',
+  'Recurrence - Black': '#8a5a8a',
+  'Resurrection': '#eb6834',
+  'Upsell': '#14b8b0',
+};
+const AG_ORDER = ['Bootcamp','Recurrence - VIP','Recurrence - VIP-Mas','Recurrence - Platinum','Recurrence - Black','Resurrection','Upsell'];
+const AG_PILLS = [
+  {key:'__ALL__', label:'Todos'},
+  {key:'Bootcamp', label:'Bootcamp'},
+  {key:'__RECURRENCE__', label:'Recurrence (todos)'},
+  {key:'Recurrence - VIP', label:'Recurrence - VIP'},
+  {key:'Recurrence - VIP-Mas', label:'Recurrence - VIP-Mas'},
+  {key:'Recurrence - Platinum', label:'Recurrence - Platinum'},
+  {key:'Recurrence - Black', label:'Recurrence - Black'},
+  {key:'Resurrection', label:'Resurrection'},
+  {key:'Upsell', label:'Upsell'},
+];
+
+function fmt(n){ return Math.round(n).toLocaleString('es-CO'); }
+function fmtPct(n){ return n===null || n===undefined ? '—' : (Math.round(n*10)/10).toLocaleString('es-CO') + '%'; }
+function sum(arr){ return arr.reduce((a,b)=>a+b,0); }
+function sumRange(arr, idxs){ return idxs.reduce((s,i)=>s+arr[i],0); }
+
+document.getElementById('exportDate').textContent = new Date().toLocaleDateString('es-CO', {year:'numeric', month:'long', day:'numeric'});
+
+function matchAg(c, key){
+  if (key==='__ALL__') return true;
+  if (key==='__RECURRENCE__') return c.agentGroup.startsWith('Recurrence');
+  return c.agentGroup === key;
+}
+// Lista de grupos de agentes visibles según el filtro activo — usado por TODAS las
+// secciones (Volumen, Grupos de agentes, Índices, Alertas, Manual, Inbound, Segmentos,
+// Cambios, Simulador) para que el filtro de operación funcione igual en todo el dashboard.
+function visibleAgs(){
+  if (state.ag === '__ALL__') return AG_ORDER.slice();
+  if (state.ag === '__RECURRENCE__') return AG_ORDER.filter(ag => ag.startsWith('Recurrence'));
+  return AG_ORDER.filter(ag => ag === state.ag);
+}
+function currentFilterLabel(){
+  const p = AG_PILLS.find(p => p.key === state.ag);
+  return p ? p.label : state.ag;
+}
+
+let state = { ag: '__ALL__', months: MONTHS.map((_,i)=>i), search: '', sortKey: 'calls', sortDir: -1 };
+
+// ---------- filter pill UI ----------
+const agPillsEl = document.getElementById('agPills');
+AG_PILLS.forEach(p => {
+  const b = document.createElement('button');
+  b.className = 'pill' + (p.key===state.ag ? ' active':'');
+  const color = AGENT_COLORS[p.key] || 'var(--text-muted)';
+  b.innerHTML = (p.key!=='__ALL__' && p.key!=='__RECURRENCE__') ? `<span class="sw" style="background:${color}"></span>${p.label}` : p.label;
+  b.dataset.key = p.key;
+  b.addEventListener('click', () => { state.ag = p.key; state.search=''; document.getElementById('searchBox').value=''; render(); });
+  agPillsEl.appendChild(b);
+});
+
+const monthPillsEl = document.getElementById('monthPills');
+MONTHS_ES.forEach((m,i) => {
+  const b = document.createElement('button');
+  b.className = 'pill month active' + (i===SEPT_IDX ? ' partial':'');
+  b.textContent = m + (i===SEPT_IDX ? '*':'');
+  b.title = i===SEPT_IDX ? 'Septiembre es un mes parcial' : '';
+  b.dataset.idx = i;
+  b.addEventListener('click', () => {
+    const idx = state.months.indexOf(i);
+    if (idx>-1){ if (state.months.length>1) state.months.splice(idx,1); }
+    else { state.months.push(i); state.months.sort((a,b)=>a-b); }
+    render();
+  });
+  monthPillsEl.appendChild(b);
+});
+const allMonthsBtn = document.createElement('button');
+allMonthsBtn.className = 'pill';
+allMonthsBtn.textContent = 'Todos';
+allMonthsBtn.addEventListener('click', () => { state.months = MONTHS.map((_,i)=>i); render(); });
+monthPillsEl.appendChild(allMonthsBtn);
+
+document.getElementById('searchBox').addEventListener('input', e => { state.search = e.target.value.toLowerCase(); render(); });
+
+// ---------- pestañas ----------
+state.tab = 'resumen';
+function switchTab(tab){
+  state.tab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.tab===tab));
+}
+document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+switchTab('resumen');
+
+// ---------- SVG helpers ----------
+function svgEl(tag, attrs){
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+function sparkline(values, color){
+  const W=100,H=26,pad=2;
+  const max = Math.max(1,...values);
+  const stepX = values.length>1 ? (W-pad*2)/(values.length-1) : 0;
+  const pts = values.map((v,i)=>[pad+stepX*i, H-pad-(v/max)*(H-pad*2)]);
+  const d = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  return `<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><path d="${d}" fill="none" stroke="${color||'var(--series-1)'}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${pts[SEPT_IDX][0]}" cy="${pts[SEPT_IDX][1]}" r="2.4" fill="${color||'var(--series-1)'}" opacity="0.55"/></svg>`;
+}
+function miniLine(values, color){
+  const W=200,H=44,pad=3;
+  const max = Math.max(1,...values);
+  const stepX = (W-pad*2)/(values.length-1);
+  const pts = values.map((v,i)=>[pad+stepX*i, H-pad-(v/max)*(H-pad*2)]);
+  const solidPts = pts.slice(0, SEPT_IDX+1);
+  const dSolid = pts.slice(0,SEPT_IDX).map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const dDashed = 'M'+pts[SEPT_IDX-1][0].toFixed(1)+','+pts[SEPT_IDX-1][1].toFixed(1)+' L'+pts[SEPT_IDX][0].toFixed(1)+','+pts[SEPT_IDX][1].toFixed(1);
+  return `<svg class="mini" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <path d="${dSolid}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    <path d="${dDashed}" fill="none" stroke="${color}" stroke-width="2" stroke-dasharray="3,3" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${pts[SEPT_IDX][0]}" cy="${pts[SEPT_IDX][1]}" r="2.6" fill="${color}"/>
+  </svg>`;
+}
+
+// ---------- KPI + table (respect filters) ----------
+function filteredCampaigns(){
+  return WFM_DATA.campaigns.filter(c => matchAg(c, state.ag) && (!state.search || c.name.toLowerCase().includes(state.search)));
+}
+
+let lastTableRows = [];
+
+function renderAll(){
+  const camps = filteredCampaigns();
+  const monthIdx = state.months.length ? state.months : MONTHS.map((_,i)=>i);
+  const calls = sum(camps.map(c=>sumRange(c.calls, monthIdx)));
+  const c2 = sum(camps.map(c=>sumRange(c.calls2min, monthIdx)));
+  const vt = sum(camps.map(c=>sumRange(c.ventas, monthIdx)));
+
+  document.getElementById('kpiCalls').textContent = fmt(calls);
+  document.getElementById('kpiCallsSub').textContent = `${camps.length} campaña(s) · ${monthIdx.length} mes(es)`;
+  document.getElementById('kpi2min').textContent = fmt(c2);
+  document.getElementById('kpi2minSub').textContent = calls? fmtPct(100*c2/calls)+' de las llamadas' : '—';
+  document.getElementById('kpiVentas').textContent = fmt(vt);
+  document.getElementById('kpiVentasSub').textContent = c2? fmtPct(100*vt/c2)+' de los contactos' : '—';
+  document.getElementById('kpiRateContacto').textContent = calls? fmtPct(100*c2/calls) : '—';
+  document.getElementById('kpiRateCierre').textContent = c2? fmtPct(100*vt/c2) : '—';
+  document.getElementById('kpiRateConv').textContent = calls? fmtPct(100*vt/calls) : '—';
+
+  document.getElementById('tableScope').textContent = `${camps.length} campaña(s)`;
+
+  let rows = camps.map(c => {
+    const cc = sumRange(c.calls, monthIdx), c2c = sumRange(c.calls2min, monthIdx), vtc = sumRange(c.ventas, monthIdx);
+    return {
+      name: c.name, agentGroup: c.agentGroup, calls: cc, calls2min: c2c, ventas: vtc,
+      rateContacto: cc? 100*c2c/cc : 0, rateCierre: c2c? 100*vtc/c2c : 0,
+      trend: monthIdx.map(mi=>c.calls[mi]),
+    };
+  });
+  rows.sort((a,b)=> (a[state.sortKey]>b[state.sortKey]?1:-1) * state.sortDir);
+  renderTable(rows);
+  lastTableRows = rows;
+}
+
+function rateClass(v){ return v>=15?'':(v>=5?'mid':'low'); }
+
+function renderTable(rows){
+  const tbody = document.getElementById('tableBody');
+  document.getElementById('emptyState').style.display = rows.length ? 'none':'block';
+  tbody.innerHTML = rows.map(r => {
+    const color = AGENT_COLORS[r.agentGroup] || 'var(--text-muted)';
+    return `<tr>
+      <td class="nm" title="${r.name}">${r.name}</td>
+      <td><span class="ag-tag"><span class="sw" style="background:${color}"></span>${r.agentGroup}</span></td>
+      <td class="num">${fmt(r.calls)}</td>
+      <td class="num">${fmt(r.calls2min)}</td>
+      <td class="num"><span class="rate-pill ${rateClass(r.rateContacto)}">${fmtPct(r.rateContacto)}</span></td>
+      <td class="num">${fmt(r.ventas)}</td>
+      <td class="num"><span class="rate-pill ${rateClass(r.rateCierre)}">${fmtPct(r.rateCierre)}</span></td>
+      <td>${sparkline(r.trend, color)}</td>
+    </tr>`;
+  }).join('');
+  document.querySelectorAll('#campaignTable thead th[data-key]').forEach(th=>{
+    const isSorted = th.dataset.key===state.sortKey;
+    th.classList.toggle('sorted', isSorted);
+    th.classList.toggle('sort-desc', isSorted && state.sortDir===-1);
+    th.classList.toggle('sort-asc', isSorted && state.sortDir===1);
+  });
+}
+document.querySelectorAll('#campaignTable thead th[data-key]').forEach(th=>{
+  th.title = 'Clic para ordenar';
+  th.addEventListener('click', () => {
+    const key = th.dataset.key;
+    if (state.sortKey===key) state.sortDir *= -1; else { state.sortKey=key; state.sortDir=-1; }
+    renderAll();
+  });
+});
+
+// Vuelve a pintar TODO el dashboard con el filtro de operación / meses / búsqueda activo.
+// Se llama cada vez que cambia cualquier filtro para que absolutamente todas las
+// secciones (no solo la tabla de detalle) respeten la operación seleccionada.
+function render(){
+  renderAll();
+  renderVolByAg();
+  renderAgGrid();
+  renderIdxContacto();
+  renderIdxCierre();
+  renderAlerts();
+  renderManual();
+  renderInboundByOp();
+  renderLtv();
+  if (typeof renderChanges === 'function') renderChanges();
+  if (typeof renderSimulator === 'function') renderSimulator();
+  updateActiveFilterBanner();
+  document.querySelectorAll('#agPills .pill').forEach(b => b.classList.toggle('active', b.dataset.key===state.ag));
+  document.querySelectorAll('#monthPills .pill.month').forEach(b => b.classList.toggle('active', state.months.includes(+b.dataset.idx)));
+}
+
+function updateActiveFilterBanner(){
+  const el = document.getElementById('activeFilterBanner');
+  if (!el) return;
+  const ags = visibleAgs();
+  const monthTxt = state.months.length===N_MONTHS ? 'Ene–Sep' : state.months.map(i=>MONTHS_ES[i]).join(', ');
+  const agTxt = ags.length===1 ? ags[0] : `${currentFilterLabel()} (${ags.join(', ')})`;
+  el.innerHTML = `<strong>Filtro activo:</strong> ${agTxt} · ${monthTxt}${state.search? ` · búsqueda "${state.search}"`:''} — esta selección aplica a todas las secciones del dashboard.`;
+}
+
+// ---------- Volumen mensual por grupo de agentes (respeta el filtro de operación) ----------
+function agentGroupMonthlyTotals(){
+  const tot = {};
+  AG_ORDER.forEach(ag => tot[ag] = {calls: Array(N_MONTHS).fill(0), calls2min: Array(N_MONTHS).fill(0), ventas: Array(N_MONTHS).fill(0)});
+  WFM_DATA.campaigns.forEach(c => {
+    const t = tot[c.agentGroup];
+    if (!t) return;
+    for (let i=0;i<N_MONTHS;i++){ t.calls[i]+=c.calls[i]; t.calls2min[i]+=c.calls2min[i]; t.ventas[i]+=c.ventas[i]; }
+  });
+  return tot;
+}
+const AG_TOTALS = agentGroupMonthlyTotals();
+
+function renderVolByAg(){
+  const tbody = document.getElementById('volByAgBody');
+  let grand = Array(N_MONTHS).fill(0);
+  const rows = visibleAgs().map(ag => {
+    const calls = AG_TOTALS[ag].calls;
+    calls.forEach((v,i)=>grand[i]+=v);
+    return `<tr>
+      <td><span class="ag-tag"><span class="sw" style="background:${AGENT_COLORS[ag]}"></span>${ag}</span></td>
+      ${calls.map(v=>`<td class="num">${fmt(v)}</td>`).join('')}
+      <td class="num"><strong>${fmt(sum(calls))}</strong></td>
+    </tr>`;
+  }).join('');
+  const totalRow = `<tr class="total-row"><td>Total</td>${grand.map(v=>`<td class="num">${fmt(v)}</td>`).join('')}<td class="num">${fmt(sum(grand))}</td></tr>`;
+  tbody.innerHTML = rows + totalRow;
+}
+
+// ---------- Agent group cards ----------
+function renderAgGrid(){
+  const grid = document.getElementById('agGrid');
+  grid.innerHTML = visibleAgs().map(ag => {
+    const t = AG_TOTALS[ag];
+    const totalCalls = sum(t.calls), totalC2 = sum(t.calls2min), totalVt = sum(t.ventas);
+    const cJul = t.calls[PREV_FULL], cAug = t.calls[LAST_FULL];
+    let mom;
+    if (cJul>=MIN_VOL && cAug>=MIN_VOL){
+      const delta = 100*(cAug-cJul)/cJul;
+      const cls = delta<=-10?'down':(delta>=10?'up':'flat');
+      const arrow = delta<=-10?'▼':(delta>=10?'▲':'≈');
+      mom = `<span class="delta-pill ${cls}">${arrow} ${delta>=0?'+':''}${delta.toFixed(0)}% Jul→Ago</span>`;
+    } else {
+      mom = `<span class="na">volumen insuficiente en Jul/Ago para comparar</span>`;
+    }
+    const rateContacto = totalCalls? 100*totalC2/totalCalls : 0;
+    const rateCierre = totalC2? 100*totalVt/totalC2 : 0;
+    const isNew = sum(t.calls.slice(0,6))===0; // no volume before July -> new pool
+    return `<div class="ag-card" style="border-top-color:${AGENT_COLORS[ag]}">
+      <h3><span class="sw" style="width:9px;height:9px;border-radius:2px;background:${AGENT_COLORS[ag]};display:inline-block;"></span>${ag}${isNew?' <span class="rate-pill mid" style="margin-left:4px;">nuevo (jul)</span>':''}</h3>
+      <div class="big">${fmt(totalCalls)}</div>
+      <div class="mom">${mom}</div>
+      <div class="funnel">
+        <div>Contacto<b>${fmtPct(rateContacto)}</b></div>
+        <div>Cierre<b>${fmtPct(rateCierre)}</b></div>
+        <div>Ventas<b>${fmt(totalVt)}</b></div>
+      </div>
+      ${miniLine(t.calls, AGENT_COLORS[ag])}
+    </div>`;
+  }).join('');
+}
+
+// ---------- Índice de tasa de contacto / conversión por grupo de agentes ----------
+function heatBg(frac){
+  const f = Math.max(0, Math.min(1, frac));
+  const hue = f*130; // 0=rojo, 130=verde
+  return `hsla(${hue.toFixed(0)},70%,50%,0.26)`;
+}
+function renderIdxTable(tbodyId, denFn, numFn, minDen, trendThreshold){
+  const tbody = document.getElementById(tbodyId);
+  const ags = visibleAgs();
+  const rateMatrix = {};
+  ags.forEach(ag => {
+    const den = denFn(ag), num = numFn(ag);
+    rateMatrix[ag] = den.map((d,i) => d>=minDen ? 100*num[i]/d : null);
+  });
+  const allVals = ags.flatMap(ag=>rateMatrix[ag]).filter(v=>v!==null);
+  const lo = allVals.length?Math.min(...allVals):0, hi = allVals.length?Math.max(...allVals):1;
+  const rows = ags.map(ag => {
+    const rates = rateMatrix[ag];
+    const cells = rates.map(v => v===null
+      ? `<td class="num heat heat-na">—</td>`
+      : `<td class="num heat" style="background:${heatBg(hi>lo?(v-lo)/(hi-lo):0.5)}">${fmtPct(v)}</td>`
+    ).join('');
+    const rJul = rates[PREV_FULL], rAug = rates[LAST_FULL];
+    let trend;
+    if (rJul!==null && rAug!==null){
+      const d = rAug-rJul;
+      const cls = d<=-trendThreshold?'down':(d>=trendThreshold?'up':'flat');
+      const arrow = d<=-trendThreshold?'▼':(d>=trendThreshold?'▲':'≈');
+      trend = `<span class="delta-pill ${cls}">${arrow} ${d>=0?'+':''}${d.toFixed(1)}pp</span>`;
+    } else {
+      trend = `<span class="na">insuficiente</span>`;
+    }
+    return `<tr><td><span class="ag-tag"><span class="sw" style="background:${AGENT_COLORS[ag]}"></span>${ag}</span></td>${cells}<td class="num">${trend}</td></tr>`;
+  }).join('');
+  tbody.innerHTML = rows;
+}
+function renderIdxContacto(){
+  renderIdxTable('idxContactoBody', ag => AG_TOTALS[ag].calls, ag => AG_TOTALS[ag].calls2min, 10, 2);
+}
+function renderIdxCierre(){
+  renderIdxTable('idxCierreBody', ag => AG_TOTALS[ag].calls2min, ag => AG_TOTALS[ag].ventas, 5, 1);
+}
+
+// ---------- Alertas ----------
+// Diagnóstico en lenguaje llano de un cambio mes a mes, cruzando la variación de volumen
+// con la variación de tasa de contacto — para señalar el "detonante" probable.
+function diagnoseChange(volDeltaPct, rateDeltaPP){
+  const hasRate = rateDeltaPP !== null && rateDeltaPP !== undefined;
+  if (volDeltaPct !== null && volDeltaPct <= -20){
+    if (hasRate && rateDeltaPP <= -3) return 'Doble caída: menos volumen y peor contacto — revisar dotación y guion a la vez.';
+    if (hasRate && rateDeltaPP >= 3) return 'Cayó el volumen pero mejoró el contacto — puede ser foco en mejor base pese a marcar menos.';
+    return 'Cayó por menor volumen; el contacto se sostuvo — parece decisión de dotación/prioridad, no problema de calidad.';
+  }
+  if (volDeltaPct !== null && volDeltaPct >= 20){
+    if (hasRate && rateDeltaPP >= 3) return 'Creció el volumen y mejoró el contacto — palanca positiva, vale la pena sostenerla o escalarla.';
+    if (hasRate && rateDeltaPP <= -3) return 'Creció el volumen pero se diluyó el contacto — posible saturación o peor calidad de base al escalar.';
+    return 'Creció el volumen manteniendo el contacto — buena señal de escalabilidad.';
+  }
+  if (hasRate && rateDeltaPP <= -3) return 'El volumen se sostuvo pero bajó el contacto — revisar guion, horario o calidad de la base (no es tema de dotación).';
+  if (hasRate && rateDeltaPP >= 3) return 'El volumen se sostuvo y mejoró el contacto — cambio positivo en efectividad, vale la pena entender qué se hizo distinto.';
+  return 'Cambio detectado; revisar manualmente el detalle.';
+}
+
+function computeAlerts(){
+  const FULL_MONTHS = [0,1,2,3,4,5,6,7]; // excluye septiembre (parcial)
+  const ags = visibleAgs();
+  const camp = WFM_DATA.campaigns.filter(c => ags.includes(c.agentGroup)).map(c => {
+    const calls = sumRange(c.calls, FULL_MONTHS), c2 = sumRange(c.calls2min, FULL_MONTHS), vt = sumRange(c.ventas, FULL_MONTHS);
+    const cJul = c.calls[PREV_FULL], cAug = c.calls[LAST_FULL];
+    const c2Jul = c.calls2min[PREV_FULL], c2Aug = c.calls2min[LAST_FULL];
+    const rateContJul = cJul>=10 ? 100*c2Jul/cJul : null;
+    const rateContAug = cAug>=10 ? 100*c2Aug/cAug : null;
+    const rateDeltaPP = (rateContJul!==null && rateContAug!==null) ? rateContAug-rateContJul : null;
+    return { name:c.name, agentGroup:c.agentGroup, calls, c2, vt,
+      rateContacto: calls? 100*c2/calls : null, rateCierre: c2? 100*vt/c2 : null,
+      cJul, cAug, rateContJul, rateContAug, rateDeltaPP };
+  });
+  const withVol = camp.filter(c => c.calls >= MIN_VOL);
+  const rContacto = withVol.map(c=>c.rateContacto).sort((a,b)=>a-b);
+  const medContacto = rContacto[Math.floor(rContacto.length/2)] || 0;
+  const volsSorted = withVol.map(c=>c.calls).sort((a,b)=>a-b);
+  const medVol = volsSorted[Math.floor(volsSorted.length/2)] || 0;
+  const withC2 = withVol.filter(c => c.c2 >= MIN_VOL);
+  const rCierre = withC2.map(c=>c.rateCierre).sort((a,b)=>a-b);
+  const medCierre = rCierre[Math.floor(rCierre.length/2)] || 0;
+
+  const highVolLowContacto = withVol.filter(c => c.calls>=medVol && c.rateContacto < medContacto*0.7)
+    .sort((a,b)=>b.calls-a.calls).slice(0,6);
+  const highVolLowCierre = withC2.filter(c => c.c2>=medVol*0.3 && c.rateCierre < medCierre*0.5)
+    .sort((a,b)=>b.c2-a.c2).slice(0,6);
+  const momDrops = camp.filter(c => c.cJul>=MIN_VOL && c.cAug>=MIN_VOL && (100*(c.cAug-c.cJul)/c.cJul)<=-25)
+    .sort((a,b)=> (a.cAug-a.cJul)/a.cJul - (b.cAug-b.cJul)/b.cJul).slice(0,6);
+  const momGrowth = camp.filter(c => c.cJul>=MIN_VOL && c.cAug>=MIN_VOL && (100*(c.cAug-c.cJul)/c.cJul)>=40)
+    .sort((a,b)=> (b.cAug-b.cJul)/b.cJul - (a.cAug-a.cJul)/a.cJul).slice(0,6);
+
+  return {highVolLowContacto, highVolLowCierre, momDrops, momGrowth, medVol, medContacto, medCierre};
+}
+
+function alertCard(sev, title, desc, items, rowFn){
+  const body = items.length ? `<ul>${items.map(rowFn).join('')}</ul>` : `<div class="alert-empty">Sin casos que cumplan el criterio en este momento.</div>`;
+  return `<div class="alert-card sev-${sev}"><div class="ahd">${title}<span class="n">(${items.length})</span></div><div class="adesc">${desc}</div>${body}</div>`;
+}
+
+function renderAlerts(){
+  const a = computeAlerts();
+  const total = a.highVolLowContacto.length + a.highVolLowCierre.length + a.momDrops.length + a.momGrowth.length;
+  document.getElementById('alertsCount').textContent = total + ' alerta(s) activa(s) · filtro: ' + currentFilterLabel();
+  document.getElementById('alertsGrid').innerHTML =
+    alertCard('high', '🔴 Alto volumen, tasa de contacto muy baja', `Volumen ≥ mediana (${fmt(a.medVol)}) y tasa de contacto &lt; 70% de la mediana (${fmtPct(a.medContacto)}). Ene–Ago, excluye septiembre.`, a.highVolLowContacto,
+      c => `<li><span class="nm" title="${c.name} · ${c.agentGroup}">${c.name} <span class="na">· ${c.agentGroup}</span></span><span class="mt">${fmt(c.calls)} · ${fmtPct(c.rateContacto)}</span></li>`) +
+    alertCard('high', '💸 Se contacta bien pero no cierra', `Contactos suficientes pero tasa de cierre (venta ÷ contacto) muy por debajo de la mediana (${fmtPct(a.medCierre)}) — no es problema de marcación, es de oferta/guión/producto.`, a.highVolLowCierre,
+      c => `<li><span class="nm" title="${c.name} · ${c.agentGroup}">${c.name} <span class="na">· ${c.agentGroup}</span></span><span class="mt">${fmt(c.c2)} cont. · ${fmtPct(c.rateCierre)}</span></li>`) +
+    alertCard('med', '📉 Caída fuerte Jul→Ago (≥25%) — posible detonante', `Campañas con volumen suficiente en ambos meses cuya llamada cayó 25% o más. El diagnóstico cruza el cambio de volumen con el de tasa de contacto para apuntar a la causa más probable.`, a.momDrops,
+      c => { const volD = 100*(c.cAug-c.cJul)/c.cJul; return `<li><span class="nm" title="${c.name} · ${c.agentGroup}">${c.name} <span class="na">· ${c.agentGroup}</span></span><span class="mt">${fmt(c.cJul)} → ${fmt(c.cAug)}</span><div class="diag">${diagnoseChange(volD, c.rateDeltaPP)}</div></li>`; }) +
+    alertCard('info', '📈 Subida fuerte Jul→Ago (≥40%) — posible detonante', `Campañas que crecieron fuerte de un mes a otro — si sigue así, hay que planear dotación para sostenerlo.`, a.momGrowth,
+      c => { const volD = 100*(c.cAug-c.cJul)/c.cJul; return `<li><span class="nm" title="${c.name} · ${c.agentGroup}">${c.name} <span class="na">· ${c.agentGroup}</span></span><span class="mt">${fmt(c.cJul)} → ${fmt(c.cAug)}</span><div class="diag">${diagnoseChange(volD, c.rateDeltaPP)}</div></li>`; });
+}
+
+// ---------- Manual Outbound e Inbound por grupo de agentes (agregado + mensual) ----------
+function renderAggByAg(tbodyId, data, ags){
+  const tbody = document.getElementById(tbodyId);
+  if (!ags.length){ tbody.innerHTML = `<tr><td colspan="6" class="alert-empty">La operación filtrada no tiene campañas de este tipo.</td></tr>`; return; }
+  let totCalls=0, totC2=0, totVt=0;
+  const rows = ags.map(ag => {
+    const t = data[ag];
+    const calls = sum(t.calls), c2 = sum(t.calls2min), vt = sum(t.ventas);
+    totCalls+=calls; totC2+=c2; totVt+=vt;
+    return `<tr>
+      <td><span class="ag-tag"><span class="sw" style="background:${AGENT_COLORS[ag]}"></span>${ag}</span></td>
+      <td class="num">${fmt(calls)}</td>
+      <td class="num">${fmt(c2)}</td>
+      <td class="num"><span class="rate-pill ${rateClass(calls?100*c2/calls:0)}">${fmtPct(calls?100*c2/calls:0)}</span></td>
+      <td class="num">${fmt(vt)}</td>
+      <td class="num"><span class="rate-pill ${rateClass(c2?100*vt/c2:0)}">${fmtPct(c2? 100*vt/c2 : 0)}</span></td>
+    </tr>`;
+  }).join('');
+  const totalRow = `<tr class="total-row"><td>Total</td><td class="num">${fmt(totCalls)}</td><td class="num">${fmt(totC2)}</td><td class="num">${fmtPct(totCalls?100*totC2/totCalls:0)}</td><td class="num">${fmt(totVt)}</td><td class="num">${fmtPct(totC2?100*totVt/totC2:0)}</td></tr>`;
+  tbody.innerHTML = rows + totalRow;
+}
+
+function groupMonthlyByAg(filterFn){
+  const out = {};
+  WFM_DATA.campaigns.filter(filterFn).forEach(c => {
+    if (!out[c.agentGroup]) out[c.agentGroup] = {calls:Array(N_MONTHS).fill(0), calls2min:Array(N_MONTHS).fill(0), ventas:Array(N_MONTHS).fill(0)};
+    const t = out[c.agentGroup];
+    for (let i=0;i<N_MONTHS;i++){ t.calls[i]+=c.calls[i]; t.calls2min[i]+=c.calls2min[i]; t.ventas[i]+=c.ventas[i]; }
+  });
+  return out;
+}
+
+function renderMonthlyVolTable(tbodyId, data, ags){
+  const tbody = document.getElementById(tbodyId);
+  if (!ags.length){ tbody.innerHTML = `<tr><td colspan="11" class="alert-empty">La operación filtrada no tiene campañas de este tipo.</td></tr>`; return; }
+  const grand = Array(N_MONTHS).fill(0);
+  const rows = ags.map(ag => {
+    const calls = data[ag].calls;
+    calls.forEach((v,i)=>grand[i]+=v);
+    return `<tr><td><span class="ag-tag"><span class="sw" style="background:${AGENT_COLORS[ag]}"></span>${ag}</span></td>${calls.map(v=>`<td class="num">${fmt(v)}</td>`).join('')}<td class="num"><strong>${fmt(sum(calls))}</strong></td></tr>`;
+  }).join('');
+  const totalRow = `<tr class="total-row"><td>Total</td>${grand.map(v=>`<td class="num">${fmt(v)}</td>`).join('')}<td class="num">${fmt(sum(grand))}</td></tr>`;
+  tbody.innerHTML = rows + totalRow;
+}
+
+function renderMonthlyRateTable(tbodyId, data, ags, numKey, denKey, minDen){
+  const tbody = document.getElementById(tbodyId);
+  if (!ags.length){ tbody.innerHTML = `<tr><td colspan="10" class="alert-empty">La operación filtrada no tiene campañas de este tipo.</td></tr>`; return; }
+  const rateMatrix = {};
+  ags.forEach(ag => {
+    const t = data[ag];
+    rateMatrix[ag] = t[denKey].map((d,i) => d>=minDen ? 100*t[numKey][i]/d : null);
+  });
+  const allVals = ags.flatMap(ag=>rateMatrix[ag]).filter(v=>v!==null);
+  const lo = allVals.length?Math.min(...allVals):0, hi = allVals.length?Math.max(...allVals):1;
+  const rows = ags.map(ag => {
+    const cells = rateMatrix[ag].map(v => v===null
+      ? `<td class="num heat heat-na">—</td>`
+      : `<td class="num heat" style="background:${heatBg(hi>lo?(v-lo)/(hi-lo):0.5)}">${fmtPct(v)}</td>`
+    ).join('');
+    return `<tr><td><span class="ag-tag"><span class="sw" style="background:${AGENT_COLORS[ag]}"></span>${ag}</span></td>${cells}</tr>`;
+  }).join('');
+  tbody.innerHTML = rows;
+}
+
+const MANUAL_DATA = groupMonthlyByAg(c => c.name === 'Manual Outbound');
+const MANUAL_AGS = AG_ORDER.filter(ag => MANUAL_DATA[ag]);
+const INBOUND_DATA = groupMonthlyByAg(c => c.name.toLowerCase().includes('inbound'));
+const INBOUND_AGS = AG_ORDER.filter(ag => INBOUND_DATA[ag]);
+
+function renderManual(){
+  const ags = MANUAL_AGS.filter(ag => visibleAgs().includes(ag));
+  renderAggByAg('manualBody', MANUAL_DATA, ags);
+  renderMonthlyVolTable('manualVolBody', MANUAL_DATA, ags);
+  renderMonthlyRateTable('manualContactoBody', MANUAL_DATA, ags, 'calls2min', 'calls', 10);
+  renderMonthlyRateTable('manualCierreBody', MANUAL_DATA, ags, 'ventas', 'calls2min', 5);
+}
+
+function renderInboundByOp(){
+  const ags = INBOUND_AGS.filter(ag => visibleAgs().includes(ag));
+  renderAggByAg('inboundBody', INBOUND_DATA, ags);
+  renderMonthlyVolTable('inboundVolBody', INBOUND_DATA, ags);
+  renderMonthlyRateTable('inboundContactoBody', INBOUND_DATA, ags, 'calls2min', 'calls', 10);
+  renderMonthlyRateTable('inboundCierreBody', INBOUND_DATA, ags, 'ventas', 'calls2min', 5);
+}
+
+// ---------- Simulador de palancas para septiembre ----------
+const SEPT_DAYS_ELAPSED = 9, SEPT_DAYS_TOTAL = 30;
+const SEPT_PACE = SEPT_DAYS_TOTAL / SEPT_DAYS_ELAPSED;
+function rateOrNull(num, den){ return den ? 100*num/den : null; }
+function sumAgsField(data, ags, key, idx){ return ags.reduce((s,ag)=> s + (data[ag] ? data[ag][key][idx] : 0), 0); }
+function fmtDeltaPct(v){ return v===null||v===undefined ? '—' : (v>=0?'+':'')+v.toFixed(0)+'%'; }
+function fmtDeltaPP(v){ return v===null||v===undefined ? '—' : (v>=0?'+':'')+v.toFixed(1)+'pp'; }
+
+let SIM_BASE = null;
+function calcSim(kind){
+  const baseKey = kind.toLowerCase();
+  if (!SIM_BASE || !SIM_BASE[baseKey]) return;
+  const base = SIM_BASE[baseKey];
+  const volInput = document.getElementById('sim'+kind+'Vol');
+  const contInput = document.getElementById('sim'+kind+'Contacto');
+  const cierInput = document.getElementById('sim'+kind+'Cierre');
+  if (!volInput) return;
+  const volPct = parseFloat(volInput.value) || 0;
+  const contacto = parseFloat(contInput.value);
+  const cierre = parseFloat(cierInput.value);
+  const calls = base.calls * (1+volPct/100);
+  const contactos = calls * (isNaN(contacto)?0:contacto) / 100;
+  const ventas = contactos * (isNaN(cierre)?0:cierre) / 100;
+  const deltaVentas = ventas - base.ventas;
+  const out = document.getElementById('sim'+kind+'Out');
+  if (out){
+    out.innerHTML = `<div class="big">${fmt(ventas)} ventas/mes</div><div class="cmp">vs. ${fmt(base.ventas)} en agosto (${deltaVentas>=0?'+':''}${fmt(deltaVentas)}) · ${fmt(calls)} llamadas · ${fmt(contactos)} contactos</div>`;
+  }
+}
+
+function renderSimulator(){
+  const el = document.getElementById('simContent');
+  if (!el) return;
+  const ags = visibleAgs();
+  const manualAgs = MANUAL_AGS.filter(ag => ags.includes(ag));
+  const inboundAgs = INBOUND_AGS.filter(ag => ags.includes(ag));
+
+  const mCallsAug = sumAgsField(MANUAL_DATA, manualAgs, 'calls', LAST_FULL);
+  const mCallsSep = sumAgsField(MANUAL_DATA, manualAgs, 'calls', SEPT_IDX);
+  const mC2Aug = sumAgsField(MANUAL_DATA, manualAgs, 'calls2min', LAST_FULL);
+  const mC2Sep = sumAgsField(MANUAL_DATA, manualAgs, 'calls2min', SEPT_IDX);
+  const mVtAug = sumAgsField(MANUAL_DATA, manualAgs, 'ventas', LAST_FULL);
+  const mVtSep = sumAgsField(MANUAL_DATA, manualAgs, 'ventas', SEPT_IDX);
+
+  const iCallsAug = sumAgsField(INBOUND_DATA, inboundAgs, 'calls', LAST_FULL);
+  const iCallsSep = sumAgsField(INBOUND_DATA, inboundAgs, 'calls', SEPT_IDX);
+  const iC2Aug = sumAgsField(INBOUND_DATA, inboundAgs, 'calls2min', LAST_FULL);
+  const iC2Sep = sumAgsField(INBOUND_DATA, inboundAgs, 'calls2min', SEPT_IDX);
+  const iVtAug = sumAgsField(INBOUND_DATA, inboundAgs, 'ventas', LAST_FULL);
+  const iVtSep = sumAgsField(INBOUND_DATA, inboundAgs, 'ventas', SEPT_IDX);
+
+  const mRateAug = rateOrNull(mC2Aug,mCallsAug), mRateSep = rateOrNull(mC2Sep,mCallsSep);
+  const mCierreAug = rateOrNull(mVtAug,mC2Aug), mCierreSep = rateOrNull(mVtSep,mC2Sep);
+  const iRateAug = rateOrNull(iC2Aug,iCallsAug), iRateSep = rateOrNull(iC2Sep,iCallsSep);
+  const iCierreAug = rateOrNull(iVtAug,iC2Aug), iCierreSep = rateOrNull(iVtSep,iC2Sep);
+
+  const mCallsSepProj = mCallsSep*SEPT_PACE, iCallsSepProj = iCallsSep*SEPT_PACE;
+  const mVtSepProj = (mRateSep!==null && mCierreSep!==null) ? mCallsSepProj*mRateSep/100*mCierreSep/100 : null;
+  const iVtSepProj = (iRateSep!==null && iCierreSep!==null) ? iCallsSepProj*iRateSep/100*iCierreSep/100 : null;
+
+  const totalAug = mCallsAug+iCallsAug, totalSep = mCallsSep+iCallsSep;
+  const mixManualAug = totalAug? 100*mCallsAug/totalAug : 0, mixInboundAug = totalAug? 100-mixManualAug : 0;
+  const mixManualSep = totalSep? 100*mCallsSep/totalSep : 0, mixInboundSep = totalSep? 100-mixManualSep : 0;
+
+  function cmpRow(label, aug, sepReal, sepProj, isRate){
+    const f = isRate ? fmtPct : fmt;
+    return `<tr><td>${label}</td><td class="num">${aug===null?'—':f(aug)}</td><td class="num">${sepReal===null?'—':f(sepReal)}</td><td class="num">${sepProj===null||sepProj===undefined?'—':f(sepProj)}</td></tr>`;
+  }
+  const cmpTable = `<div class="table-scroll"><table>
+    <thead><tr><th>Métrica</th><th class="num">Agosto (completo)</th><th class="num">Septiembre (real, ~9 días)</th><th class="num">Septiembre (proyectado a ritmo actual)</th></tr></thead>
+    <tbody>
+      ${cmpRow('Llamadas Manual', mCallsAug, mCallsSep, mCallsSepProj, false)}
+      ${cmpRow('Llamadas Inbound', iCallsAug, iCallsSep, iCallsSepProj, false)}
+      ${cmpRow('Total llamadas', totalAug, totalSep, mCallsSepProj+iCallsSepProj, false)}
+      ${cmpRow('Tasa contacto Manual', mRateAug, mRateSep, mRateSep, true)}
+      ${cmpRow('Tasa contacto Inbound', iRateAug, iRateSep, iRateSep, true)}
+      ${cmpRow('Tasa cierre Manual', mCierreAug, mCierreSep, mCierreSep, true)}
+      ${cmpRow('Tasa cierre Inbound', iCierreAug, iCierreSep, iCierreSep, true)}
+      ${cmpRow('Ventas Manual', mVtAug, mVtSep, mVtSepProj, false)}
+      ${cmpRow('Ventas Inbound', iVtAug, iVtSep, iVtSepProj, false)}
+    </tbody>
+  </table></div>
+  <div class="alert-empty">Las tasas no se proyectan (ya son porcentajes) — se repite el valor real de septiembre. Solo el volumen y las ventas que dependen de él se proyectan al ritmo de ~9/30 días.</div>`;
+
+  const mixHtml = `<div style="margin-top:14px;">
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Mezcla Agosto: Manual ${mixManualAug.toFixed(0)}% / Inbound ${mixInboundAug.toFixed(0)}%</div>
+    <div class="mixbar"><span style="width:${mixManualAug}%;background:var(--series-2);">${mixManualAug>=12?'Manual '+mixManualAug.toFixed(0)+'%':''}</span><span style="width:${mixInboundAug}%;background:var(--series-1);">${mixInboundAug>=12?'Inbound '+mixInboundAug.toFixed(0)+'%':''}</span></div>
+    <div style="font-size:12px;color:var(--text-muted);margin:10px 0 4px;">Mezcla Septiembre (real): Manual ${mixManualSep.toFixed(0)}% / Inbound ${mixInboundSep.toFixed(0)}%</div>
+    <div class="mixbar"><span style="width:${mixManualSep}%;background:var(--series-2);">${mixManualSep>=12?'Manual '+mixManualSep.toFixed(0)+'%':''}</span><span style="width:${mixInboundSep}%;background:var(--series-1);">${mixInboundSep>=12?'Inbound '+mixInboundSep.toFixed(0)+'%':''}</span></div>
+  </div>`;
+
+  // Composición de Inbound por subtipo de campaña
+  const inboundCamps = WFM_DATA.campaigns.filter(c => c.name.toLowerCase().includes('inbound') && ags.includes(c.agentGroup));
+  const subtypeAgg = {};
+  inboundCamps.forEach(c => {
+    if (!subtypeAgg[c.name]) subtypeAgg[c.name] = Array(N_MONTHS).fill(0);
+    for (let i=0;i<N_MONTHS;i++) subtypeAgg[c.name][i]+=c.calls[i];
+  });
+  const subtypeRows = Object.entries(subtypeAgg).map(([name,calls]) => ({ name, aug:calls[LAST_FULL], sep:calls[SEPT_IDX] }))
+    .filter(r=>r.aug>0||r.sep>0).sort((a,b)=>b.aug-a.aug);
+  const subtypeHtml = subtypeRows.length ? `<div class="table-scroll"><table>
+    <thead><tr><th>Subtipo de campaña Inbound</th><th class="num">Agosto</th><th class="num">Septiembre (real)</th><th class="num">Δ ritmo diario</th></tr></thead>
+    <tbody>${subtypeRows.map(r => {
+      const dailyAug = r.aug/31, dailySep = r.sep/SEPT_DAYS_ELAPSED;
+      const d = dailyAug>0 ? 100*(dailySep-dailyAug)/dailyAug : null;
+      return `<tr><td class="nm" title="${r.name}">${r.name}</td><td class="num">${fmt(r.aug)}</td><td class="num">${fmt(r.sep)}</td><td class="num">${d===null?'—':fmtDeltaPct(d)}</td></tr>`;
+    }).join('')}</tbody>
+  </table></div>` : `<div class="alert-empty">Esta operación no tiene campañas Inbound.</div>`;
+
+  // Mezcla de segmentos (ltv_type)
+  const ltvRows = WFM_DATA.ltv.filter(r => ags.includes(r.agentGroup));
+  const segAgg = {};
+  ltvRows.forEach(r => {
+    if (!segAgg[r.ltvType]) segAgg[r.ltvType] = {aug:0, sep:0};
+    segAgg[r.ltvType].aug += r.calls[LAST_FULL];
+    segAgg[r.ltvType].sep += r.calls[SEPT_IDX];
+  });
+  const totalSegAug = Object.values(segAgg).reduce((s,v)=>s+v.aug,0) || 1;
+  const totalSegSep = Object.values(segAgg).reduce((s,v)=>s+v.sep,0) || 1;
+  const segRows = Object.entries(segAgg).map(([seg,v]) => ({
+    seg, aug:v.aug, sep:v.sep, shareAug: 100*v.aug/totalSegAug, shareSep: 100*v.sep/totalSegSep,
+  })).sort((a,b)=> b.aug-a.aug).slice(0,8);
+  const segHtml = `<div class="table-scroll"><table>
+    <thead><tr><th>Segmento (ltv_type)</th><th class="num">% de llamadas Agosto</th><th class="num">% de llamadas Septiembre</th><th class="num">Δ pp de participación</th></tr></thead>
+    <tbody>${segRows.map(r => `<tr><td>${r.seg}</td><td class="num">${fmtPct(r.shareAug)}</td><td class="num">${fmtPct(r.shareSep)}</td><td class="num">${fmtDeltaPP(r.shareSep-r.shareAug)}</td></tr>`).join('')}</tbody>
+  </table></div>
+  <div class="alert-empty">"Segmento" aquí es el ltv_type (momento del ciclo de vida del estudiante) — es distinto del "grupo de agentes" (ej. Recurrence - VIP), que es el filtro de operación de arriba.</div>`;
+
+  // Palancas (narrativa data-driven)
+  const levers = [];
+  if (mRateSep!==null && mRateAug!==null && Math.abs(mRateSep-mRateAug)>=1.5){
+    const d = mRateSep-mRateAug;
+    levers.push(`<b>Manual — tasa de contacto:</b> ${d>0?'subió':'bajó'} de ${fmtPct(mRateAug)} (agosto) a ${fmtPct(mRateSep)} (septiembre, ~9 días) — ${fmtDeltaPP(d)}. ${d>0? 'Si se sostiene, mejora el embudo sin necesidad de más volumen.':'Palanca a revisar antes de subir volumen: guion, horario de marcación o calidad de la base.'}`);
+  }
+  if (iRateSep!==null && iRateAug!==null && Math.abs(iRateSep-iRateAug)>=1.5){
+    const d = iRateSep-iRateAug;
+    levers.push(`<b>Inbound — tasa de contacto:</b> ${d>0?'subió':'bajó'} de ${fmtPct(iRateAug)} (agosto) a ${fmtPct(iRateSep)} (septiembre, ~9 días) — ${fmtDeltaPP(d)}.`);
+  }
+  if (mCierreSep!==null && mCierreAug!==null && Math.abs(mCierreSep-mCierreAug)>=2){
+    const d = mCierreSep-mCierreAug;
+    levers.push(`<b>Manual — tasa de cierre:</b> pasó de ${fmtPct(mCierreAug)} a ${fmtPct(mCierreSep)} (${fmtDeltaPP(d)}) — ${d>0?'mejor conversión de los contactos logrados.':'se están perdiendo más contactos sin convertir; revisar oferta/guión de cierre.'}`);
+  }
+  if (iCierreSep!==null && iCierreAug!==null && Math.abs(iCierreSep-iCierreAug)>=2){
+    const d = iCierreSep-iCierreAug;
+    levers.push(`<b>Inbound — tasa de cierre:</b> pasó de ${fmtPct(iCierreAug)} a ${fmtPct(iCierreSep)} (${fmtDeltaPP(d)}).`);
+  }
+  if (totalAug>0 && totalSep>0 && Math.abs(mixManualSep-mixManualAug)>=5){
+    levers.push(`<b>Mezcla Manual/Inbound:</b> agosto ${mixManualAug.toFixed(0)}%/${mixInboundAug.toFixed(0)}% → septiembre ${mixManualSep.toFixed(0)}%/${mixInboundSep.toFixed(0)}% — se está inclinando hacia ${mixManualSep>mixManualAug?'Manual':'Inbound'}. ${iRateAug!==null && mRateAug!==null && iRateAug>mRateAug ? 'Como el Inbound suele contactar mejor, empujar más volumen ahí (más horario/visibilidad para que llamen) es una palanca de contacto.' : ''}`);
+  }
+  const dailyAugTotal = totalAug/31, dailySepTotal = totalSep/SEPT_DAYS_ELAPSED;
+  if (dailyAugTotal>0 && Math.abs(100*(dailySepTotal-dailyAugTotal)/dailyAugTotal)>=10){
+    const d = 100*(dailySepTotal-dailyAugTotal)/dailyAugTotal;
+    levers.push(`<b>Ritmo diario de llamadas:</b> ${fmt(dailyAugTotal)} llamadas/día en agosto vs. ${fmt(dailySepTotal)} llamadas/día en lo que va de septiembre (${fmtDeltaPct(d)}). ${d<0? 'Si se mantiene este ritmo, septiembre cierra por debajo de agosto en volumen — palanca de dotación/discado.':'El ritmo de marcación va por encima de agosto.'}`);
+  }
+  if (!levers.length) levers.push('Con los ~9 días de septiembre disponibles no hay cambios de mezcla o de tasas por encima del umbral — todavía es pronto para concluir; vuelve a revisar en unos días.');
+
+  // Calculadora interactiva (solo con una operación específica seleccionada)
+  const singleAg = !['__ALL__','__RECURRENCE__'].includes(state.ag);
+  let calcHtml;
+  if (singleAg){
+    const ag = state.ag;
+    const mHas = MANUAL_DATA[ag], iHas = INBOUND_DATA[ag];
+    SIM_BASE = {
+      manual: mHas ? { calls: mHas.calls[LAST_FULL], rate: rateOrNull(mHas.calls2min[LAST_FULL], mHas.calls[LAST_FULL]), cierre: rateOrNull(mHas.ventas[LAST_FULL], mHas.calls2min[LAST_FULL]), ventas: mHas.ventas[LAST_FULL] } : null,
+      inbound: iHas ? { calls: iHas.calls[LAST_FULL], rate: rateOrNull(iHas.calls2min[LAST_FULL], iHas.calls[LAST_FULL]), cierre: rateOrNull(iHas.ventas[LAST_FULL], iHas.calls2min[LAST_FULL]), ventas: iHas.ventas[LAST_FULL] } : null,
+    };
+    function calcCard(kind, label, base){
+      if (!base) return `<div class="sim-card"><h4>${label}</h4><div class="alert-empty">${ag} no tiene campañas de este tipo.</div></div>`;
+      return `<div class="sim-card">
+        <h4>${label} — línea base: agosto</h4>
+        <div class="sim-row"><span>Δ% volumen vs. agosto</span><input type="number" id="sim${kind}Vol" value="0" step="5" oninput="calcSim('${kind}')"></div>
+        <div class="sim-row"><span>Tasa de contacto objetivo (%)</span><input type="number" id="sim${kind}Contacto" value="${base.rate===null?0:base.rate.toFixed(1)}" step="0.5" oninput="calcSim('${kind}')"></div>
+        <div class="sim-row"><span>Tasa de cierre objetivo (%)</span><input type="number" id="sim${kind}Cierre" value="${base.cierre===null?0:base.cierre.toFixed(1)}" step="0.5" oninput="calcSim('${kind}')"></div>
+        <div class="sim-out" id="sim${kind}Out"></div>
+      </div>`;
+    }
+    calcHtml = `<div class="sim-grid">${calcCard('Manual','📞 Manual Outbound', SIM_BASE.manual)}${calcCard('Inbound','☎️ Inbound', SIM_BASE.inbound)}</div>`;
+  } else {
+    SIM_BASE = null;
+    calcHtml = `<div class="sim-note">Selecciona una operación específica (ej. "Recurrence - VIP") en el filtro de arriba — no "Todos" ni "Recurrence (todos)" — para activar la calculadora "¿qué pasaría si...?" de esa operación.</div>`;
+  }
+
+  el.innerHTML = `
+    <div class="panel"><h2>Agosto vs. Septiembre (real y proyectado) <small>operación: ${currentFilterLabel()}</small></h2>${cmpTable}${mixHtml}</div>
+    <div class="panel"><h2>Composición del Inbound por subtipo <small>¿cambió qué tipo de Inbound está entrando?</small></h2>${subtypeHtml}</div>
+    <div class="panel"><h2>Mezcla de segmentos (ltv_type) <small>¿hay más peso de algún segmento del ciclo de vida?</small></h2>${segHtml}</div>
+    <div class="panel"><h2>Palancas identificadas <small>lecturas automáticas a partir de los datos, no una recomendación genérica</small></h2><ul class="lever-list">${levers.map(l=>`<li>${l}</li>`).join('')}</ul></div>
+    <div class="panel"><h2>Simulador "¿qué pasaría si...?" <small>ajusta volumen y tasas objetivo para ver el impacto en ventas</small></h2>${calcHtml}</div>
+  `;
+  if (singleAg){ calcSim('Manual'); calcSim('Inbound'); }
+}
+
+// ---------- ltv_type ----------
+let ltvSortKey = 'calls', ltvSortDir = -1;
+function renderLtv(){
+  const dq = WFM_DATA.dataQuality.calls;
+  const DQ_CANON = {'first_segment':'1er_Segment', 'graduated':'Graduated', 'eot':'EOT', '1.0':'Sin clasificar', 'lo':'Sin clasificar'};
+  const dqParts = Object.entries(dq).map(([k,v]) => `"${k}" → "${DQ_CANON[k]||k}" (${v} filas)`).join('; ');
+  document.getElementById('dqSummary').textContent = dqParts || 'sin inconsistencias detectadas';
+
+  const search = state.search;
+  const ags = visibleAgs();
+  let rows = WFM_DATA.ltv.filter(r => ags.includes(r.agentGroup) && (!search || r.ltvType.toLowerCase().includes(search))).map(r => {
+    const calls = sum(r.calls), c2 = sum(r.calls2min), vt = sum(r.ventas);
+    return { ltvType:r.ltvType, agentGroup:r.agentGroup, calls, rateContacto: calls?100*c2/calls:0, ventas:vt, rateCierre: c2?100*vt/c2:0 };
+  });
+  rows.sort((a,b)=> (a[ltvSortKey]>b[ltvSortKey]?1:-1)*ltvSortDir);
+  rows = rows.slice(0,60);
+  document.getElementById('ltvBody').innerHTML = rows.map(r => `<tr>
+    <td>${r.ltvType}</td>
+    <td><span class="ag-tag"><span class="sw" style="background:${AGENT_COLORS[r.agentGroup]||'var(--text-muted)'}"></span>${r.agentGroup}</span></td>
+    <td class="num">${fmt(r.calls)}</td>
+    <td class="num"><span class="rate-pill ${rateClass(r.rateContacto)}">${fmtPct(r.rateContacto)}</span></td>
+    <td class="num">${fmt(r.ventas)}</td>
+    <td class="num"><span class="rate-pill ${rateClass(r.rateCierre)}">${fmtPct(r.rateCierre)}</span></td>
+  </tr>`).join('');
+}
+document.querySelectorAll('table thead th[data-key]').forEach(th=>{
+  if (th.closest('#ltvBody')) return;
+});
+// wire ltv table header sorting (scoped to the ltv table specifically)
+(function(){
+  const ltvTable = document.getElementById('ltvBody').closest('table');
+  ltvTable.querySelectorAll('thead th[data-key]').forEach(th=>{
+    th.title = 'Clic para ordenar';
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if (ltvSortKey===key) ltvSortDir *= -1; else { ltvSortKey=key; ltvSortDir=-1; }
+      renderLtv();
+      ltvTable.querySelectorAll('thead th[data-key]').forEach(t=>{
+        const isSorted = t.dataset.key===ltvSortKey;
+        t.classList.toggle('sorted', isSorted);
+        t.classList.toggle('sort-desc', isSorted && ltvSortDir===-1);
+        t.classList.toggle('sort-asc', isSorted && ltvSortDir===1);
+      });
+    });
+  });
+})();
+
+// ---------- Validar cambios: bitácora de cambios mes a mes (Ene→Feb … Jul→Ago) ----------
+let changesSortMode = 'severity';
+let lastChangesRows = [];
+function computeChanges(){
+  const FULL_PAIRS = [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]];
+  const ags = visibleAgs();
+  const MINV = 30;
+  const out = [];
+  WFM_DATA.campaigns.filter(c => ags.includes(c.agentGroup)).forEach(c => {
+    FULL_PAIRS.forEach(([i,j]) => {
+      const cb=c.calls[i], ca=c.calls[j];
+      if (cb<MINV && ca<MINV) return;
+      const c2b=c.calls2min[i], c2a=c.calls2min[j];
+      const vb=c.ventas[i], va=c.ventas[j];
+      const rb = cb>=10 ? 100*c2b/cb : null, ra = ca>=10 ? 100*c2a/ca : null;
+      const clb = c2b>=5 ? 100*vb/c2b : null, cla = c2a>=5 ? 100*va/c2a : null;
+      const volDelta = cb>=MINV ? 100*(ca-cb)/cb : null;
+      const rateDelta = (rb!==null && ra!==null) ? ra-rb : null;
+      const cierreDelta = (clb!==null && cla!==null) ? cla-clb : null;
+      const flagged = (volDelta!==null && Math.abs(volDelta)>=25) || (rateDelta!==null && Math.abs(rateDelta)>=4) || (cierreDelta!==null && Math.abs(cierreDelta)>=6);
+      if (!flagged) return;
+      const severity = Math.max(Math.abs(volDelta||0), Math.abs(rateDelta||0)*6, Math.abs(cierreDelta||0)*5);
+      out.push({
+        name:c.name, agentGroup:c.agentGroup, mAIdx:i, mA:MONTHS_ES[i], mB:MONTHS_ES[j],
+        cb, ca, volDelta, rb, ra, rateDelta, vb, va, clb, cla, cierreDelta, severity,
+        diag: diagnoseChange(volDelta, rateDelta),
+      });
+    });
+  });
+  return out;
+}
+function renderChanges(){
+  const tbody = document.getElementById('changesBody');
+  if (!tbody) return;
+  const search = document.getElementById('changesSearch').value.toLowerCase();
+  let rows = computeChanges().filter(r => !search || r.name.toLowerCase().includes(search));
+  const total = rows.length;
+  switch (changesSortMode){
+    case 'volAsc': rows.sort((a,b)=> (a.volDelta===null?999:a.volDelta) - (b.volDelta===null?999:b.volDelta)); break;
+    case 'volDesc': rows.sort((a,b)=> (b.volDelta===null?-999:b.volDelta) - (a.volDelta===null?-999:a.volDelta)); break;
+    case 'rateAsc': rows.sort((a,b)=> (a.rateDelta===null?999:a.rateDelta) - (b.rateDelta===null?999:b.rateDelta)); break;
+    case 'recent': rows.sort((a,b)=> b.mAIdx - a.mAIdx); break;
+    default: rows.sort((a,b)=> b.severity - a.severity);
+  }
+  lastChangesRows = rows;
+  const shown = rows.slice(0, 250);
+  document.getElementById('changesCount').textContent = `${total} cambio(s) detectado(s)${total>shown.length? ` · mostrando los ${shown.length} más relevantes`:''} · filtro: ${currentFilterLabel()}`;
+  document.getElementById('changesEmpty').style.display = total ? 'none':'block';
+  tbody.innerHTML = shown.map(r => `<tr>
+    <td class="nm" title="${r.name}">${r.name}</td>
+    <td><span class="ag-tag"><span class="sw" style="background:${AGENT_COLORS[r.agentGroup]||'var(--text-muted)'}"></span>${r.agentGroup}</span></td>
+    <td>${r.mA} → ${r.mB}</td>
+    <td style="max-width:280px;font-size:11.5px;color:var(--text-secondary);">${r.diag}</td>
+    <td class="num">${fmt(r.cb)} → ${fmt(r.ca)}</td>
+    <td class="num">${r.volDelta===null?'—':(r.volDelta>=0?'+':'')+r.volDelta.toFixed(0)+'%'}</td>
+    <td class="num">${r.rb===null?'—':fmtPct(r.rb)} → ${r.ra===null?'—':fmtPct(r.ra)}</td>
+    <td class="num">${r.rateDelta===null?'—':(r.rateDelta>=0?'+':'')+r.rateDelta.toFixed(1)+'pp'}</td>
+    <td class="num">${r.clb===null?'—':fmtPct(r.clb)} → ${r.cla===null?'—':fmtPct(r.cla)}</td>
+    <td class="num">${r.cierreDelta===null?'—':(r.cierreDelta>=0?'+':'')+r.cierreDelta.toFixed(1)+'pp'}</td>
+  </tr>`).join('');
+}
+document.getElementById('changesSearch').addEventListener('input', renderChanges);
+document.getElementById('changesSort').addEventListener('change', e => { changesSortMode = e.target.value; renderChanges(); });
+function changesRowsToCsv(rows){
+  const header = ['Campaña','Grupo de agentes','Mes antes','Mes después','Llamadas antes','Llamadas después','Δ Volumen (%)','Contacto antes (%)','Contacto después (%)','Δ Contacto (pp)','Cierre antes (%)','Cierre después (%)','Δ Cierre (pp)','Diagnóstico'];
+  const esc = v => `"${String(v).replace(/"/g,'""')}"`;
+  const lines = [header.map(esc).join(',')];
+  rows.forEach(r => lines.push([r.name, r.agentGroup, r.mA, r.mB, r.cb, r.ca, r.volDelta===null?'':r.volDelta.toFixed(1), r.rb===null?'':r.rb.toFixed(1), r.ra===null?'':r.ra.toFixed(1), r.rateDelta===null?'':r.rateDelta.toFixed(1), r.clb===null?'':r.clb.toFixed(1), r.cla===null?'':r.cla.toFixed(1), r.cierreDelta===null?'':r.cierreDelta.toFixed(1), r.diag].map(esc).join(',')));
+  return lines.join('\n');
+}
+document.getElementById('copyChangesBtn').addEventListener('click', async () => {
+  const csv = changesRowsToCsv(lastChangesRows);
+  try {
+    await navigator.clipboard.writeText(csv);
+    showToast(`Copiado ✓ (${lastChangesRows.length} filas)`);
+  } catch (err) {
+    const overlay = document.getElementById('copyOverlay');
+    const ta = document.getElementById('copyTextarea');
+    ta.value = csv; overlay.hidden = false; ta.focus(); ta.select();
+  }
+});
+
+// ---------- copiar tabla como CSV ----------
+function rowsToCsv(rows){
+  const header = ['Campaña','Grupo de agentes','Llamadas','Contactos','Tasa contacto (%)','Ventas','Tasa cierre (%)'];
+  const esc = v => `"${String(v).replace(/"/g,'""')}"`;
+  const lines = [header.map(esc).join(',')];
+  rows.forEach(r => lines.push([r.name, r.agentGroup, r.calls, r.calls2min, r.rateContacto.toFixed(2), r.ventas, r.rateCierre.toFixed(2)].map(esc).join(',')));
+  return lines.join('\n');
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+document.getElementById('copyTableBtn').addEventListener('click', async () => {
+  const csv = rowsToCsv(lastTableRows);
+  try {
+    await navigator.clipboard.writeText(csv);
+    showToast(`Copiado ✓ (${lastTableRows.length} filas)`);
+  } catch (err) {
+    const overlay = document.getElementById('copyOverlay');
+    const ta = document.getElementById('copyTextarea');
+    ta.value = csv; overlay.hidden = false; ta.focus(); ta.select();
+  }
+});
+document.getElementById('closeCopyOverlay').addEventListener('click', () => { document.getElementById('copyOverlay').hidden = true; });
+
+render(); // pinta todo el dashboard (KPIs, tablas, índices, alertas, manual/inbound, ltv, cambios, simulador)
+</script>
+
+</body>
+</html>
