@@ -94,6 +94,19 @@
   .changes-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px;}
   select.sort-select{background:var(--surface-raised);border:1px solid var(--border-strong);border-radius:8px;padding:6px 10px;font-size:12.5px;color:var(--text-primary);font-family:inherit;}
 
+  /* Detalle por campaña — acordeón mensual */
+  tr.camp-row{cursor:pointer;}
+  tr.camp-row:hover td{background:var(--surface-raised);}
+  tr.camp-row.expanded td{background:var(--series-1-soft);}
+  .camp-toggle{display:inline-block;width:14px;color:var(--text-muted);transition:transform .15s;font-size:10px;}
+  tr.camp-row.expanded .camp-toggle{transform:rotate(90deg);}
+  .camp-ag-badges{display:flex;flex-wrap:wrap;gap:4px;}
+  tr.camp-detail-row.collapsed{display:none;}
+  .camp-detail{padding:14px 16px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:4px 0 8px;}
+  .camp-detail h5{margin:14px 0 8px;font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;}
+  .camp-detail h5:first-child{margin-top:0;}
+  .camp-detail-note{font-size:12px;color:var(--text-secondary);margin-bottom:4px;}
+
   header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;margin-bottom:20px;}
   header.top h1{font-size:22px;font-weight:700;margin:0 0 4px;letter-spacing:-0.01em;}
   header.top p{margin:0;color:var(--text-secondary);font-size:13.5px;max-width:62ch;}
@@ -461,6 +474,19 @@
 
   <div class="panel">
     <div class="panel-toolbar">
+      <h2>Detalle por campaña (mensual) <small id="campAccordionScope">haz clic en una campaña para ver su desglose mensual y a qué grupo(s) de agentes pertenece</small></h2>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th style="width:24px;"></th><th data-key="name">Campaña</th><th>Grupo(s) de agentes</th><th class="num" data-key="calls">Llamadas</th><th class="num" data-key="calls2min">Contactos</th><th class="num" data-key="rateContacto">Tasa contacto</th><th class="num" data-key="ventas">Ventas</th><th class="num" data-key="rateCierre">Tasa cierre</th></tr></thead>
+        <tbody id="campAccordionBody"></tbody>
+      </table>
+    </div>
+    <div class="alert-empty" id="campAccordionEmpty" style="display:none;">No hay campañas que coincidan con los filtros actuales.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-toolbar">
       <h2>Detalle por campaña <small id="tableScope"></small></h2>
       <button class="btn-copy" id="copyTableBtn">📋 Copiar tabla (CSV)</button>
     </div>
@@ -721,6 +747,7 @@ function render(){
   renderManual();
   renderInboundByOp();
   renderLtv();
+  if (typeof renderCampAccordion === 'function') renderCampAccordion();
   if (typeof renderChanges === 'function') renderChanges();
   if (typeof renderSimulator === 'function') renderSimulator();
   updateActiveFilterBanner();
@@ -1237,6 +1264,112 @@ document.querySelectorAll('table thead th[data-key]').forEach(th=>{
         t.classList.toggle('sorted', isSorted);
         t.classList.toggle('sort-desc', isSorted && ltvSortDir===-1);
         t.classList.toggle('sort-asc', isSorted && ltvSortDir===1);
+      });
+    });
+  });
+})();
+
+// ---------- Detalle por campaña (mensual) — acordeón agrupado por nombre de campaña ----------
+// Una misma campaña puede repartirse en varios grupos de agentes (ej. "Manual Outbound" tiene
+// una fila por cada uno de los 7 grupos) — esta vista la consolida en UNA fila por campaña y,
+// al abrirla, muestra a qué grupo(s) pertenece y su desglose mensual (volumen, tasa de contacto,
+// tasa de cierre), igual que las secciones de Manual/Inbound.
+let campSortKey = 'calls', campSortDir = -1;
+const expandedCampaigns = new Set();
+function campaignAccordionData(){
+  const ags = visibleAgs();
+  const search = state.search;
+  const byName = {};
+  WFM_DATA.campaigns.forEach(c => {
+    if (!ags.includes(c.agentGroup)) return;
+    if (search && !c.name.toLowerCase().includes(search)) return;
+    if (!byName[c.name]) byName[c.name] = [];
+    byName[c.name].push(c);
+  });
+  return Object.entries(byName).map(([name, rows]) => {
+    const dataByAg = {};
+    rows.forEach(r => { dataByAg[r.agentGroup] = { calls:r.calls, calls2min:r.calls2min, ventas:r.ventas }; });
+    let totCalls=0, totC2=0, totVt=0;
+    rows.forEach(r => { totCalls+=sum(r.calls); totC2+=sum(r.calls2min); totVt+=sum(r.ventas); });
+    const agentGroups = AG_ORDER.filter(ag => dataByAg[ag]); // orden consistente
+    return {
+      name, dataByAg, agentGroups,
+      calls: totCalls, calls2min: totC2, ventas: totVt,
+      rateContacto: totCalls? 100*totC2/totCalls : 0,
+      rateCierre: totC2? 100*totVt/totC2 : 0,
+    };
+  });
+}
+function renderCampDetailBlock(entry){
+  const multi = entry.agentGroups.length > 1;
+  const badges = entry.agentGroups.map(ag => `<span class="ag-tag"><span class="sw" style="background:${AGENT_COLORS[ag]}"></span>${ag}</span>`).join('');
+  const volId = 'campvol-'+entry._idx, contId = 'campcont-'+entry._idx, cierId = 'campcier-'+entry._idx;
+  return `<div class="camp-detail">
+    <div class="camp-detail-note"><strong>Pertenece a ${entry.agentGroups.length} grupo(s) de agentes:</strong></div>
+    <div class="camp-ag-badges" style="margin-bottom:10px;">${badges}</div>
+    <h5>Volumen mensual</h5>
+    <div class="table-scroll"><table><thead><tr><th>Grupo de agentes</th><th class="num">Ene</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Abr</th><th class="num">May</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">Sep*</th><th class="num">Total</th></tr></thead><tbody id="${volId}"></tbody></table></div>
+    <h5>Tasa de contacto mensual</h5>
+    <div class="table-scroll"><table><thead><tr><th>Grupo de agentes</th><th class="num">Ene</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Abr</th><th class="num">May</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">Sep*</th></tr></thead><tbody id="${contId}"></tbody></table></div>
+    <h5>Tasa de cierre mensual</h5>
+    <div class="table-scroll"><table><thead><tr><th>Grupo de agentes</th><th class="num">Ene</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Abr</th><th class="num">May</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">Sep*</th></tr></thead><tbody id="${cierId}"></tbody></table></div>
+    ${!multi? '<div class="alert-empty">Esta campaña solo tiene datos en un grupo de agentes en el filtro actual.</div>':''}
+  </div>`;
+}
+function renderCampAccordion(){
+  const tbody = document.getElementById('campAccordionBody');
+  if (!tbody) return;
+  let rows = campaignAccordionData();
+  document.getElementById('campAccordionEmpty').style.display = rows.length ? 'none':'block';
+  rows.sort((a,b)=> (a[campSortKey]>b[campSortKey]?1:-1) * campSortDir);
+  rows.forEach((r,i)=> r._idx = i);
+  tbody.innerHTML = rows.map(r => {
+    const isOpen = expandedCampaigns.has(r.name);
+    const badgePreview = r.agentGroups.length<=2
+      ? r.agentGroups.map(ag=>`<span class="ag-tag"><span class="sw" style="background:${AGENT_COLORS[ag]}"></span>${ag}</span>`).join('')
+      : `<span class="ag-tag"><span class="sw" style="background:${AGENT_COLORS[r.agentGroups[0]]}"></span>${r.agentGroups[0]}</span><span class="na">+${r.agentGroups.length-1} más</span>`;
+    return `<tr class="camp-row${isOpen?' expanded':''}" data-camp="${r.name.replace(/"/g,'&quot;')}">
+        <td><span class="camp-toggle">▶</span></td>
+        <td class="nm" title="${r.name}">${r.name}</td>
+        <td><div class="camp-ag-badges">${badgePreview}</div></td>
+        <td class="num">${fmt(r.calls)}</td>
+        <td class="num">${fmt(r.calls2min)}</td>
+        <td class="num"><span class="rate-pill ${rateClass(r.rateContacto)}">${fmtPct(r.rateContacto)}</span></td>
+        <td class="num">${fmt(r.ventas)}</td>
+        <td class="num"><span class="rate-pill ${rateClass(r.rateCierre)}">${fmtPct(r.rateCierre)}</span></td>
+      </tr>
+      <tr class="camp-detail-row${isOpen?'':' collapsed'}" data-camp-detail="${r.name.replace(/"/g,'&quot;')}">
+        <td colspan="8">${isOpen ? renderCampDetailBlock(r) : ''}</td>
+      </tr>`;
+  }).join('');
+  // pinta las mini-tablas de las filas que están abiertas
+  rows.forEach(r => {
+    if (!expandedCampaigns.has(r.name)) return;
+    renderMonthlyVolTable('campvol-'+r._idx, r.dataByAg, r.agentGroups);
+    renderMonthlyRateTable('campcont-'+r._idx, r.dataByAg, r.agentGroups, 'calls2min', 'calls', 10);
+    renderMonthlyRateTable('campcier-'+r._idx, r.dataByAg, r.agentGroups, 'ventas', 'calls2min', 5);
+  });
+}
+document.getElementById('campAccordionBody').addEventListener('click', e => {
+  const row = e.target.closest('tr.camp-row');
+  if (!row) return;
+  const name = row.dataset.camp;
+  if (expandedCampaigns.has(name)) expandedCampaigns.delete(name); else expandedCampaigns.add(name);
+  renderCampAccordion();
+});
+(function(){
+  const accTable = document.getElementById('campAccordionBody').closest('table');
+  accTable.querySelectorAll('thead th[data-key]').forEach(th=>{
+    th.title = 'Clic para ordenar';
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if (campSortKey===key) campSortDir *= -1; else { campSortKey=key; campSortDir=-1; }
+      renderCampAccordion();
+      accTable.querySelectorAll('thead th[data-key]').forEach(t=>{
+        const isSorted = t.dataset.key===campSortKey;
+        t.classList.toggle('sorted', isSorted);
+        t.classList.toggle('sort-desc', isSorted && campSortDir===-1);
+        t.classList.toggle('sort-asc', isSorted && campSortDir===1);
       });
     });
   });
