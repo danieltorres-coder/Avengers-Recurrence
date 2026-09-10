@@ -232,6 +232,13 @@
   .copy-box textarea{width:100%;height:160px;font-family:ui-monospace,monospace;font-size:11px;padding:8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--page);color:var(--text-primary);}
 
   footer.foot{margin-top:28px;color:var(--text-muted);font-size:11.5px;line-height:1.6;border-top:1px solid var(--border);padding-top:14px;}
+
+  tr.month-divider td{background:var(--surface-raised);font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;padding:7px 10px;border-top:1px solid var(--border);}
+  .rank-badge{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;font-size:10.5px;font-weight:800;background:var(--surface-raised);color:var(--text-muted);}
+  .rank-badge.r1{background:var(--series-3-soft);color:var(--series-3);}
+  td.nm-camp{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  tr.top-rest-row td{color:var(--text-secondary);font-style:italic;border-top:1px dashed var(--border);}
+  tr.top-total-row td{font-weight:700;background:var(--surface-raised);border-bottom:2px solid var(--border-strong);}
 </style>
 
 <div class="wrap">
@@ -326,6 +333,17 @@
       </table>
     </div>
     <div class="idx-legend"><span>Peor</span><span class="bar"></span><span>Mejor</span><span style="margin-left:6px;">· la escala de color compara todos los grupos y meses juntos · "—" = menos de 5 contactos ese mes (dato insuficiente)</span></div>
+  </div>
+
+  <div class="panel">
+    <h2>Top campañas por tasa de cierre, mes a mes <small>las 5 campañas con mejor tasa de cierre cada mes (con volumen suficiente) — respeta el filtro de operación de arriba, con llamadas/contactos/ventas en número junto al %</small></h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th class="num">#</th><th>Campaña</th><th>Grupo de agentes</th><th class="num">Llamadas</th><th class="num">Contactos</th><th class="num">Ventas</th><th class="num">Tasa de cierre</th></tr></thead>
+        <tbody id="topCierreBody"></tbody>
+      </table>
+    </div>
+    <div class="idx-legend"><span style="margin-left:0;">· mínimo 10 contactos (+2min) ese mes para entrar al ranking (evita que una sola venta suerte infle el % de una campaña muy chica) · la fila "Resto de campañas" agrupa todo lo que no entró al Top y la fila "Total del mes" muestra qué % de las ventas pesa el Top frente al resto · Sep* es un mes parcial (~9 días)</span></div>
   </div>
   </div><!-- /tab-panel resumen -->
 
@@ -638,13 +656,15 @@ function svgEl(tag, attrs){
   for (const k in attrs) el.setAttribute(k, attrs[k]);
   return el;
 }
-function sparkline(values, color){
+function sparkline(values, color, highlightIdx){
   const W=100,H=26,pad=2;
   const max = Math.max(1,...values);
   const stepX = values.length>1 ? (W-pad*2)/(values.length-1) : 0;
   const pts = values.map((v,i)=>[pad+stepX*i, H-pad-(v/max)*(H-pad*2)]);
   const d = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
-  return `<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><path d="${d}" fill="none" stroke="${color||'var(--series-1)'}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${pts[SEPT_IDX][0]}" cy="${pts[SEPT_IDX][1]}" r="2.4" fill="${color||'var(--series-1)'}" opacity="0.55"/></svg>`;
+  const hi = (highlightIdx===undefined ? pts.length-1 : highlightIdx);
+  const dot = (hi>=0 && hi<pts.length) ? `<circle cx="${pts[hi][0]}" cy="${pts[hi][1]}" r="2.4" fill="${color||'var(--series-1)'}" opacity="0.55"/>` : '';
+  return `<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><path d="${d}" fill="none" stroke="${color||'var(--series-1)'}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>${dot}</svg>`;
 }
 function miniLine(values, color){
   const W=200,H=44,pad=3;
@@ -705,6 +725,8 @@ function rateClass(v){ return v>=15?'':(v>=5?'mid':'low'); }
 function renderTable(rows){
   const tbody = document.getElementById('tableBody');
   document.getElementById('emptyState').style.display = rows.length ? 'none':'block';
+  const monthIdx = state.months.length ? state.months : MONTHS.map((_,i)=>i);
+  const sparkHi = monthIdx.indexOf(SEPT_IDX);
   tbody.innerHTML = rows.map(r => {
     const color = AGENT_COLORS[r.agentGroup] || 'var(--text-muted)';
     return `<tr>
@@ -715,7 +737,7 @@ function renderTable(rows){
       <td class="num"><span class="rate-pill ${rateClass(r.rateContacto)}">${fmtPct(r.rateContacto)}</span></td>
       <td class="num">${fmt(r.ventas)}</td>
       <td class="num"><span class="rate-pill ${rateClass(r.rateCierre)}">${fmtPct(r.rateCierre)}</span></td>
-      <td>${sparkline(r.trend, color)}</td>
+      <td>${sparkline(r.trend, color, sparkHi)}</td>
     </tr>`;
   }).join('');
   document.querySelectorAll('#campaignTable thead th[data-key]').forEach(th=>{
@@ -743,6 +765,7 @@ function render(){
   renderAgGrid();
   renderIdxContacto();
   renderIdxCierre();
+  if (typeof renderTopCierreByMonth === 'function') renderTopCierreByMonth();
   renderAlerts();
   renderManual();
   renderInboundByOp();
@@ -867,6 +890,77 @@ function renderIdxContacto(){
 }
 function renderIdxCierre(){
   renderIdxTable('idxCierreBody', ag => AG_TOTALS[ag].calls2min, ag => AG_TOTALS[ag].ventas, 5, 1);
+}
+
+// ---------- Top campañas por tasa de cierre, mes a mes ----------
+// Respeta el filtro de operación (visibleAgs), el filtro de meses (state.months) y la
+// búsqueda (state.search) — igual que el resto del dashboard. Muestra el Top 5 de cada
+// mes con % de cierre Y el volumen real (llamadas/contactos/ventas) detrás del %.
+function renderTopCierreByMonth(){
+  const tbody = document.getElementById('topCierreBody');
+  if (!tbody) return;
+  const ags = visibleAgs();
+  const MIN_C2 = 10;
+  const TOPN = 5;
+  const monthIdx = state.months.length ? state.months : MONTHS.map((_,i)=>i);
+  const camps = WFM_DATA.campaigns.filter(c => ags.includes(c.agentGroup) && (!state.search || c.name.toLowerCase().includes(state.search)));
+
+  let html = '';
+  monthIdx.forEach(i => {
+    const all = camps.map(c => ({
+      name: c.name, agentGroup: c.agentGroup,
+      calls: c.calls[i], c2: c.calls2min[i], vt: c.ventas[i],
+      cierre: c.calls2min[i] ? 100*c.ventas[i]/c.calls2min[i] : null,
+    }));
+    const top = all
+      .filter(r => r.c2 >= MIN_C2)
+      .sort((a,b) => b.cierre - a.cierre)
+      .slice(0, TOPN);
+    const topKeys = new Set(top.map(r => r.name+'|'+r.agentGroup));
+    const rest = all.filter(r => !topKeys.has(r.name+'|'+r.agentGroup));
+    const restActive = rest.filter(r => r.c2 > 0).length;
+
+    html += `<tr class="month-divider"><td colspan="7">${MONTHS_ES[i]}${i===SEPT_IDX ? ' · parcial (~9 días)' : ''}</td></tr>`;
+    if (!top.length){
+      html += `<tr><td colspan="7" class="alert-empty">Sin campañas con volumen suficiente (mín. ${MIN_C2} contactos) este mes.</td></tr>`;
+    } else {
+      html += top.map((r,idx) => `<tr>
+        <td class="num"><span class="rank-badge${idx===0?' r1':''}">${idx+1}</span></td>
+        <td class="nm-camp" title="${r.name}">${r.name}</td>
+        <td><span class="ag-tag"><span class="sw" style="background:${AGENT_COLORS[r.agentGroup]||'var(--text-muted)'}"></span>${r.agentGroup}</span></td>
+        <td class="num">${fmt(r.calls)}</td>
+        <td class="num">${fmt(r.c2)}</td>
+        <td class="num">${fmt(r.vt)}</td>
+        <td class="num"><span class="rate-pill ${rateClass(r.cierre)}">${fmtPct(r.cierre)}</span></td>
+      </tr>`).join('');
+
+      // ---- resumen: Top 5 vs. el resto de campañas, para ver cuánto pesa cada bloque ----
+      const topCalls = sum(top.map(r=>r.calls)), topC2 = sum(top.map(r=>r.c2)), topVt = sum(top.map(r=>r.vt));
+      const restCalls = sum(rest.map(r=>r.calls)), restC2 = sum(rest.map(r=>r.c2)), restVt = sum(rest.map(r=>r.vt));
+      const totCalls = topCalls+restCalls, totC2 = topC2+restC2, totVt = topVt+restVt;
+      const restCierre = restC2 ? 100*restVt/restC2 : null;
+      const totCierre = totC2 ? 100*totVt/totC2 : null;
+      const topSharePct = totVt ? 100*topVt/totVt : null;
+
+      html += `<tr class="top-rest-row">
+        <td></td>
+        <td colspan="2" class="nm-camp">Resto de campañas (${restActive})</td>
+        <td class="num">${fmt(restCalls)}</td>
+        <td class="num">${fmt(restC2)}</td>
+        <td class="num">${fmt(restVt)}</td>
+        <td class="num">${restCierre===null?'<span class="na">—</span>':`<span class="rate-pill ${rateClass(restCierre)}">${fmtPct(restCierre)}</span>`}</td>
+      </tr>
+      <tr class="top-total-row">
+        <td></td>
+        <td colspan="2">Total del mes${topSharePct!==null?` <span class="na">· el Top ${top.length} pesa ${fmtPct(topSharePct)} de las ventas del mes</span>`:''}</td>
+        <td class="num">${fmt(totCalls)}</td>
+        <td class="num">${fmt(totC2)}</td>
+        <td class="num">${fmt(totVt)}</td>
+        <td class="num">${totCierre===null?'<span class="na">—</span>':`<span class="rate-pill ${rateClass(totCierre)}">${fmtPct(totCierre)}</span>`}</td>
+      </tr>`;
+    }
+  });
+  tbody.innerHTML = html;
 }
 
 // ---------- Alertas ----------
