@@ -187,6 +187,14 @@
   .delta-pill.down{background:rgba(216,67,67,0.13);color:var(--bad);}
   .delta-pill.up{background:var(--series-3-soft);color:var(--series-3);}
   .delta-pill.flat{background:var(--surface);color:var(--text-muted);border:1px solid var(--border);}
+  td.trk-flag-down{background:rgba(216,67,67,0.13);color:var(--bad);font-weight:700;}
+  td.trk-flag-up{background:var(--series-3-soft);color:var(--series-3);font-weight:700;}
+  .trk-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:16px;}
+  .trk-summary-card{background:var(--surface-raised);border:1px solid var(--border);border-radius:12px;padding:13px 15px;}
+  .trk-summary-card h4{margin:0 0 8px;font-size:12.5px;font-weight:700;}
+  .trk-summary-line{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:6px;}
+  .trk-summary-line:last-child{margin-bottom:0;}
+  .trk-summary-line b{color:var(--text-primary);}
   .na{color:var(--text-muted);font-size:11px;}
 
   .heat{border-radius:4px;font-weight:600;}
@@ -297,6 +305,7 @@
     <button class="tab-btn" data-tab="validar">🔍 Validar cambios</button>
     <button class="tab-btn" data-tab="simulador">🧪 Simulador <span class="mes-actual">Septiembre</span></button>
     <button class="tab-btn" data-tab="detalle">📋 Segmentos y detalle</button>
+    <button class="tab-btn" data-tab="tracker">🗂️ 092026 - Tracker:MKTSales</button>
   </div>
 
   <div class="tab-panel" data-tab="resumen">
@@ -553,6 +562,17 @@
     <div class="empty-state" id="emptyState" style="display:none;">No hay campañas que coincidan con los filtros actuales.</div>
   </div>
   </div><!-- /tab-panel detalle -->
+
+  <div class="tab-panel" data-tab="tracker">
+  <div class="banner" id="trackerBanner">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
+    <div><strong>Pestaña 092026 - Tracker:MKTSales.</strong> Vista a nivel general por operación (Upsell, Recurrence, Bootcamp LTV, Resurrection) para analizar caídas y tendencias. El desglose diario aplica solo al mes que se está calculando (el más reciente cargado); los meses anteriores se muestran en acumulado mensual. Se actualiza a mano igual que el resto del dashboard: cuando cargues la pestaña del siguiente mes, súbela como <code>data/tracker_YYYY-MM.json</code> y agrégala a <code>data/tracker_manifest.json</code> — el instructivo va en <code>data/README_TRACKER.md</code>.</div>
+  </div>
+  <div id="trackerLoadState" class="load-state">Cargando 092026 - Tracker:MKTSales…</div>
+  <div class="pill-row" id="trackerOpFilter" style="margin-bottom:14px;"></div>
+  <div id="trackerSummary"></div>
+  <div id="trackerContent"></div>
+  </div><!-- /tab-panel tracker -->
 
   <footer class="foot">
     Fuente: Google Sheet "Post-Sales-Operations Calls" (hojas Year Calls, Year Calls 2 min, Year Ventas Cerradas), leído el <span id="exportDate"></span>. Este dashboard todavía se actualiza a mano — no hay automatización corriendo — así que esa fecha es la de la última vez que alguien volvió a leer el Sheet y republicó este archivo, no la fecha de hoy. Herramienta de llamadas: Five9. "Grupo de agentes" = columna AGENT GROUP del archivo (el pool de agentes asignado a la campaña, no el nombre de la campaña en sí). Septiembre es un mes parcial. Panel autocontenido.
@@ -1881,6 +1901,173 @@ async function cargarYArrancar() {
 }
 
 cargarYArrancar();
+
+// ================================================================
+//  092026 - Tracker:MKTSales — pestaña independiente, autocontenida
+//  No depende del Web App (WFM_ENDPOINT); lee sus propios JSON en
+//  data/tracker_manifest.json + data/tracker_YYYY-MM.json.
+//  Si falla, no rompe el resto del dashboard (try/catch propio).
+// ================================================================
+let TRACKER_DATA = null;
+const TRACKER_MONTHS_LARGO = {'2026-01':'Enero','2026-02':'Febrero','2026-03':'Marzo','2026-04':'Abril',
+  '2026-05':'Mayo','2026-06':'Junio','2026-07':'Julio','2026-08':'Agosto','2026-09':'Septiembre',
+  '2026-10':'Octubre','2026-11':'Noviembre','2026-12':'Diciembre'};
+
+function trkFmtUsd(n){ return n===null||n===undefined ? '—' : '$'+Math.round(n).toLocaleString('es-CO'); }
+function trkFmtNum(n){ return n===null||n===undefined ? '—' : Math.round(n).toLocaleString('es-CO'); }
+function trkFmtPct(n){ return n===null||n===undefined ? '—' : (Math.round(n*1000)/10).toLocaleString('es-CO')+'%'; }
+function trkFmtVal(kpi, v){ return kpi.unit==='pct' ? trkFmtPct(v) : (kpi.unit==='usd' ? trkFmtUsd(v) : trkFmtNum(v)); }
+function trkFmtDelta(v){
+  if (v===null||v===undefined) return '<span class="delta-pill flat">—</span>';
+  const pct = v*100, cls = pct>=0 ? 'up':'down', arrow = pct>=0 ? '▲':'▼';
+  return `<span class="delta-pill ${cls}">${arrow} ${pct>=0?'+':''}${pct.toFixed(1)}%</span>`;
+}
+
+// Umbral para marcar un día como "desviado" (mismo criterio usado en el análisis
+// 14-17 sep: >=15% de desviación vs. la referencia propia del KPI).
+const TRK_FLAG_THRESHOLD = 0.15;
+function trkDayRef(kpi){
+  return kpi.kind==='volume' ? (kpi.referencia14_17 || 0)/4 : kpi.referencia;
+}
+function trkDayDev(kpi, dayVal){
+  const ref = trkDayRef(kpi);
+  if (dayVal===null || dayVal===undefined || !ref) return null;
+  return (dayVal/ref) - 1;
+}
+
+const TRK_OP_ORDER = ['upsell','recurrence','bootcamp_ltv','resurrection'];
+let trkOpFilter = 'all';
+
+function trkOpLabel(D, key){ return (D.operations[key]||{}).label || key; }
+
+function renderTrackerOpFilter(D){
+  const el = document.getElementById('trackerOpFilter');
+  if (!el) return;
+  const opts = [{key:'all', label:'Todas las operaciones'}].concat(TRK_OP_ORDER.filter(k=>D.operations[k]).map(k=>({key:k, label:D.operations[k].label})));
+  el.innerHTML = opts.map(o => `<button class="pill${o.key===trkOpFilter?' active':''}" data-op="${o.key}">${o.label}</button>`).join('');
+  el.querySelectorAll('.pill').forEach(b => b.addEventListener('click', () => { trkOpFilter = b.dataset.op; renderTracker(); }));
+}
+
+// Resumen ejecutivo por operación: el KPI más afectado (mayor desviación negativa,
+// "meter lupa") y el que mejor amortigua (mayor desviación positiva) del período
+// cargado — mismo criterio de "mayor desviación % vs. referencia propia" que usamos
+// en el análisis del 14-17 sep, aplicado automáticamente a cualquier mes que se cargue.
+function trkComputeStandouts(op, dayKeys){
+  let worst = null, best = null;
+  op.kpis.forEach(kpi => {
+    dayKeys.forEach(dk => {
+      const dev = trkDayDev(kpi, kpi.days[dk]);
+      if (dev===null) return;
+      if (!worst || dev < worst.dev) worst = {kpi, dev, day:dk};
+      if (!best || dev > best.dev) best = {kpi, dev, day:dk};
+    });
+  });
+  return {worst, best};
+}
+function trkFmtDay(dk, D){
+  return dk.slice(8,10)+' '+(TRACKER_MONTHS_LARGO[D.month]||'').slice(0,3).toLowerCase();
+}
+function renderTrackerSummary(D, dayKeys){
+  const el = document.getElementById('trackerSummary');
+  if (!el) return;
+  const ops = TRK_OP_ORDER.filter(k => D.operations[k] && (trkOpFilter==='all' || trkOpFilter===k));
+  const cards = ops.map(opKey => {
+    const op = D.operations[opKey];
+    const {worst, best} = trkComputeStandouts(op, dayKeys);
+    const worstLine = worst
+      ? `<div class="trk-summary-line">🔎 <span><b>A vigilar:</b> ${worst.kpi.label} — ${trkFmtDay(worst.day,D)} (<span class="delta-pill down" style="padding:1px 6px;">${(worst.dev*100).toFixed(1)}%</span> vs. referencia)</span></div>`
+      : '';
+    const bestLine = best && best.dev > 0
+      ? `<div class="trk-summary-line">🟢 <span><b>Amortiguador:</b> ${best.kpi.label} — ${trkFmtDay(best.day,D)} (<span class="delta-pill up" style="padding:1px 6px;">+${(best.dev*100).toFixed(1)}%</span> vs. referencia)</span></div>`
+      : '';
+    return `<div class="trk-summary-card"><h4>${op.label}</h4>${worstLine}${bestLine}</div>`;
+  }).join('');
+  el.innerHTML = `<div class="trk-summary-grid">${cards}</div>`;
+}
+
+async function loadTrackerData(){
+  try{
+    const manResp = await fetch('./data/tracker_manifest.json');
+    if (!manResp.ok) throw new Error('No se encontró data/tracker_manifest.json');
+    const manifest = await manResp.json();
+    const months = manifest.months || [];
+    if (!months.length) throw new Error('El manifest no tiene meses cargados');
+    const currentMonth = months[months.length-1]; // el último cargado = el mes en curso (parcial)
+    const dataResp = await fetch(`./data/tracker_${currentMonth}.json`);
+    if (!dataResp.ok) throw new Error(`No se encontró data/tracker_${currentMonth}.json`);
+    TRACKER_DATA = await dataResp.json();
+    TRACKER_DATA._allMonths = months;
+    document.getElementById('trackerLoadState').hidden = true;
+    renderTracker();
+  } catch(err){
+    const el = document.getElementById('trackerLoadState');
+    if (el){ el.textContent = 'No se pudo cargar 092026 - Tracker:MKTSales: ' + err.message; el.className = 'load-state load-error'; el.hidden = false; }
+    console.error('[tracker]', err);
+  }
+}
+
+function trkKpiRow(kpi, dayKeys){
+  const isVol = kpi.kind === 'volume';
+  const dayCells = dayKeys.map(dk => {
+    const v = kpi.days[dk];
+    const dev = trkDayDev(kpi, v);
+    let cls = 'num';
+    if (dev!==null && Math.abs(dev) >= TRK_FLAG_THRESHOLD) cls += dev < 0 ? ' trk-flag-down' : ' trk-flag-up';
+    return `<td class="${cls}" title="${dev===null?'':'vs. referencia: '+(dev*100).toFixed(1)+'%'}">${trkFmtVal(kpi, v)}</td>`;
+  }).join('');
+  const acumulado = isVol ? kpi.acumulado14_17 : kpi.promedio14_17;
+  const referencia = isVol ? kpi.referencia14_17 : kpi.referencia;
+  return `<tr>
+    <td>${kpi.label}</td>
+    ${dayCells}
+    <td class="num"><strong>${trkFmtVal(kpi, acumulado)}</strong></td>
+    <td class="num">${trkFmtVal(kpi, referencia)}</td>
+    <td class="num">${kpi.plan===null||kpi.plan===undefined ? '—' : trkFmtVal(kpi, kpi.plan)}</td>
+    <td class="num">${kpi.proyeccion===null||kpi.proyeccion===undefined ? '—' : trkFmtVal(kpi, kpi.proyeccion)}</td>
+    <td class="num">${trkFmtDelta(kpi.diferencia)}</td>
+  </tr>`;
+}
+
+function trkTrendRow(kpi){
+  const m = kpi.monthly || {};
+  const cells = ['2026-06','2026-07','2026-08'].map(mo => `<td class="num">${trkFmtVal(kpi, m[mo])}</td>`).join('');
+  const mtdLabel = kpi.kind==='volume' ? kpi.mtd : kpi.mtd;
+  return `<tr><td>${kpi.label}</td>${cells}<td class="num"><strong>${trkFmtVal(kpi, mtdLabel)}</strong></td></tr>`;
+}
+
+function renderTracker(){
+  if (!TRACKER_DATA) return;
+  const D = TRACKER_DATA;
+  const dayKeys = D.daysLoaded || [];
+  const dayHeaders = dayKeys.map(dk => `<th class="num">${dk.slice(8,10)} ${TRACKER_MONTHS_LARGO[D.month].slice(0,3).toLowerCase()}</th>`).join('');
+
+  renderTrackerOpFilter(D);
+  renderTrackerSummary(D, dayKeys);
+
+  let html = `<div class="panel"><h2>${TRACKER_MONTHS_LARGO[D.month]||D.month} ${D.partial?'<small>mes en curso — parcial</small>':''}</h2>
+    <div style="font-size:13px;color:var(--text-muted);">Fuente: pestaña <strong>${D.sourceTab}</strong> del Google Sheet "Post-Sales-Operations Calls". ${D.note||''} Las celdas resaltadas marcan un día con desviación de ${(TRK_FLAG_THRESHOLD*100).toFixed(0)}% o más contra la referencia propia de ese KPI — mismo criterio del análisis 14-17 sep.</div></div>`;
+
+  TRK_OP_ORDER.filter(k => trkOpFilter==='all' || trkOpFilter===k).forEach(opKey => {
+    const op = D.operations[opKey];
+    if (!op) return;
+    html += `<div class="panel">
+      <h2>${op.label} <small>detalle ${TRACKER_MONTHS_LARGO[D.month]||D.month} + acumulado vs. referencia/plan</small></h2>
+      <div class="table-scroll"><table>
+        <thead><tr><th>KPI</th>${dayHeaders}<th class="num">Acumulado</th><th class="num">Referencia</th><th class="num">PLAN</th><th class="num">PROYECCIÓN</th><th class="num">Diferencia</th></tr></thead>
+        <tbody>${op.kpis.map(k => trkKpiRow(k, dayKeys)).join('')}</tbody>
+      </table></div>
+      <h2 style="margin-top:18px;">${op.label} <small>tendencia mensual (acumulado por mes) — para ver caídas/subidas</small></h2>
+      <div class="table-scroll"><table>
+        <thead><tr><th>KPI</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">${TRACKER_MONTHS_LARGO[D.month]?TRACKER_MONTHS_LARGO[D.month].slice(0,3):D.month} (MTD)</th></tr></thead>
+        <tbody>${op.kpis.map(trkTrendRow).join('')}</tbody>
+      </table></div>
+    </div>`;
+  });
+
+  document.getElementById('trackerContent').innerHTML = html;
+}
+
+loadTrackerData();
 
 </script>
 
