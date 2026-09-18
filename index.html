@@ -566,7 +566,7 @@
   <div class="tab-panel" data-tab="tracker">
   <div class="banner" id="trackerBanner">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
-    <div><strong>Pestaña 092026 - Tracker:MKTSales.</strong> Vista a nivel general por operación (Upsell, Recurrence, Bootcamp LTV, Resurrection) para analizar caídas y tendencias. El desglose diario aplica solo al mes que se está calculando (el más reciente cargado); los meses anteriores se muestran en acumulado mensual. Se actualiza a mano igual que el resto del dashboard: cuando cargues la pestaña del siguiente mes, súbela como <code>data/tracker_YYYY-MM.json</code> y agrégala a <code>data/tracker_manifest.json</code> — el instructivo va en <code>data/README_TRACKER.md</code>.</div>
+    <div><strong>Pestaña 092026 - Tracker:MKTSales.</strong> Vista a nivel general por operación (Upsell, Recurrence, Bootcamp LTV, Resurrection) para analizar caídas y tendencias. El desglose por semana (1ra a 5ta semana del mes) aplica solo al mes que se está calculando (el más reciente cargado); los meses anteriores se muestran en acumulado mensual. PLAN, PROYECCIÓN y DIFERENCIA vienen calculados directamente de esa pestaña del Sheet. Se actualiza a mano igual que el resto del dashboard: cuando cargues la pestaña del siguiente mes, súbela como <code>data/tracker_YYYY-MM.json</code> y agrégala a <code>data/tracker_manifest.json</code> — el instructivo va en <code>data/README_TRACKER.md</code>.</div>
   </div>
   <div id="trackerLoadState" class="load-state">Cargando 092026 - Tracker:MKTSales…</div>
   <div class="pill-row" id="trackerOpFilter" style="margin-bottom:14px;"></div>
@@ -1923,16 +1923,25 @@ function trkFmtDelta(v){
   return `<span class="delta-pill ${cls}">${arrow} ${pct>=0?'+':''}${pct.toFixed(1)}%</span>`;
 }
 
-// Umbral para marcar un día como "desviado" (mismo criterio usado en el análisis
-// 14-17 sep: >=15% de desviación vs. la referencia propia del KPI).
+// Umbral para marcar una semana como "desviada" (mismo criterio usado en el análisis
+// original: >=15% de desviación vs. la referencia propia del KPI).
 const TRK_FLAG_THRESHOLD = 0.15;
-function trkDayRef(kpi){
-  return kpi.kind==='volume' ? (kpi.referencia14_17 || 0)/4 : kpi.referencia;
+// Referencia por semana: solo los KPIs que se ACUMULAN mes a mes (Revenue, Volumen)
+// prorratean el PLAN mensual por los días de esa semana ya transcurridos (comparación
+// justa en semanas parciales). Los promedios (ASP) y las tasas (%) no se prorratean —
+// se comparan directo contra el PLAN, igual que una tasa.
+function trkWeekRef(D, kpi, weekIdx){
+  if (kpi.plan===null || kpi.plan===undefined) return null;
+  if (!kpi.cumulative) return kpi.plan;
+  const elapsed = (D.weekDaysElapsed||[])[weekIdx] || 0;
+  if (!elapsed) return null;
+  return kpi.plan * (elapsed / (D.daysInMonth||30));
 }
-function trkDayDev(kpi, dayVal){
-  const ref = trkDayRef(kpi);
-  if (dayVal===null || dayVal===undefined || !ref) return null;
-  return (dayVal/ref) - 1;
+function trkWeekDev(D, kpi, weekIdx){
+  const v = kpi.weeks[weekIdx];
+  const ref = trkWeekRef(D, kpi, weekIdx);
+  if (v===null || v===undefined || !ref) return null;
+  return (v/ref) - 1;
 }
 
 const TRK_OP_ORDER = ['upsell','recurrence','bootcamp_ltv','resurrection'];
@@ -1949,36 +1958,34 @@ function renderTrackerOpFilter(D){
 }
 
 // Resumen ejecutivo por operación: el KPI más afectado (mayor desviación negativa,
-// "meter lupa") y el que mejor amortigua (mayor desviación positiva) del período
-// cargado — mismo criterio de "mayor desviación % vs. referencia propia" que usamos
-// en el análisis del 14-17 sep, aplicado automáticamente a cualquier mes que se cargue.
-function trkComputeStandouts(op, dayKeys){
+// "meter lupa") y el que mejor amortigua (mayor desviación positiva) entre las semanas
+// que ya arrancaron — mismo criterio de "mayor desviación % vs. referencia propia",
+// aplicado automáticamente a cualquier mes que se cargue.
+function trkComputeStandouts(D, op){
   let worst = null, best = null;
   op.kpis.forEach(kpi => {
-    dayKeys.forEach(dk => {
-      const dev = trkDayDev(kpi, kpi.days[dk]);
+    (D.weekLabels||[]).forEach((wl, i) => {
+      if (!(D.weekDaysElapsed||[])[i]) return; // semana sin arrancar, no se evalúa
+      const dev = trkWeekDev(D, kpi, i);
       if (dev===null) return;
-      if (!worst || dev < worst.dev) worst = {kpi, dev, day:dk};
-      if (!best || dev > best.dev) best = {kpi, dev, day:dk};
+      if (!worst || dev < worst.dev) worst = {kpi, dev, week:wl};
+      if (!best || dev > best.dev) best = {kpi, dev, week:wl};
     });
   });
   return {worst, best};
 }
-function trkFmtDay(dk, D){
-  return dk.slice(8,10)+' '+(TRACKER_MONTHS_LARGO[D.month]||'').slice(0,3).toLowerCase();
-}
-function renderTrackerSummary(D, dayKeys){
+function renderTrackerSummary(D){
   const el = document.getElementById('trackerSummary');
   if (!el) return;
   const ops = TRK_OP_ORDER.filter(k => D.operations[k] && (trkOpFilter==='all' || trkOpFilter===k));
   const cards = ops.map(opKey => {
     const op = D.operations[opKey];
-    const {worst, best} = trkComputeStandouts(op, dayKeys);
+    const {worst, best} = trkComputeStandouts(D, op);
     const worstLine = worst
-      ? `<div class="trk-summary-line">🔎 <span><b>A vigilar:</b> ${worst.kpi.label} — ${trkFmtDay(worst.day,D)} (<span class="delta-pill down" style="padding:1px 6px;">${(worst.dev*100).toFixed(1)}%</span> vs. referencia)</span></div>`
+      ? `<div class="trk-summary-line">🔎 <span><b>A vigilar:</b> ${worst.kpi.label} — semana del ${worst.week} (<span class="delta-pill down" style="padding:1px 6px;">${(worst.dev*100).toFixed(1)}%</span> vs. referencia)</span></div>`
       : '';
     const bestLine = best && best.dev > 0
-      ? `<div class="trk-summary-line">🟢 <span><b>Amortiguador:</b> ${best.kpi.label} — ${trkFmtDay(best.day,D)} (<span class="delta-pill up" style="padding:1px 6px;">+${(best.dev*100).toFixed(1)}%</span> vs. referencia)</span></div>`
+      ? `<div class="trk-summary-line">🟢 <span><b>Amortiguador:</b> ${best.kpi.label} — semana del ${best.week} (<span class="delta-pill up" style="padding:1px 6px;">+${(best.dev*100).toFixed(1)}%</span> vs. referencia)</span></div>`
       : '';
     return `<div class="trk-summary-card"><h4>${op.label}</h4>${worstLine}${bestLine}</div>`;
   }).join('');
@@ -2006,60 +2013,62 @@ async function loadTrackerData(){
   }
 }
 
-function trkKpiRow(kpi, dayKeys){
-  const isVol = kpi.kind === 'volume';
-  const dayCells = dayKeys.map(dk => {
-    const v = kpi.days[dk];
-    const dev = trkDayDev(kpi, v);
+function trkKpiRow(D, kpi){
+  const weekCells = (D.weekLabels||[]).map((wl, i) => {
+    const elapsed = (D.weekDaysElapsed||[])[i] || 0;
+    const v = kpi.weeks[i];
+    if (!elapsed) return `<td class="num" title="Semana aún no inicia">—</td>`;
+    const dev = trkWeekDev(D, kpi, i);
     let cls = 'num';
     if (dev!==null && Math.abs(dev) >= TRK_FLAG_THRESHOLD) cls += dev < 0 ? ' trk-flag-down' : ' trk-flag-up';
-    return `<td class="${cls}" title="${dev===null?'':'vs. referencia: '+(dev*100).toFixed(1)+'%'}">${trkFmtVal(kpi, v)}</td>`;
+    const partial = elapsed < (D.weekDaysTotal||[])[i] ? ' (parcial)' : '';
+    return `<td class="${cls}" title="${dev===null?'':'vs. referencia'+partial+': '+(dev*100).toFixed(1)+'%'}">${trkFmtVal(kpi, v)}</td>`;
   }).join('');
-  const acumulado = isVol ? kpi.acumulado14_17 : kpi.promedio14_17;
-  const referencia = isVol ? kpi.referencia14_17 : kpi.referencia;
   return `<tr>
     <td>${kpi.label}</td>
-    ${dayCells}
-    <td class="num"><strong>${trkFmtVal(kpi, acumulado)}</strong></td>
-    <td class="num">${trkFmtVal(kpi, referencia)}</td>
+    ${weekCells}
+    <td class="num"><strong>${trkFmtVal(kpi, kpi.mtd)}</strong></td>
     <td class="num">${kpi.plan===null||kpi.plan===undefined ? '—' : trkFmtVal(kpi, kpi.plan)}</td>
     <td class="num">${kpi.proyeccion===null||kpi.proyeccion===undefined ? '—' : trkFmtVal(kpi, kpi.proyeccion)}</td>
     <td class="num">${trkFmtDelta(kpi.diferencia)}</td>
   </tr>`;
 }
 
-function trkTrendRow(kpi){
+function trkTrendRow(D, kpi){
   const m = kpi.monthly || {};
-  const cells = ['2026-06','2026-07','2026-08'].map(mo => `<td class="num">${trkFmtVal(kpi, m[mo])}</td>`).join('');
-  const mtdLabel = kpi.kind==='volume' ? kpi.mtd : kpi.mtd;
-  return `<tr><td>${kpi.label}</td>${cells}<td class="num"><strong>${trkFmtVal(kpi, mtdLabel)}</strong></td></tr>`;
+  const cells = ['2025-09','2026-06','2026-07','2026-08'].map(mo => `<td class="num">${trkFmtVal(kpi, m[mo])}</td>`).join('');
+  return `<tr><td>${kpi.label}</td>${cells}<td class="num"><strong>${trkFmtVal(kpi, kpi.mtd)}</strong></td></tr>`;
 }
 
 function renderTracker(){
   if (!TRACKER_DATA) return;
   const D = TRACKER_DATA;
-  const dayKeys = D.daysLoaded || [];
-  const dayHeaders = dayKeys.map(dk => `<th class="num">${dk.slice(8,10)} ${TRACKER_MONTHS_LARGO[D.month].slice(0,3).toLowerCase()}</th>`).join('');
+  const weekHeaders = (D.weekLabels||[]).map((wl,i) => {
+    const elapsed = (D.weekDaysElapsed||[])[i] || 0;
+    const total = (D.weekDaysTotal||[])[i] || 7;
+    const tag = elapsed===0 ? ' — sin iniciar' : (elapsed<total ? ' — parcial' : '');
+    return `<th class="num">${wl}${tag}</th>`;
+  }).join('');
 
   renderTrackerOpFilter(D);
-  renderTrackerSummary(D, dayKeys);
+  renderTrackerSummary(D);
 
-  let html = `<div class="panel"><h2>${TRACKER_MONTHS_LARGO[D.month]||D.month} ${D.partial?'<small>mes en curso — parcial</small>':''}</h2>
-    <div style="font-size:13px;color:var(--text-muted);">Fuente: pestaña <strong>${D.sourceTab}</strong> del Google Sheet "Post-Sales-Operations Calls". ${D.note||''} Las celdas resaltadas marcan un día con desviación de ${(TRK_FLAG_THRESHOLD*100).toFixed(0)}% o más contra la referencia propia de ese KPI — mismo criterio del análisis 14-17 sep.</div></div>`;
+  let html = `<div class="panel"><h2>${D.monthLabel||TRACKER_MONTHS_LARGO[D.month]||D.month} ${D.partial?'<small>mes en curso — parcial, '+(D.daysElapsed||'?')+' de '+(D.daysInMonth||'?')+' días</small>':''}</h2>
+    <div style="font-size:13px;color:var(--text-muted);">Fuente: pestaña <strong>${D.sourceTab}</strong> del Google Sheet "Post-Sales-Operations Calls" (datos y PLAN/PROYECCIÓN/DIFERENCIA tal como están calculados ahí — no estimados). ${D.note||''} Las celdas resaltadas marcan una semana con desviación de ${(TRK_FLAG_THRESHOLD*100).toFixed(0)}% o más contra la referencia propia de ese KPI. Las semanas que aún no arrancan se muestran en blanco.</div></div>`;
 
   TRK_OP_ORDER.filter(k => trkOpFilter==='all' || trkOpFilter===k).forEach(opKey => {
     const op = D.operations[opKey];
     if (!op) return;
     html += `<div class="panel">
-      <h2>${op.label} <small>detalle ${TRACKER_MONTHS_LARGO[D.month]||D.month} + acumulado vs. referencia/plan</small></h2>
+      <h2>${op.label} <small>detalle por semana ${D.monthLabel||D.month} + acumulado vs. PLAN</small></h2>
       <div class="table-scroll"><table>
-        <thead><tr><th>KPI</th>${dayHeaders}<th class="num">Acumulado</th><th class="num">Referencia</th><th class="num">PLAN</th><th class="num">PROYECCIÓN</th><th class="num">Diferencia</th></tr></thead>
-        <tbody>${op.kpis.map(k => trkKpiRow(k, dayKeys)).join('')}</tbody>
+        <thead><tr><th>KPI</th>${weekHeaders}<th class="num">Acumulado (MTD)</th><th class="num">PLAN</th><th class="num">PROYECCIÓN</th><th class="num">Diferencia</th></tr></thead>
+        <tbody>${op.kpis.map(k => trkKpiRow(D, k)).join('')}</tbody>
       </table></div>
       <h2 style="margin-top:18px;">${op.label} <small>tendencia mensual (acumulado por mes) — para ver caídas/subidas</small></h2>
       <div class="table-scroll"><table>
-        <thead><tr><th>KPI</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">${TRACKER_MONTHS_LARGO[D.month]?TRACKER_MONTHS_LARGO[D.month].slice(0,3):D.month} (MTD)</th></tr></thead>
-        <tbody>${op.kpis.map(trkTrendRow).join('')}</tbody>
+        <thead><tr><th>KPI</th><th class="num">Sep 2025</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">${D.monthLabel?D.monthLabel.slice(0,3):D.month} (MTD)</th></tr></thead>
+        <tbody>${op.kpis.map(k => trkTrendRow(D, k)).join('')}</tbody>
       </table></div>
     </div>`;
   });
