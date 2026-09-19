@@ -148,6 +148,7 @@ input[type=number]:focus{border-color:var(--ind)}
     <div style="display:flex;gap:3px">
       <button class="vt active" onclick="setView('agent',this)">Agente</button>
       <button class="vt" onclick="setView('supervisor',this)">Supervisor</button>
+      <button class="vt" onclick="setView('team',this)">Equipo completo</button>
     </div>
   </div>
   <div class="cg2" id="grp-ag"><span class="cl">Asesor</span><select id="sel-ag" onchange="update()"></select></div>
@@ -197,7 +198,7 @@ input[type=number]:focus{border-color:var(--ind)}
   <!-- TAB OVERVIEW -->
   <div class="tab-panel active" id="tab-overview">
     <div class="kg" id="kpi-ov"></div>
-    <div id="comm-panel" style="display:none;background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px"><div class="ct" style="margin-bottom:8px">Comision YTD 2026 <span class="cbg">Front Comisiones</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div><div style="font-size:11px;color:var(--tx2);margin-bottom:4px">Comision USD por mes</div><div class="h150"><canvas id="c-comm-usd"></canvas></div></div><div><div style="font-size:11px;color:var(--tx2);margin-bottom:4px">% Comision por mes</div><div class="h150"><canvas id="c-comm-pct"></canvas></div></div></div></div>
+    <div id="comm-panel" style="display:none;background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px"><div class="ct" style="margin-bottom:8px">Comision YTD 2026 <span class="cbg" id="comm-panel-badge">Front Comisiones</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div><div style="font-size:11px;color:var(--tx2);margin-bottom:4px">Comision USD por mes</div><div class="h150"><canvas id="c-comm-usd"></canvas></div></div><div><div style="font-size:11px;color:var(--tx2);margin-bottom:4px">% Comision por mes</div><div class="h150"><canvas id="c-comm-pct"></canvas></div></div></div></div>
     <div class="cg cg2">
       <div class="cc"><div class="ct">Revenue &amp; Cash <span class="cbg" id="lbl-rv">--</span></div><div class="h150"><canvas id="c-rv"></canvas></div></div>
       <div class="cc"><div class="ct">Calls &gt;2min <span class="cbg" id="lbl-cl">--</span></div><div class="h150"><canvas id="c-cl"></canvas></div></div>
@@ -360,10 +361,19 @@ input[type=number]:focus{border-color:var(--ind)}
       </div>
     </div>
     <div class="cc">
+      <div class="ct">Rendimiento por Supervisor <span class="cbg" id="sup-rollup-lbl">--</span></div>
+      <div class="tw"><table class="tbl">
+        <thead><tr>
+          <th>Supervisor</th><th>Asesores</th><th>Activos hoy</th><th>Cash</th><th>Ventas</th><th>CR%</th><th>ASP</th><th>Comision equipo</th>
+        </tr></thead>
+        <tbody id="sup-rollup-body"></tbody>
+      </table></div>
+    </div>
+    <div class="cc">
       <div class="ct">Ranking Asesores &mdash; YTD 2026 <span class="cbg" id="rank-lbl">--</span></div>
       <div class="tw"><table class="tbl">
         <thead><tr>
-          <th>#</th><th>Asesor</th><th>Supervisor</th><th>Seg.</th><th>Tenure</th><th>Ingreso</th>
+          <th>#</th><th>Asesor</th><th>Supervisor</th><th>Seg.</th><th>Tenure</th><th>Ingreso</th><th>Últ. actividad</th>
           <th onclick="setSortRank('cash')" style="cursor:pointer">Cash</th>
           <th onclick="setSortRank('sales')" style="cursor:pointer">Ventas</th>
           <th onclick="setSortRank('cr')" style="cursor:pointer">CR%</th>
@@ -503,7 +513,7 @@ const MES_ES   = {'2026-01':'Enero','2026-02':'Febrero','2026-03':'Marzo','2026-
 //  APP_STATE — single source of truth
 // ────────────────────────────────────────────────────────────────
 // Dashboard version — change this to force cache clear on all browsers
-const APP_VERSION = '20260918_RawEngine2';
+const APP_VERSION = '20260918_RawEngine4';
 
 const APP_STATE = {
   currentView:        'overview',
@@ -833,6 +843,15 @@ const DataEngine = {
       weeks: payload.agentsMeta.weeks,
     };
     this._cobranza = payload.cobranza;
+    // Comisiones: Enero-Abril ya vienen reales (Front_Commisions / COMM_RAW) — NO se tocan.
+    // Mayo en adelante no existia ese feed real, asi que se llena con la estimacion de RawEngine
+    // (misma tabla de Rango x Antiguedad que Ene-Abr, aplicada al cash real del CSV). Queda marcada
+    // con estimado:true para que la UI la distinga de una comision realmente pagada.
+    this._commissions = this._commissions || {};
+    const est = payload.commissionsEstimated || {};
+    Object.keys(est).forEach(m => {
+      if (!this._commissions[m] || !this._commissions[m].length) this._commissions[m] = est[m];
+    });
     this._rebuildRanking();
   },
   get cobranza() { return this._cobranza || null; },
@@ -939,8 +958,6 @@ const RawEngine = {
       const billing = this._parseBilling(byKey.billing);
 
       const merged = this._mergeRows(sales, staff, calls);
-      const agentsMeta = this._buildAgentsMeta(merged.rows, sales.allAgents, staff.allAgents, calls.allAgents);
-      const cobranza = this._buildCobranza(sales, billing);
 
       // Fecha real más reciente entre TODAS las fuentes (no la fecha en que se carga la página).
       let lastDataDate = '';
@@ -948,6 +965,10 @@ const RawEngine = {
       merged.rows.forEach(r => bump(r.date));
       er.rows.forEach(r => bump(r[1]));
       billing.folioIndex.forEach(v => bump(v.date));
+
+      const agentsMeta = this._buildAgentsMeta(merged.rows, sales.allAgents, staff.allAgents, calls.allAgents, lastDataDate);
+      const cobranza = this._buildCobranza(sales, billing);
+      const commissionsEstimated = this._buildCommissions(merged.rows, agentsMeta.agents_meta, sales, billing);
 
       DataEngine.applyRawData({
         rows: merged.rows,
@@ -958,6 +979,7 @@ const RawEngine = {
         agentsMeta,
         cobranza,
         lastDataDate,
+        commissionsEstimated,
       });
 
       this._loaded = true;
@@ -986,6 +1008,7 @@ const RawEngine = {
     const iFCash = H.indexOf('Final Cash_cc');
     const iFRev = H.indexOf('Final Revenue_cc');
     const foliosWithRefund = new Map(); // folio -> {agent,date,amt,type}
+    const folioAgent = new Map(); // folio -> {agent,date} — TODOS los folios (venta original), usado para atribuir cobros de billing al vendedor original
 
     this._forEachRow(text, (f) => {
       const agent = this._normAgent(f[iAgent]);
@@ -999,6 +1022,8 @@ const RawEngine = {
       a.sales   += parseFloat(f[iFSales]) || 0;
       a.cash    += parseFloat(f[iFCash])  || 0;
       a.revenue += parseFloat(f[iFRev])   || 0;
+      const folioAll = (f[iFolio]||'').trim();
+      if (folioAll && !folioAgent.has(folioAll)) folioAgent.set(folioAll, {agent, date});
       const rtype = (f[iRefType]||'').trim();
       const ramt = parseFloat(f[iRefAmt]) || 0;
       if (rtype === 'Total') { a.cancelaciones++; a.refunds++; }
@@ -1008,7 +1033,7 @@ const RawEngine = {
         if (folio) foliosWithRefund.set(folio, {agent, date, amt:ramt, type:rtype});
       }
     });
-    return { agg, allAgents, foliosWithRefund };
+    return { agg, allAgents, foliosWithRefund, folioAgent };
   },
 
   // ── STAFF ──
@@ -1187,18 +1212,100 @@ const RawEngine = {
   },
 
   // ── agents_meta: reusa supervisor/segmento/score conocidos, agrega el resto de agentes sin inventar datos ──
-  _buildAgentsMeta(rows, salesAgents, staffAgents, callsAgents) {
+  // Antigüedad (fecha_ingreso/meses/dias): si el agente ya tenía fecha_ingreso real conocida (HR), se respeta tal cual.
+  // Si no, se infiere del PRIMER DIA con actividad real (venta, llamada o staff — el que sea mas antiguo) en los 5 CSV,
+  // no solo Staff, porque Staff (QS_Staff_Agent_Perfo.csv) recien tiene datos desde 2026-05-17 y muchos agentes ya
+  // vendian desde enero: usar solo Staff los haria aparecer con antiguedad 0 estando activos hace meses.
+  _buildAgentsMeta(rows, salesAgents, staffAgents, callsAgents, lastDataDate) {
     const known = (DataEngine._agents && DataEngine._agents.agents_meta) || {};
     const allAgents = new Set([...salesAgents, ...staffAgents, ...callsAgents]);
+    const firstActivity = {}; // agent -> earliest date con cualquier actividad real
+    rows.forEach(r => { if (!firstActivity[r.agent] || r.date < firstActivity[r.agent]) firstActivity[r.agent] = r.date; });
     const agents_meta = {};
     allAgents.forEach(ag => {
-      agents_meta[ag] = known[ag] ? {...known[ag]} : { nombre: ag, supervisor: 'Sin Supervisor', team: 'Recurrence' };
+      const base = known[ag] ? {...known[ag]} : { nombre: ag, supervisor: 'Sin Supervisor', team: 'Recurrence' };
+      if (!base.fecha_ingreso && firstActivity[ag]) {
+        base.fecha_ingreso = firstActivity[ag];
+        base.fecha_ingreso_inferida = true; // no es dato de RRHH, es la primera actividad real detectada
+      }
+      if (base.fecha_ingreso && lastDataDate) {
+        base.dias = this._daysBetween(base.fecha_ingreso, lastDataDate);
+        base.meses = this._monthsBetween(base.fecha_ingreso, lastDataDate.slice(0,7));
+      }
+      agents_meta[ag] = base;
     });
     rows.forEach(r => { if (agents_meta[r.agent]) r.supervisor = agents_meta[r.agent].supervisor; });
     const supervisor_list = [...new Set(Object.values(agents_meta).map(m => m.supervisor).filter(s => s && s !== 'Sin Supervisor'))].sort();
     const months = [...new Set(rows.map(r => r.month))].sort();
     const weeks = [...new Set(rows.map(r => r.week_of_year))].sort();
     return { agents: [...allAgents].sort(), agents_meta, supervisor_list, months, weeks };
+  },
+
+  _daysBetween(dateStr, toDateStr) {
+    const a = new Date(dateStr+'T00:00:00'), b = new Date(toDateStr+'T00:00:00');
+    return Math.max(0, Math.round((b-a)/86400000));
+  },
+  // Meses de antiguedad AL MES `toMonth` (YYYY-MM), contando el mes de inicio como mes 1.
+  _monthsBetween(dateStr, toMonth) {
+    const [y1,m1] = dateStr.slice(0,7).split('-').map(Number);
+    const [y2,m2] = toMonth.split('-').map(Number);
+    return Math.max(1, (y2-y1)*12 + (m2-m1) + 1);
+  },
+
+  // ── Tabla de comisión por Rango de Cash mensual x Antigüedad (meses) — esquema real dado por el usuario ──
+  // Solo se conocen las bandas de antiguedad 1-4; para antiguedad >=5 se usa la banda 4 (misma % que un agente de
+  // 4 meses) porque aun no tenemos confirmado el resto de la tabla — asuncion senalada explicitamente al usuario.
+  COMMISSION_TIERS: {
+    1: [[10,8800,0.10],[9,7800,0.095],[8,6800,0.075],[7,5800,0.07],[6,5300,0.06],[5,4800,0.0525],[4,4300,0.045],[3,3800,0.04],[2,3300,0.0325],[1,2800,0.03]],
+    2: [[10,9500,0.10],[9,8500,0.095],[8,7500,0.075],[7,6500,0.07],[6,6000,0.06],[5,5500,0.0525],[4,5000,0.045],[3,4500,0.04],[2,4000,0.0325],[1,3500,0.03]],
+    3: [[10,13000,0.10],[9,12000,0.095],[8,11000,0.075],[7,10000,0.07],[6,9500,0.06],[5,9000,0.0525],[4,8500,0.045],[3,8000,0.04],[2,7500,0.0325],[1,6000,0.03]],
+    4: [[10,13000,0.108],[9,12000,0.103],[8,11000,0.083],[7,10000,0.07],[6,9500,0.06],[5,9000,0.0525],[4,8500,0.045],[3,8000,0.04],[2,7500,0.0325],[1,6000,0.03]],
+  },
+  _tierFor(antiguedadMeses, cashTotal) {
+    const band = this.COMMISSION_TIERS[Math.min(4, Math.max(1, antiguedadMeses))];
+    for (const [rango, desde, pct] of band) { if (cashTotal >= desde) return { rango, pct }; }
+    return { rango: 0, pct: 0 };
+  },
+
+  // ── Comisiones estimadas Mayo+ (Ene-Abr ya vienen reales de Front_Commisions/COMM_RAW y no se tocan) ──
+  // cash_total = cash del agente (QS_Sales) + cobros de billing atribuidos a su folio original (QS_Pay_Billing).
+  _buildCommissions(rows, agents_meta, sales, billing) {
+    const cashByAgentMonth = new Map(); // agent|month -> cash
+    rows.forEach(r => {
+      if (!r.cash) return;
+      const k = r.agent+'|'+r.month;
+      cashByAgentMonth.set(k, (cashByAgentMonth.get(k)||0) + r.cash);
+    });
+    // Cobros de billing atribuidos al agente que hizo la venta original (join por Folio), sumados al mes en que se cobraron
+    const billingByAgentMonth = new Map();
+    billing.folioIndex.forEach((billRow, folio) => {
+      const orig = sales.folioAgent.get(folio);
+      if (!orig || !billRow.date) return;
+      const k = orig.agent+'|'+billRow.date.slice(0,7);
+      billingByAgentMonth.set(k, (billingByAgentMonth.get(k)||0) + (billRow.cash||0));
+    });
+    const months = [...new Set(rows.map(r => r.month))].sort();
+    const out = {};
+    months.forEach(m => {
+      const arr = [];
+      Object.keys(agents_meta).forEach(agent => {
+        const cash = cashByAgentMonth.get(agent+'|'+m) || 0;
+        if (!cash) return; // sin cash ese mes = sin fila (igual que el comportamiento previo con COMM_RAW)
+        const billingAmt = billingByAgentMonth.get(agent+'|'+m) || 0;
+        const cashTotal = cash + billingAmt;
+        const meta = agents_meta[agent] || {};
+        const antiguedad = meta.fecha_ingreso ? this._monthsBetween(meta.fecha_ingreso, m) : 1;
+        const { rango, pct } = this._tierFor(antiguedad, cashTotal);
+        arr.push({
+          agent, supervisor: meta.supervisor||'', month: m,
+          cash_total: cashTotal, cash, billing: billingAmt,
+          rango: String(rango), pct_comision: pct, comision_usd: cashTotal*pct,
+          estimado: true,
+        });
+      });
+      out[m] = arr;
+    });
+    return out;
   },
 
   // ── Cobranza: equipo de billing (7 personas) + ventas cruzadas con reintegro por Folio ──
@@ -1909,6 +2016,7 @@ function _checkStaleAlert() {
 // ────────────────────────────────────────────────────────────────
 const Q = {
   agents() {
+    if (APP_STATE.viewMode === 'team') return DataEngine.agentList;
     if (APP_STATE.viewMode === 'supervisor') return DataEngine.supervisors[APP_STATE.currentSupervisor] || [];
     return APP_STATE.currentAgent ? [APP_STATE.currentAgent] : [];
   },
@@ -2008,7 +2116,8 @@ function pLbl(){ const m=APP_STATE.currentMonth,w=APP_STATE.currentWeek; switch(
 // ────────────────────────────────────────────────────────────────
 function updateHero(rows){
   let name,metaStr,initials;
-  if(APP_STATE.viewMode==='supervisor'){const sup=APP_STATE.currentSupervisor||'';name=sup;initials=sup.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase();metaStr=(DataEngine.supervisors[sup]||[]).length+' agentes · Recurrence · '+pLbl();}
+  if(APP_STATE.viewMode==='team'){name='Equipo Recurrence completo';initials='RC';const nAct=new Set(rows.map(r=>r.agent)).size;metaStr=DataEngine.agentList.length+' asesores · '+nAct+' con actividad en el periodo · '+pLbl();}
+  else if(APP_STATE.viewMode==='supervisor'){const sup=APP_STATE.currentSupervisor||'';name=sup;initials=sup.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase();metaStr=(DataEngine.supervisors[sup]||[]).length+' agentes · Recurrence · '+pLbl();}
   else{const ag=APP_STATE.currentAgent||'';const mm=DataEngine.agents[ag]||{};name=ag;initials=ag.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase();const fi=mm.fecha_ingreso?'Ingreso: '+mm.fecha_ingreso:'';const ant=mm.meses!=null?mm.meses+'m':'';const d=mm.dias!=null?'('+mm.dias+' dias)':'';metaStr=[(mm.supervisor||'--'),(mm.team||'--'),'Turno '+(mm.turno||'--'),fi,'Antiguedad: '+ant+' '+d,pLbl()].filter(Boolean).join(' · ');}
   $('hero-av').textContent=initials;$('hero-nm').textContent=name;$('hero-mt').textContent=metaStr;
   const tR=agg(rows,'revenue'),tCl=agg(rows,'calls_2m'),tS=agg(rows,'sales'),tSt=agg(rows,'staff_h');
@@ -2019,9 +2128,12 @@ function updateHero(rows){
     // Show YTD if year view OR current month has no data
     if(_cv===null||APP_STATE.currentPeriod==='year'){let _y=0,_f=false;DataEngine.months.forEach(m=>{const _r=DataEngine.getCommission(_cag,m);if(_r){_y+=_r.comision_usd||0;_f=true;}});if(_f)_cv=_y;}
   }
+  let _teamComm=null;
+  if(APP_STATE.viewMode==='team'){const mList=APP_STATE.currentPeriod==='month'?[APP_STATE.currentMonth]:DataEngine.months;let _t=0,_f=false;mList.forEach(m=>(DataEngine.commissions[m]||[]).forEach(r=>{_t+=r.comision_usd||0;_f=true;}));if(_f)_teamComm=_t;}
   const _cr2=sd(tS,tCl),_asp=sd(tR,tS),_sph=sd(tS,tSt);
   const _hi=[{l:'Revenue',v:F.usd(tR)},{l:'CR%',v:F.pct(_cr2)},{l:'ASP',v:F.usd(_asp)},{l:'SPH',v:F.dec(_sph,3)},sc!=null?{l:'Score',v:Math.round(sc*100)+'%'}:{l:'Calls>2m',v:F.num(tCl)}];
   if(_cv!=null)_hi.push({l:'Comision',v:F.usd(_cv)});
+  if(_teamComm!=null)_hi.push({l:'Comision equipo',v:F.usd(_teamComm)});
   $('hero-stats').innerHTML=_hi.map(s=>'<div class="hs"><div class="hsv">'+s.v+'</div><div class="hsl">'+s.l+'</div></div>').join('');
 }
 
@@ -2053,6 +2165,7 @@ function update(){
 //  CONTROL HANDLERS
 // ────────────────────────────────────────────────────────────────
 function setView(mode,btn){ APP_STATE.viewMode=mode;document.querySelectorAll('.vt').forEach(b=>b.classList.remove('active'));btn.classList.add('active');$('grp-ag').style.display=mode==='agent'?'flex':'none';$('grp-sup').style.display=mode==='supervisor'?'flex':'none';update(); }
+function isTeamView(){ return APP_STATE.viewMode==='team'; }
 function setPeriod(p,btn){
   APP_STATE.currentPeriod=p;
   document.querySelectorAll('.pb').forEach(b=>b.classList.remove('active'));
@@ -2073,8 +2186,14 @@ function setSortRank(f){ rankSort=f;const s=$('rank-sort');if(s)s.value=f;render
 function renderOverview(rows,allRows){
   const tS=agg(rows,'sales'),tC=agg(rows,'cash'),tR=agg(rows,'revenue'),tCl=agg(rows,'calls_2m'),tTk=agg(rows,'talk_time'),tSt=agg(rows,'staff_h'),tOc=agg(rows,'oncall'),tRef=agg(rows,'refunds');
   const cr=sd(tS,tCl),aht=sd(tTk,tCl),asp=sd(tR,tS),sph=sd(tS,tSt),rev2mc=sd(tR,tCl),revSt=sd(tR,tSt);
-  // Commission for agent (if available)
-  const comm=APP_STATE.viewMode==='agent'?DataEngine.getCommission(APP_STATE.currentAgent,APP_STATE.currentMonth):null;
+  // Commission for agent (if available). En vista Año se suma YTD (igual que el hero card) en vez de
+  // mostrar solo el mes actualmente seleccionado con la etiqueta "YTD" (bug previo: confundia un mes con el acumulado).
+  let comm=APP_STATE.viewMode==='agent'?DataEngine.getCommission(APP_STATE.currentAgent,APP_STATE.currentMonth):null;
+  if(APP_STATE.viewMode==='agent'&&APP_STATE.currentPeriod==='year'&&APP_STATE.currentAgent){
+    let _yUsd=0,_yFound=false,_yEst=false;
+    DataEngine.months.forEach(m=>{const _r=DataEngine.getCommission(APP_STATE.currentAgent,m);if(_r){_yUsd+=_r.comision_usd||0;_yFound=true;if(_r.estimado)_yEst=true;}});
+    comm=_yFound?{comision_usd:_yUsd,pct_comision:null,rango:null,estimado:_yEst}:null;
+  }
   const hasAnyComm=APP_STATE.viewMode==='agent'&&!!APP_STATE.currentAgent&&
     DataEngine.months.some(m=>(DataEngine.commissions[m]||[]).some(r=>r.agent===APP_STATE.currentAgent||(r.agent&&APP_STATE.currentAgent&&r.agent.split(' ')[0]===APP_STATE.currentAgent.split(' ')[0])));
   kpis('kpi-ov',[
@@ -2087,7 +2206,7 @@ function renderOverview(rows,allRows){
     {l:'SPH',        v:F.dec(sph,3), s:'ventas/hora staff',         c:'#0891b2'},
     {l:'Rev/2MC',    v:F.usd(rev2mc),s:'revenue por call>2m',       c:'#16a34a'},
     {l:'Rev/Staff',  v:F.usd(revSt), s:'revenue por hora staff',    c:'#d97706'},
-    hasAnyComm?(comm?{l:'Comision '+(APP_STATE.currentPeriod==='year'?'YTD':(MES_ES[APP_STATE.currentMonth]||'')),v:F.usd(comm.comision_usd||0),s:F.pct(comm.pct_comision||0)+' · Rango '+(comm.rango||'--'),c:'#7c3aed'}:{l:'Comision',v:'--',s:'sin datos este mes',c:'#7c3aed'}):{l:'Refund Cases',v:String(tRef),s:'eventos cancelacion',c:tRef>5?'#dc2626':'#16a34a'},
+    hasAnyComm?(comm?{l:'Comision '+(APP_STATE.currentPeriod==='year'?'YTD':(MES_ES[APP_STATE.currentMonth]||'')),v:F.usd(comm.comision_usd||0),s:(APP_STATE.currentPeriod==='year'?'acumulado Ene-Sep':(F.pct(comm.pct_comision||0)+' · Rango '+(comm.rango||'--')))+(comm.estimado?' · incluye estimado':''),c:comm.estimado?'#a78bfa':'#7c3aed'}:{l:'Comision',v:'--',s:'sin datos este mes',c:'#7c3aed'}):{l:'Refund Cases',v:String(tRef),s:'eventos cancelacion',c:tRef>5?'#dc2626':'#16a34a'},
   ]);
   // Commission panel for agent view
   const commPanel = $('comm-panel');
@@ -2097,7 +2216,8 @@ function renderOverview(rows,allRows){
       commPanel.style.display='block';
       // charts rendered above
       const _cms=DataEngine.months,_cag2=APP_STATE.currentAgent;
-      const _cb=_cms.map(m=>{const _a=DataEngine.commissions[m]||[];const _r=_a.find(r=>r.agent===_cag2)||_a.find(r=>r.agent&&_cag2&&r.agent.split(' ')[0]===_cag2.split(' ')[0]);return{usd:_r?(_r.comision_usd||0):0,pct:_r?(_r.pct_comision||0):0};});
+      const _cb=_cms.map(m=>{const _a=DataEngine.commissions[m]||[];const _r=_a.find(r=>r.agent===_cag2)||_a.find(r=>r.agent&&_cag2&&r.agent.split(' ')[0]===_cag2.split(' ')[0]);return{usd:_r?(_r.comision_usd||0):0,pct:_r?(_r.pct_comision||0):0,estimado:_r?!!_r.estimado:false};});
+      const _badge=$('comm-panel-badge');if(_badge)_badge.textContent=_cb.some(c=>c.estimado)?'Front Comisiones real + estimado desde Mayo':'Front Comisiones';
       mkBar('c-comm-usd',_cms.map(m=>MES_ES[m]||m),_cb.map(c=>c.usd),'#7c3aed',v=>'$'+Math.round(v));
       mkLine('c-comm-pct',_cms.map(m=>MES_ES[m]||m),[{data:_cb.map(c=>+(c.pct*100).toFixed(1)),borderColor:'#4f46e5',backgroundColor:'rgba(79,70,229,.08)',fill:true,tension:.4,pointRadius:4,borderWidth:2,showLabels:true}],v=>v+'%');
     } else {
@@ -2538,6 +2658,7 @@ function renderRanking(){
   // la tabla apenas había más de un agente real cargado).
   const _rrows=DataEngine.rows.filter(r=>Q._period(r));
   const _ragents=[...new Set(_rrows.map(r=>r.agent))];
+  const _lastData=DataEngine.dataUpdated||'';
   const _rmap={};
   _ragents.forEach(ag=>{
     const ar=_rrows.filter(r=>r.agent===ag);
@@ -2548,18 +2669,54 @@ function renderRanking(){
     const cl=ar.reduce((s,r)=>s+(r.calls_2m||0),0);
     const sh=ar.reduce((s,r)=>s+(r.staff_h||0),0);
     const cm=DataEngine.getCommission(ag,APP_STATE.currentMonth);
+    // Ultima actividad REAL del agente (no limitada al periodo filtrado) — para detectar bajas/inactividad
+    const allAg=DataEngine.rows.filter(r=>r.agent===ag&&(r.sales>0||r.calls_2m>0||r.staff_h>0));
+    const lastAct=allAg.reduce((mx,r)=>r.date>mx?r.date:mx,'');
+    const daysInactive=(lastAct&&_lastData)?Math.round((new Date(_lastData+'T00:00:00')-new Date(lastAct+'T00:00:00'))/86400000):null;
     _rmap[ag]={agent:ag,supervisor:m.supervisor||(ar[0]?.supervisor||''),segmento:m.segmento||'',tenure_seg:m.tenure_seg||'',meses:m.meses||0,fecha_ingreso:m.fecha_ingreso||m.ingreso||'',ingreso:m.ingreso||'',score:m.score||null,
-      revenue:rv,cash:ca,sales:sl,cr:sl/Math.max(cl,1),asp:rv/Math.max(sl,1),sph:sl/Math.max(sh,1),
-      rev_per_call:rv/Math.max(cl,1),rev_per_staff:rv/Math.max(sh,1),comision_usd:cm?(cm.comision_usd||0):0};
+      revenue:rv,cash:ca,sales:sl,calls:cl,cr:sl/Math.max(cl,1),asp:rv/Math.max(sl,1),sph:sl/Math.max(sh,1),
+      rev_per_call:rv/Math.max(cl,1),rev_per_staff:rv/Math.max(sh,1),comision_usd:cm?(cm.comision_usd||0):0,
+      lastAct,daysInactive};
   });
   let data=Object.values(_rmap).filter(r=>r.cash>0||r.sales>0);
   if(supF)data=data.filter(r=>r.supervisor===supF);
   data.sort((a,b)=>((b[sortF]||0)-(a[sortF]||0)));
+  renderSupervisorRollup(data);
   const _rmo=APP_STATE.currentMonth;const _rper=APP_STATE.currentPeriod==='year'?'YTD 2026':(MES_ES[_rmo]||_rmo)+' 2026';const lbl=$('rank-lbl');if(lbl)lbl.textContent=_rper+' · '+(data.length===1?'1 asesor':data.length+' asesores');
   const segSt={'VIP+':'background:#ede9fe;color:#5b21b6;border:1px solid #ddd6fe','Black+':'background:#f1f5f9;color:#334155;border:1px solid #e2e8f0','Black':'background:#f8fafc;color:#475569;border:1px solid #e2e8f0','VIP':'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe'};
   const tenSt={'Antiguo':'background:#dcfce7;color:#166534;border:1px solid #86efac','Medio Nuevo':'background:#fef9c3;color:#854d0e;border:1px solid #fde68a','Nuevo':'background:#fee2e2;color:#991b1b;border:1px solid #fecaca'};
   const body=$('rank-body');if(!body)return;
-  body.innerHTML=data.map((r,i)=>{const rank=i+1,rc=rank<=3?'r'+rank:'rn',sc=r.score!=null?Math.round(r.score*100):null,scCol=sc!=null?scC(r.score):'#94a3b8';const sst=segSt[r.segmento]||'background:var(--s2);color:var(--tx3)',tst=tenSt[r.tenure_seg]||'background:var(--s2);color:var(--tx3)';const agEsc=r.agent.replace(/"/g,'&quot;');const comm=DataEngine.getCommission(r.agent,APP_STATE.currentMonth);return '<tr><td><span class="rank-badge '+rc+'">'+rank+'</span></td><td style="font-weight:600;color:var(--ind);cursor:pointer" data-agent="'+agEsc+'" onclick="openAgent(this.dataset.agent)">'+r.agent+'</td><td style="color:var(--tx2)">'+r.supervisor+'</td><td><span class="seg-badge" style="'+sst+'">'+(r.segmento||'--')+'</span></td><td><span class="seg-badge" style="'+tst+'">'+(r.tenure_seg||'--')+(r.meses>0?' '+r.meses+'m':'')+'</span></td><td style="font-family:var(--mono);font-size:10px;color:var(--tx3)">'+(r.fecha_ingreso?(()=>{const _p=r.fecha_ingreso.split('-');return _p.length===3?_p[2]+'/'+_p[1]+'/'+_p[0]:r.fecha_ingreso;})():'--')+'</td><td style="font-family:var(--mono);font-weight:700;color:'+(rank<=3?'#4f46e5':'var(--tx2)')+'">'+F.usd(r.revenue)+'</td><td class="mono">'+F.usd(r.cash)+'</td><td class="mono">'+F.num(r.sales)+'</td><td style="font-family:var(--mono);font-weight:700;color:'+crC(r.cr)+'">'+F.pct(r.cr)+'</td><td class="mono">'+F.usd(r.asp)+'</td><td class="mono">'+F.dec(r.sph,3)+'</td><td class="mono">'+F.usd(r.rev_per_call)+'</td><td class="mono">'+F.usd(r.rev_per_staff)+'</td>'+(comm?'<td class="mono" style="color:#7c3aed;font-weight:700">'+F.usd(comm.comision_usd||0)+'</td>':'<td class="mono" style="color:var(--tx3)">--</td>')+'<td style="font-family:var(--mono);font-weight:700;color:'+scCol+'">'+(sc!=null?sc+'%':'--')+'</td></tr>';}).join('');
+  body.innerHTML=data.map((r,i)=>{const rank=i+1,rc=rank<=3?'r'+rank:'rn',sc=r.score!=null?Math.round(r.score*100):null,scCol=sc!=null?scC(r.score):'#94a3b8';const sst=segSt[r.segmento]||'background:var(--s2);color:var(--tx3)',tst=tenSt[r.tenure_seg]||'background:var(--s2);color:var(--tx3)';const agEsc=r.agent.replace(/"/g,'&quot;');const comm=DataEngine.getCommission(r.agent,APP_STATE.currentMonth);const _diC=r.daysInactive==null?'var(--tx3)':(r.daysInactive<=3?'#16a34a':r.daysInactive<=14?'#d97706':'#dc2626');const _diTxt=r.lastAct?((()=>{const _p=r.lastAct.split('-');return _p.length===3?_p[2]+'/'+_p[1]+'/'+_p[0]:r.lastAct;})()+(r.daysInactive!=null?' ('+(r.daysInactive===0?'hoy':r.daysInactive+'d')+')':'')):'--';return '<tr><td><span class="rank-badge '+rc+'">'+rank+'</span></td><td style="font-weight:600;color:var(--ind);cursor:pointer" data-agent="'+agEsc+'" onclick="openAgent(this.dataset.agent)">'+r.agent+'</td><td style="color:var(--tx2)">'+r.supervisor+'</td><td><span class="seg-badge" style="'+sst+'">'+(r.segmento||'--')+'</span></td><td><span class="seg-badge" style="'+tst+'">'+(r.tenure_seg||'--')+(r.meses>0?' '+r.meses+'m':'')+'</span></td><td style="font-family:var(--mono);font-size:10px;color:var(--tx3)">'+(r.fecha_ingreso?(()=>{const _p=r.fecha_ingreso.split('-');return _p.length===3?_p[2]+'/'+_p[1]+'/'+_p[0]:r.fecha_ingreso;})():'--')+'</td><td style="font-family:var(--mono);font-size:10px;font-weight:700;color:'+_diC+'" title="Ultimo dia con venta, llamada o staff registrado">'+_diTxt+'</td><td style="font-family:var(--mono);font-weight:700;color:'+(rank<=3?'#4f46e5':'var(--tx2)')+'">'+F.usd(r.revenue)+'</td><td class="mono">'+F.usd(r.cash)+'</td><td class="mono">'+F.num(r.sales)+'</td><td style="font-family:var(--mono);font-weight:700;color:'+crC(r.cr)+'">'+F.pct(r.cr)+'</td><td class="mono">'+F.usd(r.asp)+'</td><td class="mono">'+F.dec(r.sph,3)+'</td><td class="mono">'+F.usd(r.rev_per_call)+'</td><td class="mono">'+F.usd(r.rev_per_staff)+'</td>'+(comm?'<td class="mono" style="color:'+(comm.estimado?'#a78bfa':'#7c3aed')+';font-weight:700" title="'+(comm.estimado?'Estimado (sin Front Comisiones real este mes)':'Comision real')+'">'+F.usd(comm.comision_usd||0)+(comm.estimado?' *':'')+'</td>':'<td class="mono" style="color:var(--tx3)">--</td>')+'<td style="font-family:var(--mono);font-weight:700;color:'+scCol+'">'+(sc!=null?sc+'%':'--')+'</td></tr>';}).join('');
+}
+
+// ────────────────────────────────────────────────────────────────
+//  ROLLUP POR SUPERVISOR — para entender el historico del EQUIPO de cada supervisor
+//  de un vistazo, sin tener que abrir agente por agente. Usa la misma `data` (ya filtrada
+//  por periodo) que arma renderRanking, asi que siempre queda en sync con ese periodo.
+// ────────────────────────────────────────────────────────────────
+function renderSupervisorRollup(data){
+  const body=$('sup-rollup-body');if(!body)return;
+  const bySup={};
+  data.forEach(r=>{
+    const sup=r.supervisor||'Sin Supervisor';
+    if(!bySup[sup])bySup[sup]={supervisor:sup,agentes:0,activos:0,cash:0,sales:0,revenue:0,calls:0,comision:0};
+    const b=bySup[sup];
+    b.agentes++;
+    if(r.daysInactive!=null&&r.daysInactive<=7)b.activos++;
+    b.cash+=r.cash||0; b.sales+=r.sales||0; b.revenue+=r.revenue||0; b.calls+=r.calls||0;
+    b.comision+=r.comision_usd||0;
+  });
+  const rows=Object.values(bySup).sort((a,b)=>b.cash-a.cash);
+  const lbl=$('sup-rollup-lbl');if(lbl)lbl.textContent=(APP_STATE.currentPeriod==='year'?'YTD 2026':(MES_ES[APP_STATE.currentMonth]||APP_STATE.currentMonth))+' · '+rows.length+' supervisores';
+  body.innerHTML=rows.map(r=>{
+    const cr=r.calls>0?r.sales/r.calls:0;
+    return '<tr><td style="font-weight:600;color:var(--ind)">'+r.supervisor+'</td><td class="mono">'+r.agentes+'</td>'
+      +'<td class="mono" style="color:'+(r.activos===r.agentes?'#16a34a':r.activos===0?'#dc2626':'#d97706')+'">'+r.activos+'/'+r.agentes+'</td>'
+      +'<td class="mono">'+F.usd(r.cash)+'</td><td class="mono">'+F.num(r.sales)+'</td>'
+      +'<td style="font-family:var(--mono);font-weight:700;color:'+crC(cr)+'">'+F.pct(cr)+'</td>'
+      +'<td class="mono">'+F.usd(sd(r.revenue,r.sales))+'</td>'
+      +'<td class="mono" style="color:#7c3aed;font-weight:700">'+F.usd(r.comision)+'</td></tr>';
+  }).join('');
 }
 
 // ────────────────────────────────────────────────────────────────
