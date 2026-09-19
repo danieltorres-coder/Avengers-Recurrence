@@ -136,7 +136,7 @@ input[type=number]:focus{border-color:var(--ind)}
     <div class="hdiv"></div>
     <div class="hdr-stat"><div class="hdr-sl">Agentes</div><div class="hdr-sv" id="hdr-agents">32</div></div>
     <div class="hdiv"></div>
-    <div class="hdr-stat"><div class="hdr-sl">Actualizado</div><div style="font-family:var(--mono);font-size:12px;color:var(--tx2)">2026-05-13</div></div>
+    <div class="hdr-stat"><div class="hdr-sl">Actualizado</div><div style="font-family:var(--mono);font-size:12px;color:var(--tx2)" id="hdr-updated">2026-05-13</div></div>
     <div class="hdiv"></div>
     <div class="live-badge"><div class="ldot"></div><span id="lclock">--:--</span></div>
     <div id="live-refresh-badge" style="display:none;background:#f0fdf4;color:#166534;font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;border:1px solid #86efac;align-items:center;gap:5px;animation:pd 1.5s infinite">↻ Live</div>
@@ -503,7 +503,7 @@ const MES_ES   = {'2026-01':'Enero','2026-02':'Febrero','2026-03':'Marzo','2026-
 //  APP_STATE — single source of truth
 // ────────────────────────────────────────────────────────────────
 // Dashboard version — change this to force cache clear on all browsers
-const APP_VERSION = '20260918_RawEngine1';
+const APP_VERSION = '20260918_RawEngine2';
 
 const APP_STATE = {
   currentView:        'overview',
@@ -543,6 +543,7 @@ const DataEngine = {
   _linksConfig: {},
 
   // Accessors
+  get dataUpdated()  { return this._agents?.updated || ''; },
   get agents()       { return this._agents?.agents_meta || {}; },
   get agentList()    { return this._agents?.agents || []; },
   get supervisors()  { return this._agents?.supervisors || {}; },
@@ -824,7 +825,7 @@ const DataEngine = {
     });
     this._agents = {
       ...this._agents,
-      version: VERSION, updated: new Date().toISOString().slice(0,10),
+      version: VERSION, updated: payload.lastDataDate || new Date().toISOString().slice(0,10),
       agents: payload.agentsMeta.agents,
       agents_meta: payload.agentsMeta.agents_meta,
       supervisor_list: payload.agentsMeta.supervisor_list,
@@ -941,6 +942,13 @@ const RawEngine = {
       const agentsMeta = this._buildAgentsMeta(merged.rows, sales.allAgents, staff.allAgents, calls.allAgents);
       const cobranza = this._buildCobranza(sales, billing);
 
+      // Fecha real más reciente entre TODAS las fuentes (no la fecha en que se carga la página).
+      let lastDataDate = '';
+      const bump = d => { if (d && d > lastDataDate) lastDataDate = d; };
+      merged.rows.forEach(r => bump(r.date));
+      er.rows.forEach(r => bump(r[1]));
+      billing.folioIndex.forEach(v => bump(v.date));
+
       DataEngine.applyRawData({
         rows: merged.rows,
         callRows: calls.campaignRows,
@@ -949,6 +957,7 @@ const RawEngine = {
         erRows: er.rows,
         agentsMeta,
         cobranza,
+        lastDataDate,
       });
 
       this._loaded = true;
@@ -2867,6 +2876,7 @@ async function init(){
   // Refleja en el header los datos reales ya cargados (antes quedaban fijos/desactualizados)
   if (RawEngine._loaded) {
     const hdrAg = $('hdr-agents'); if (hdrAg) hdrAg.textContent = String(DataEngine.agentList.length);
+    const hdrUp = $('hdr-updated'); if (hdrUp && DataEngine.dataUpdated) hdrUp.textContent = DataEngine.dataUpdated;
     const sub = document.querySelector('.hdr-sub');
     if (sub && DataEngine.months.length) {
       const first = MES_ES[DataEngine.months[0]] || DataEngine.months[0];
