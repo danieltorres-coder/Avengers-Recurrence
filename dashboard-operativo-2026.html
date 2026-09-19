@@ -191,6 +191,7 @@ input[type=number]:focus{border-color:var(--ind)}
     <div class="tab" onclick="sw('coaching',this)">Coaching</div>
     <div class="tab" onclick="sw('metas',this)">Metas</div>
     <div class="tab" onclick="sw('ranking',this)">Ranking</div>
+    <div class="tab" onclick="sw('cobranza',this)">Cobranza</div>
     <div class="tab" onclick="sw('admin',this)">&#9881; Admin</div>
   </div>
   <!-- TAB OVERVIEW -->
@@ -239,9 +240,9 @@ input[type=number]:focus{border-color:var(--ind)}
       <button id="ctab-inb" onclick="setCTab('Inbound')" class="btn-sec" style="padding:4px 12px;font-size:11px">Inbound</button>
       <button id="ctab-man" onclick="setCTab('Manual')" class="btn-sec" style="padding:4px 12px;font-size:11px">Manual</button>
       <button id="ctab-oth" onclick="setCTab('Others')" class="btn-sec" style="padding:4px 12px;font-size:11px">Others</button>
-      <span style="border-left:1px solid var(--bd);margin:0 2px"></span>
-      <button id="ctab-lat" onclick="setCTab('LATAM')" class="btn-sec" style="padding:4px 12px;font-size:11px">LATAM</button>
-      <button id="ctab-usa" onclick="setCTab('USA')" class="btn-sec" style="padding:4px 12px;font-size:11px">USA</button>
+      <button id="ctab-alp" onclick="setCTab('Alpha')" class="btn-sec" style="padding:4px 12px;font-size:11px">Alpha</button>
+      <button id="ctab-bet" onclick="setCTab('Beta')" class="btn-sec" style="padding:4px 12px;font-size:11px">Beta</button>
+      <button id="ctab-del" onclick="setCTab('Delta')" class="btn-sec" style="padding:4px 12px;font-size:11px">Delta</button>
     </div>
     <div class="cg cg2">
       <div class="cc"><div class="ct">Mix llamadas por duracion</div><div class="h180"><canvas id="c-c-mix"></canvas></div></div>
@@ -378,6 +379,25 @@ input[type=number]:focus{border-color:var(--ind)}
     </div>
   </div>
 
+  <!-- ══ TAB: COBRANZA (equipo de Billing + ventas con reintegro cruzadas por Folio) ══ -->
+  <div class="tab-panel" id="tab-cobranza">
+    <div class="kg" id="kpi-cb"></div>
+    <div class="cc">
+      <div class="ct">Equipo de Cobranza / Billing <span class="cbg">por agente de billing</span></div>
+      <div class="tw"><table class="tbl">
+        <thead><tr><th>Agente Billing</th><th>Pagos procesados</th><th>Revenue</th><th>Cash</th><th>Refunds $</th></tr></thead>
+        <tbody id="cb-billing-body"></tbody>
+      </table></div>
+    </div>
+    <div class="cc" style="margin-top:12px">
+      <div class="ct">Ventas con reintegro cruzadas por Folio <span class="cbg" id="cb-cross-lbl">--</span></div>
+      <div class="tw"><table class="tbl">
+        <thead><tr><th>Folio</th><th>Asesor (venta)</th><th>Fecha</th><th>Tipo</th><th>Monto reintegro (venta)</th><th>Agente Billing</th></tr></thead>
+        <tbody id="cb-cross-body"></tbody>
+      </table></div>
+    </div>
+  </div>
+
   <!-- ══ TAB: ADHERENCIA ══ -->
   <div class="tab-panel" id="tab-adherencia">
     <div class="kpi-grid" id="kpi-adh"></div>
@@ -483,7 +503,7 @@ const MES_ES   = {'2026-01':'Enero','2026-02':'Febrero','2026-03':'Marzo','2026-
 //  APP_STATE — single source of truth
 // ────────────────────────────────────────────────────────────────
 // Dashboard version — change this to force cache clear on all browsers
-const APP_VERSION = '20260527_0156';
+const APP_VERSION = '20260918_RawEngine1';
 
 const APP_STATE = {
   currentView:        'overview',
@@ -787,11 +807,418 @@ const DataEngine = {
     return mData.find(r => r.agent === agName) ||
            mData.find(r => r.agent && agName && r.agent.split(' ')[0] === agName.split(' ')[0]) || null;
   },
+
+  // ── Aplica el dataset construido por RawEngine desde Agent-Performance/Recurrence/*.csv ──
+  // Reemplaza por completo filas, ER, callRows (campaña) y agents_meta con datos reales, sin tocar
+  // adherencia/commissions/linksConfig que siguen su propio flujo.
+  applyRawData(payload) {
+    this._rows = payload.rows;
+    this._callRows = payload.callRows;   // usado directo por el getter callRows (bypassa CALLS_RAW)
+    this._erCols  = payload.erCols;
+    this._erShort = payload.erShort;
+    this._erRows = payload.erRows.map(r => {
+      const o = { agent:r[0], date:r[1], month:r[2], week:r[3], dow:r[4] };
+      payload.erCols.forEach((c,i) => { o[c] = r[5][String(i)] || 0; });
+      o.total_errors = payload.erCols.reduce((s,c)=>s+(o[c]||0), 0);
+      return o;
+    });
+    this._agents = {
+      ...this._agents,
+      version: VERSION, updated: new Date().toISOString().slice(0,10),
+      agents: payload.agentsMeta.agents,
+      agents_meta: payload.agentsMeta.agents_meta,
+      supervisor_list: payload.agentsMeta.supervisor_list,
+      months: payload.agentsMeta.months,
+      weeks: payload.agentsMeta.weeks,
+    };
+    this._cobranza = payload.cobranza;
+    this._rebuildRanking();
+  },
+  get cobranza() { return this._cobranza || null; },
 };
 
 // ────────────────────────────────────────────────────────────────
 //  HISTORY ENGINE — insights, coaching, patterns
 // ────────────────────────────────────────────────────────────────
+/* ================================================================
+   RAW ENGINE — lee directo los CSV crudos de Agent-Performance/Recurrence/
+   Sin JSON intermedios: cada vez que se reemplazan los 5 CSV en el repo
+   (mismos nombres), el dashboard recalcula todo solo al recargar.
+   ================================================================ */
+const RawEngine = {
+  BASE_PATH: './Agent-Performance/Recurrence/',
+  FILES: {
+    sales:   'QS_Sales_Agent_Perfo.csv',
+    staff:   'QS_Staff_Agent_Perfo.csv',
+    calls:   'QS_Calls_Agent_Perfo.csv',
+    er:      'QS_ER.csv',
+    billing: 'QS_Pay_Billing_Agent.csv',
+  },
+  _loaded: false,
+
+  // ── Utilidades ──
+  _normAgent(s) {
+    if (!s) return '';
+    return s.trim().toLowerCase().split(/\s+/).map(w => w ? w[0].toUpperCase()+w.slice(1) : '').join(' ');
+  },
+  _isoWeek(dateStr) {
+    const t = new Date(dateStr+'T00:00:00');
+    t.setHours(0,0,0,0);
+    t.setDate(t.getDate()+4-(t.getDay()||7));
+    const yearStart = new Date(t.getFullYear(),0,1);
+    return Math.ceil((((t - yearStart)/86400000)+1)/7);
+  },
+  _dowName(dateStr) {
+    const DOW = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const t = new Date(dateStr+'T00:00:00');
+    return DOW[t.getDay()];
+  },
+  // Parser CSV real (RFC4180): respeta comillas y comas dentro de campos citados.
+  // Necesario porque estos CSV mezclan campos citados (texto) y sin citar (números) en la misma fila,
+  // y al menos un campo de texto (Product_name_group) trae comas dentro de las comillas.
+  _parseLine(line) {
+    const fields = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQ) {
+        if (ch === '"') { if (line[i+1] === '"') { cur += '"'; i++; } else inQ = false; }
+        else cur += ch;
+      } else {
+        if (ch === '"') inQ = true;
+        else if (ch === ',') { fields.push(cur); cur = ''; }
+        else cur += ch;
+      }
+    }
+    fields.push(cur);
+    return fields;
+  },
+  _headerOf(text) {
+    let pos = text.charCodeAt(0) === 0xFEFF ? 1 : 0;
+    let nl = text.indexOf('\n', pos);
+    if (nl === -1) nl = text.length;
+    let line = text.slice(pos, nl);
+    if (line.endsWith('\r')) line = line.slice(0,-1);
+    return this._parseLine(line);
+  },
+  // cb recibe el array de campos (strings) de cada fila de datos.
+  _forEachRow(text, cb) {
+    let pos = text.charCodeAt(0) === 0xFEFF ? 1 : 0;
+    const len = text.length;
+    let nl = text.indexOf('\n', pos);
+    if (nl === -1) nl = len;
+    const header = this._headerOf(text);
+    pos = nl+1;
+    while (pos < len) {
+      nl = text.indexOf('\n', pos);
+      if (nl === -1) nl = len;
+      let line = text.slice(pos, nl);
+      pos = nl+1;
+      if (line.endsWith('\r')) line = line.slice(0,-1);
+      if (line.length === 0) continue;
+      cb(this._parseLine(line));
+    }
+    return header;
+  },
+
+  // ── LOAD ──
+  async load() {
+    try {
+      if (typeof updateAdminStatus === 'function') updateAdminStatus('Cargando datos crudos de Agent Performance (Recurrence)...', 'loading');
+      const entries = Object.entries(this.FILES);
+      const texts = await Promise.all(entries.map(([k,f]) =>
+        fetch(this.BASE_PATH+f, {cache:'no-store'}).then(r => { if(!r.ok) throw new Error(f+': HTTP '+r.status); return r.text(); })
+      ));
+      const byKey = {}; entries.forEach(([k],i) => byKey[k] = texts[i]);
+
+      const sales   = this._parseSales(byKey.sales);
+      const staff   = this._parseStaff(byKey.staff);
+      const calls   = this._parseCalls(byKey.calls);
+      const er      = this._parseER(byKey.er);
+      const billing = this._parseBilling(byKey.billing);
+
+      const merged = this._mergeRows(sales, staff, calls);
+      const agentsMeta = this._buildAgentsMeta(merged.rows, sales.allAgents, staff.allAgents, calls.allAgents);
+      const cobranza = this._buildCobranza(sales, billing);
+
+      DataEngine.applyRawData({
+        rows: merged.rows,
+        callRows: calls.campaignRows,
+        erCols: er.cols,
+        erShort: er.short,
+        erRows: er.rows,
+        agentsMeta,
+        cobranza,
+      });
+
+      this._loaded = true;
+      const n = merged.rows.length;
+      if (typeof updateAdminStatus === 'function') updateAdminStatus('Agent Performance (Recurrence): '+n+' filas agente/día cargadas desde CSV crudo.', 'ok');
+      console.log('[RawEngine] OK — rows:', n, 'callRows:', calls.campaignRows.length, 'erRows:', er.rows.length, 'agents:', agentsMeta.agents.length);
+      return true;
+    } catch (e) {
+      console.warn('[RawEngine] No se pudo cargar Agent-Performance/Recurrence:', e.message);
+      if (typeof updateAdminStatus === 'function') updateAdminStatus('No se encontró Agent-Performance/Recurrence — usando datos previos.', 'error');
+      return false;
+    }
+  },
+
+  // ── SALES ──
+  _parseSales(text) {
+    const agg = new Map(); // agent|date -> {sales,cash,revenue,cancelaciones,descuentos,refunds}
+    const allAgents = new Set();
+    const H = this._headerOf(text);
+    const iDate = H.indexOf('salesforce_payment_date__c');
+    const iAgent = H.indexOf('Agent_Payment');
+    const iFolio = H.indexOf('Folio');
+    const iRefType = H.indexOf('Refunds Type');
+    const iRefAmt = H.indexOf('Refunds');
+    const iFSales = H.indexOf('Final Sales_cc');
+    const iFCash = H.indexOf('Final Cash_cc');
+    const iFRev = H.indexOf('Final Revenue_cc');
+    const foliosWithRefund = new Map(); // folio -> {agent,date,amt,type}
+
+    this._forEachRow(text, (f) => {
+      const agent = this._normAgent(f[iAgent]);
+      if (!agent) return;
+      const date = (f[iDate]||'').slice(0,10);
+      if (!date) return;
+      allAgents.add(agent);
+      const k = agent+'|'+date;
+      let a = agg.get(k);
+      if (!a) { a = {sales:0,cash:0,revenue:0,cancelaciones:0,descuentos:0,refunds:0}; agg.set(k, a); }
+      a.sales   += parseFloat(f[iFSales]) || 0;
+      a.cash    += parseFloat(f[iFCash])  || 0;
+      a.revenue += parseFloat(f[iFRev])   || 0;
+      const rtype = (f[iRefType]||'').trim();
+      const ramt = parseFloat(f[iRefAmt]) || 0;
+      if (rtype === 'Total') { a.cancelaciones++; a.refunds++; }
+      else if (rtype === 'Parcial') { a.descuentos++; a.refunds++; }
+      if (rtype === 'Total' || rtype === 'Parcial') {
+        const folio = (f[iFolio]||'').trim();
+        if (folio) foliosWithRefund.set(folio, {agent, date, amt:ramt, type:rtype});
+      }
+    });
+    return { agg, allAgents, foliosWithRefund };
+  },
+
+  // ── STAFF ──
+  _parseStaff(text) {
+    const agg = new Map();
+    const allAgents = new Set();
+    const H = this._headerOf(text);
+    const iDate = H.indexOf('DateTimeMX');
+    const iAgent = H.indexOf('Agent Name');
+    const iSH = H.indexOf('StaffHours');
+    const iOC = H.indexOf('Oncall');
+    const iOccP = H.indexOf('%Oncall');
+    const iNR = H.indexOf('SumNotReady');
+    const iACW = H.indexOf('ACW Time_cc');
+    const iTR = H.indexOf('Training_cc');
+    const iBR = H.indexOf('Break_cc');
+
+    this._forEachRow(text, (f) => {
+      const agent = this._normAgent(f[iAgent]);
+      if (!agent) return;
+      const date = (f[iDate]||'').slice(0,10);
+      if (!date) return;
+      allAgents.add(agent);
+      const k = agent+'|'+date;
+      const occRaw = f[iOccP];
+      agg.set(k, {
+        staff_h:   parseFloat(f[iSH]) || 0,
+        oncall:    parseFloat(f[iOC]) || 0,
+        occupancy: (occRaw!==undefined && occRaw!=='') ? (parseFloat(occRaw)||0) : 0,
+        not_ready: parseFloat(f[iNR]) || 0,
+        acw:       parseFloat(f[iACW])|| 0,
+        training:  parseFloat(f[iTR]) || 0,
+        break_t:   parseFloat(f[iBR]) || 0,
+      });
+    });
+    return { agg, allAgents };
+  },
+
+  // ── CALLS (737k filas — agregación en un solo paso) ──
+  _parseCalls(text) {
+    const agg = new Map();        // agent|date -> totals
+    const campAgg = new Map();    // agent|date|campaign -> totals
+    const allAgents = new Set();
+    const H = this._headerOf(text);
+    const iDate = H.indexOf('DateTimeMX');
+    const iAgent = H.indexOf('AGENT NAME');
+    let iCamp = H.indexOf('Campaing_details');
+    if (iCamp === -1) iCamp = H.findIndex(h => h.trim() === 'Campaing_details');
+    const iCount = H.indexOf('Countcall');
+    const iC2 = H.indexOf('Call>2Min');
+    const iC25 = H.indexOf('Call 2-5 Min');
+    const iC510 = H.indexOf('Call 5-10 Min');
+    const iC10 = H.indexOf('Call>10Min');
+    const iTalk = H.indexOf('TALK TIME');
+
+    this._forEachRow(text, (f) => {
+      const agent = this._normAgent(f[iAgent]);
+      if (!agent) return;
+      const date = (f[iDate]||'').slice(0,10);
+      if (!date) return;
+      allAgents.add(agent);
+      const c2 = +f[iC2]||0, c25 = +f[iC25]||0, c510 = +f[iC510]||0, c10 = +f[iC10]||0, talk = +f[iTalk]||0, cnt = +f[iCount]||0;
+      const k = agent+'|'+date;
+      let a = agg.get(k);
+      if (!a) { a = {calls_2m:0,calls_25:0,calls_510:0,calls_10:0,talk_time:0,call_count:0}; agg.set(k,a); }
+      a.calls_2m += c2; a.calls_25 += c25; a.calls_510 += c510; a.calls_10 += c10; a.talk_time += talk; a.call_count += cnt;
+
+      const camp = (f[iCamp]||'Others').trim() || 'Others';
+      const k2 = k+'|'+camp;
+      let a2 = campAgg.get(k2);
+      if (!a2) { a2 = {agent,date,campaign:camp,calls_2m:0,calls_25:0,calls_510:0,calls_10:0,talk_time:0,call_id:0}; campAgg.set(k2,a2); }
+      a2.calls_2m += c2; a2.calls_25 += c25; a2.calls_510 += c510; a2.calls_10 += c10; a2.talk_time += talk; a2.call_id += cnt;
+    });
+
+    const month = d => d.slice(0,7);
+    const campaignRows = Array.from(campAgg.values()).map(r => ({...r, month: month(r.date)}));
+    return { agg, allAgents, campaignRows };
+  },
+
+  // ── ER (QA) ──
+  _parseER(text) {
+    const H = this._headerOf(text);
+    const iAgent = H.indexOf('Agent_c');
+    const iDate = H.indexOf('date_filename');
+    const metaCols = new Set(['vertical','Agent_c','FILENAME DASH','call_timestamp','date_filename','agent_filename','guid']);
+    const flagCols = H.filter(c => !metaCols.has(c));
+    const flagIdx = flagCols.map(c => H.indexOf(c));
+    const SHORT = {
+      'Calls_Etapas de riesgo':'Calls ER','Saludo Expert name':'Saludo Experto','Saludo From Aprende':'Saludo Aprende',
+      'Saludo Aviso Privacidad':'Aviso Privacidad','Inf. Inc. Garantías Inex.':'Garantías Inexist.','Inf. Inc. Libros Dig':'Libros Digitales',
+      'Inf. Inc. Licencia':'Licencia','Inf. Inc. Cert. Fisico':'Cert. Físico','Inf. Inc. Cert. Horas Est.':'Cert. Horas Est.',
+      'Inf. Inc. Cancelación':'Cancelación','Inf. Inc.Alianzas Inex.':'Alianzas Inexist.','Inf. Inc. Menciona Certificar':'Menciona Certificar',
+      'Inf. Inc. Ref. Erronea':'Ref. Errónea','Inf. Inc. Sabana Notas':'Sábana Notas','Politica de Datos':'Política Datos',
+      'Corte de llamada':'Corte Llamada','Situaciones Inesp.':'Situación Inesp.',
+    };
+    const agg = new Map(); // agent|date -> {counts per flag}
+    this._forEachRow(text, (f) => {
+      const agent = this._normAgent(f[iAgent]);
+      if (!agent) return;
+      const date = (f[iDate]||'').slice(0,10);
+      if (!date) return;
+      const k = agent+'|'+date;
+      let a = agg.get(k);
+      if (!a) { a = {}; agg.set(k,a); }
+      flagCols.forEach((c,i) => {
+        const v = +f[flagIdx[i]]||0;
+        if (v) a[c] = (a[c]||0)+v;
+      });
+    });
+    const rows = [];
+    agg.forEach((counts, key) => {
+      const [agent,date] = key.split('|');
+      const month = date.slice(0,7);
+      const week = '2026-W'+String(RawEngine._isoWeek(date)).padStart(2,'0');
+      const dow = RawEngine._dowName(date);
+      const idxCounts = {};
+      flagCols.forEach((c,i) => { if (counts[c]) idxCounts[String(i)] = counts[c]; });
+      rows.push([agent, date, month, week, dow, idxCounts]);
+    });
+    return { cols: flagCols, short: SHORT, rows };
+  },
+
+  // ── BILLING ──
+  _parseBilling(text) {
+    const H = this._headerOf(text);
+    const iDate = H.indexOf('salesforce_payment_date__c');
+    const iAgent = H.indexOf('Agent_Payment');
+    const iFolio = H.indexOf('Folio');
+    const iRev = H.indexOf('usd_revenue_amount');
+    const iCash = H.indexOf('Cash');
+    const iRef = H.indexOf('Refunds');
+    const byAgent = new Map(); // billing agent -> {revenue,cash,refunds,folios}
+    const folioIndex = new Map(); // folio -> {agent,date,revenue,cash,refunds}
+    this._forEachRow(text, (f) => {
+      const agent = this._normAgent(f[iAgent]);
+      if (!agent) return;
+      const date = (f[iDate]||'').slice(0,10);
+      const folio = (f[iFolio]||'').trim();
+      const rev = parseFloat(f[iRev])||0, cash = parseFloat(f[iCash])||0, ref = parseFloat(f[iRef])||0;
+      let a = byAgent.get(agent);
+      if (!a) { a = {revenue:0,cash:0,refunds:0,n:0}; byAgent.set(agent,a); }
+      a.revenue += rev; a.cash += cash; a.refunds += ref; a.n++;
+      if (folio) folioIndex.set(folio, {agent,date,revenue:rev,cash,refunds:ref});
+    });
+    return { byAgent, folioIndex };
+  },
+
+  // ── Merge Sales + Staff + Calls -> filas por agente/día (shape DataEngine.rows) ──
+  _mergeRows(sales, staff, calls) {
+    const keys = new Set([...sales.agg.keys(), ...staff.agg.keys(), ...calls.agg.keys()]);
+    const rows = [];
+    keys.forEach(k => {
+      const [agent, date] = k.split('|');
+      const s = sales.agg.get(k) || {sales:0,cash:0,revenue:0,cancelaciones:0,descuentos:0,refunds:0};
+      const st = staff.agg.get(k) || {staff_h:0,oncall:0,occupancy:0,not_ready:0,acw:0,training:0,break_t:0};
+      const c = calls.agg.get(k) || {calls_2m:0,calls_25:0,calls_510:0,calls_10:0,talk_time:0,call_count:0};
+      const month = date.slice(0,7);
+      const wk = RawEngine._isoWeek(date);
+      const week = 'W'+String(wk).padStart(2,'0');
+      const week_of_year = date.slice(0,4)+'-W'+String(wk).padStart(2,'0');
+      const dow = RawEngine._dowName(date);
+      const year = date.slice(0,4);
+      const occupancy = st.occupancy || (st.staff_h ? st.oncall/st.staff_h : 0);
+      const cr = c.calls_2m ? s.sales/c.calls_2m : 0;
+      const aht = c.calls_2m ? c.talk_time/c.calls_2m : 0;
+      rows.push({
+        agent, supervisor: null, date, month, week, week_of_year, dow, year,
+        sales: s.sales, cash: s.cash, revenue: s.revenue, refunds: s.refunds,
+        cancelaciones: s.cancelaciones, descuentos: s.descuentos,
+        calls_2m: c.calls_2m, calls_25: c.calls_25, calls_510: c.calls_510, calls_10: c.calls_10, talk_time: c.talk_time,
+        staff_h: st.staff_h, oncall: st.oncall, not_ready: st.not_ready, acw: st.acw, training: st.training, break_t: st.break_t,
+        occupancy, cr, aht,
+      });
+    });
+    return { rows };
+  },
+
+  // ── agents_meta: reusa supervisor/segmento/score conocidos, agrega el resto de agentes sin inventar datos ──
+  _buildAgentsMeta(rows, salesAgents, staffAgents, callsAgents) {
+    const known = (DataEngine._agents && DataEngine._agents.agents_meta) || {};
+    const allAgents = new Set([...salesAgents, ...staffAgents, ...callsAgents]);
+    const agents_meta = {};
+    allAgents.forEach(ag => {
+      agents_meta[ag] = known[ag] ? {...known[ag]} : { nombre: ag, supervisor: 'Sin Supervisor', team: 'Recurrence' };
+    });
+    rows.forEach(r => { if (agents_meta[r.agent]) r.supervisor = agents_meta[r.agent].supervisor; });
+    const supervisor_list = [...new Set(Object.values(agents_meta).map(m => m.supervisor).filter(s => s && s !== 'Sin Supervisor'))].sort();
+    const months = [...new Set(rows.map(r => r.month))].sort();
+    const weeks = [...new Set(rows.map(r => r.week_of_year))].sort();
+    return { agents: [...allAgents].sort(), agents_meta, supervisor_list, months, weeks };
+  },
+
+  // ── Cobranza: equipo de billing (7 personas) + ventas cruzadas con reintegro por Folio ──
+  _buildCobranza(sales, billing) {
+    const billingAgents = [...billing.byAgent.entries()].map(([agent, a]) => ({
+      agent, revenue: a.revenue, cash: a.cash, refunds: a.refunds, n: a.n,
+    })).sort((a,b) => b.revenue - a.revenue);
+
+    const crossRefs = [];
+    sales.foliosWithRefund.forEach((salesInfo, folio) => {
+      const billInfo = billing.folioIndex.get(folio);
+      crossRefs.push({
+        folio, agent: salesInfo.agent, date: salesInfo.date, type: salesInfo.type, salesRefundAmt: salesInfo.amt,
+        billingAgent: billInfo ? billInfo.agent : null, billingRefundAmt: billInfo ? billInfo.refunds : null,
+      });
+    });
+    crossRefs.sort((a,b) => (b.salesRefundAmt||0) - (a.salesRefundAmt||0));
+
+    return {
+      billingAgents,
+      totalRefundsBilling: billingAgents.reduce((s,a)=>s+a.refunds,0),
+      totalFoliosBilling: billing.folioIndex.size,
+      crossRefs,
+      totalCancelaciones: crossRefs.filter(r=>r.type==='Total').length,
+      totalDescuentos: crossRefs.filter(r=>r.type==='Parcial').length,
+    };
+  },
+};
+
 const HistoryEngine = {
   analyze(h) {
     return { insights: this._insights(h), coaching: this._coaching(h), patterns: this._patterns(h) };
@@ -1497,7 +1924,7 @@ const Q = {
 // ────────────────────────────────────────────────────────────────
 const sd = (a,b) => (b&&isFinite(b)&&b!==0) ? a/b : 0;
 const agg = (rows,k) => rows.reduce((s,r)=>s+(+r[k]||0), 0);
-const AGG_FIELDS = ['revenue','cash','sales','refunds','calls_2m','calls_25','calls_510','calls_10','talk_time','staff_h','oncall','not_ready','acw','training','break_t'];
+const AGG_FIELDS = ['revenue','cash','sales','refunds','cancelaciones','descuentos','calls_2m','calls_25','calls_510','calls_10','talk_time','staff_h','oncall','not_ready','acw','training','break_t'];
 function aggAll(rows) { const o={}; AGG_FIELDS.forEach(k=>{o[k]=rows.reduce((s,r)=>s+(+r[k]||0),0);}); return o; }
 function groupBy(rows,k) { const m={}; rows.forEach(r=>{const key=(typeof k==='function'?k(r):r[k])||'-'; if(!m[key])m[key]=[]; m[key].push(r);}); return m; }
 function isoWeek(d) { const t=new Date(d); t.setHours(0,0,0,0); t.setDate(t.getDate()+4-(t.getDay()||7)); return Math.ceil((((t-new Date(t.getFullYear(),0,1))/86400000)+1)/7); }
@@ -1608,6 +2035,7 @@ function update(){
     case'coaching':    renderCoaching(allRows);         break;
     case'metas':       renderMetas(rows,allRows);       break;
     case'ranking':     renderRanking();                 break;
+    case'cobranza':    renderCobranza();                break;
     case'admin':       renderAdmin();                   break;
   }
 }
@@ -1684,8 +2112,9 @@ function renderOverview(rows,allRows){
 
 function renderSales(rows,allRows){
   const tS=agg(rows,'sales'),tC=agg(rows,'cash'),tR=agg(rows,'revenue'),tRef=agg(rows,'refunds'),tCl=agg(rows,'calls_2m'),tSt=agg(rows,'staff_h');
+  const tCanc=agg(rows,'cancelaciones'),tDesc=agg(rows,'descuentos');
   const cr=sd(tS,tCl),asp=sd(tR,tS),sph=sd(tS,tSt);
-  kpis('kpi-sl',[{l:'Ventas brutas',v:F.num(tS),s:F.num(tS-tRef)+' netas',c:'#16a34a'},{l:'Revenue',v:F.usd(tR),s:F.usd(tC)+' cash',c:'#4f46e5'},{l:'ASP',v:F.usd(asp),s:'ticket promedio',c:'#7c3aed'},{l:'CR%',v:F.pct(cr),s:F.num(tS)+'/'+F.num(tCl),c:crC(cr)},{l:'SPH',v:F.dec(sph,3),s:'ventas/hora',c:'#0891b2'},{l:'Refund Cases',v:String(tRef),s:'eventos cancelacion',c:tRef>5?'#dc2626':'#16a34a'}]);
+  kpis('kpi-sl',[{l:'Ventas brutas',v:F.num(tS),s:F.num(tS-tRef)+' netas',c:'#16a34a'},{l:'Revenue',v:F.usd(tR),s:F.usd(tC)+' cash',c:'#4f46e5'},{l:'ASP',v:F.usd(asp),s:'ticket promedio',c:'#7c3aed'},{l:'CR%',v:F.pct(cr),s:F.num(tS)+'/'+F.num(tCl),c:crC(cr)},{l:'SPH',v:F.dec(sph,3),s:'ventas/hora',c:'#0891b2'},{l:'Cancelaciones',v:String(tCanc),s:'anuladas 100% (Refunds Type=Total)',c:tCanc>3?'#dc2626':'#16a34a'},{l:'Descuentos',v:String(tDesc),s:'reintegro parcial (Refunds Type=Parcial)',c:tDesc>3?'#d97706':'#16a34a'}]);
   const rv=Series.get(rows,'revenue'),cs=Series.get(rows,'cash'),sl=Series.get(rows,'sales'),rf=Series.get(rows,'refunds');
   mkLine('c-s-rv',rv.labels,[{data:rv.data,borderColor:'#4f46e5',backgroundColor:'rgba(79,70,229,.08)',fill:true,tension:.4,pointRadius:3,borderWidth:2,label:'Revenue'},{data:cs.data,borderColor:'#16a34a',tension:.4,pointRadius:2,borderWidth:1.5,borderDash:[4,3],label:'Cash'}],v=>'$'+Math.round(v/1000)+'k',true);
   mkStack('c-s-rf',sl.labels,[{label:'Ventas',data:sl.data,backgroundColor:'rgba(22,163,74,.4)',borderColor:'#16a34a',borderWidth:1.5,borderRadius:3,showLabels:true},{label:'Refund Cases',data:rf.data,backgroundColor:'rgba(220,38,38,.4)',borderColor:'#dc2626',borderWidth:1.5,borderRadius:3}]);
@@ -1698,8 +2127,8 @@ function renderSales(rows,allRows){
 let _callsTab = 'all';
 function setCTab(t) {
   _callsTab = t;
-  ['all','cmn','inb','man','oth','lat','usa'].forEach(k=>{const b=$('ctab-'+k);if(b)b.className='btn-sec';b&&(b.style.cssText='padding:4px 12px;font-size:11px');});
-  const map={all:'all',CallMeNow:'cmn',Inbound:'inb',Manual:'man',Others:'oth',LATAM:'lat',USA:'usa'};
+  ['all','cmn','inb','man','oth','alp','bet','del'].forEach(k=>{const b=$('ctab-'+k);if(b)b.className='btn-sec';b&&(b.style.cssText='padding:4px 12px;font-size:11px');});
+  const map={all:'all',CallMeNow:'cmn',Inbound:'inb',Manual:'man',Others:'oth',Alpha:'alp',Beta:'bet',Delta:'del'};
   const btn=$('ctab-'+(map[t]||'all'));if(btn)btn.className='btn-pdf';
   renderCalls(Q.rows(),Q.allRows());
 }
@@ -1865,11 +2294,11 @@ function renderCalls(rows, allRows) {
 
   // Chart 4: Distribución por campaña (donut — always shows all campaigns)
   // Campaign donut — single call, adapts to data availability
-  const campNames = ['CallMeNow','Inbound','Manual','Others'];
+  const campNames = ['CallMeNow','Inbound','Manual','Others','Alpha','Beta','Delta'];
   const campVals  = cr.length > 0
     ? campNames.map(c=>cr.filter(r=>r.campaign===c).reduce((s,r)=>s+(r.calls_2m||0),0))
-    : [0,0,0,0];
-  mkDonut('c-c-camp', campNames, campVals, ['rgba(59,130,246,.8)','rgba(124,58,237,.8)','rgba(22,163,74,.8)','rgba(217,119,6,.8)']);
+    : campNames.map(()=>0);
+  mkDonut('c-c-camp', campNames, campVals, ['rgba(59,130,246,.8)','rgba(124,58,237,.8)','rgba(22,163,74,.8)','rgba(217,119,6,.8)','rgba(219,39,119,.8)','rgba(8,145,178,.8)','rgba(120,113,108,.8)']);
 
   // Mix donut (subsets)
   mkDonut('c-c-mix', ['2-5min','5-10min','>10min'],
@@ -2095,7 +2524,10 @@ function exportPDF(){const p=$('pdf-preview');if(p)p.style.display='block';setTi
 function renderRanking(){
   const sortF=($('rank-sort')&&$('rank-sort').value)||rankSort;
   const supF=($('rank-sup')&&$('rank-sup').value)||'';
-  const _rrows=Q.rows();
+  // Ranking es una vista comparativa entre TODOS los asesores del período — no debe
+  // quedar limitada al asesor/supervisor actualmente seleccionado arriba (eso rompía
+  // la tabla apenas había más de un agente real cargado).
+  const _rrows=DataEngine.rows.filter(r=>Q._period(r));
   const _ragents=[...new Set(_rrows.map(r=>r.agent))];
   const _rmap={};
   _ragents.forEach(ag=>{
@@ -2119,6 +2551,41 @@ function renderRanking(){
   const tenSt={'Antiguo':'background:#dcfce7;color:#166534;border:1px solid #86efac','Medio Nuevo':'background:#fef9c3;color:#854d0e;border:1px solid #fde68a','Nuevo':'background:#fee2e2;color:#991b1b;border:1px solid #fecaca'};
   const body=$('rank-body');if(!body)return;
   body.innerHTML=data.map((r,i)=>{const rank=i+1,rc=rank<=3?'r'+rank:'rn',sc=r.score!=null?Math.round(r.score*100):null,scCol=sc!=null?scC(r.score):'#94a3b8';const sst=segSt[r.segmento]||'background:var(--s2);color:var(--tx3)',tst=tenSt[r.tenure_seg]||'background:var(--s2);color:var(--tx3)';const agEsc=r.agent.replace(/"/g,'&quot;');const comm=DataEngine.getCommission(r.agent,APP_STATE.currentMonth);return '<tr><td><span class="rank-badge '+rc+'">'+rank+'</span></td><td style="font-weight:600;color:var(--ind);cursor:pointer" data-agent="'+agEsc+'" onclick="openAgent(this.dataset.agent)">'+r.agent+'</td><td style="color:var(--tx2)">'+r.supervisor+'</td><td><span class="seg-badge" style="'+sst+'">'+(r.segmento||'--')+'</span></td><td><span class="seg-badge" style="'+tst+'">'+(r.tenure_seg||'--')+(r.meses>0?' '+r.meses+'m':'')+'</span></td><td style="font-family:var(--mono);font-size:10px;color:var(--tx3)">'+(r.fecha_ingreso?(()=>{const _p=r.fecha_ingreso.split('-');return _p.length===3?_p[2]+'/'+_p[1]+'/'+_p[0]:r.fecha_ingreso;})():'--')+'</td><td style="font-family:var(--mono);font-weight:700;color:'+(rank<=3?'#4f46e5':'var(--tx2)')+'">'+F.usd(r.revenue)+'</td><td class="mono">'+F.usd(r.cash)+'</td><td class="mono">'+F.num(r.sales)+'</td><td style="font-family:var(--mono);font-weight:700;color:'+crC(r.cr)+'">'+F.pct(r.cr)+'</td><td class="mono">'+F.usd(r.asp)+'</td><td class="mono">'+F.dec(r.sph,3)+'</td><td class="mono">'+F.usd(r.rev_per_call)+'</td><td class="mono">'+F.usd(r.rev_per_staff)+'</td>'+(comm?'<td class="mono" style="color:#7c3aed;font-weight:700">'+F.usd(comm.comision_usd||0)+'</td>':'<td class="mono" style="color:var(--tx3)">--</td>')+'<td style="font-family:var(--mono);font-weight:700;color:'+scCol+'">'+(sc!=null?sc+'%':'--')+'</td></tr>';}).join('');
+}
+
+// ────────────────────────────────────────────────────────────────
+//  COBRANZA — equipo de Billing + ventas con reintegro cruzadas por Folio
+//  (datos reales de QS_Pay_Billing_Agent.csv + Refunds Type de QS_Sales_Agent_Perfo.csv)
+// ────────────────────────────────────────────────────────────────
+function renderCobranza(){
+  const cb = DataEngine.cobranza;
+  if (!cb) {
+    kpis('kpi-cb', [{l:'Cobranza', v:'Sin datos', s:'Agent-Performance/Recurrence aún no cargó', c:'#94a3b8'}]);
+    const bb=$('cb-billing-body'); if(bb) bb.innerHTML='';
+    const cbb=$('cb-cross-body'); if(cbb) cbb.innerHTML='';
+    return;
+  }
+  const totalCancel = cb.totalCancelaciones, totalDesc = cb.totalDescuentos;
+  kpis('kpi-cb', [
+    {l:'Refunds procesados (Billing)', v:F.usd(cb.totalRefundsBilling), s:'suma columna Refunds', c:'#dc2626'},
+    {l:'Folios en Billing', v:F.num(cb.totalFoliosBilling), s:'pagos únicos', c:'#0891b2'},
+    {l:'Cancelaciones (Total)', v:F.num(totalCancel), s:'ventas anuladas 100%', c:'#dc2626'},
+    {l:'Descuentos (Parcial)', v:F.num(totalDesc), s:'ventas con reintegro parcial', c:'#d97706'},
+    {l:'Cruces por Folio', v:F.num(cb.crossRefs.length), s:'venta encontrada en Billing', c:'#7c3aed'},
+    {l:'Agentes de Billing', v:F.num(cb.billingAgents.length), s:'equipo de cobranza', c:'#64748b'},
+  ]);
+
+  const bb = $('cb-billing-body');
+  if (bb) bb.innerHTML = cb.billingAgents.map(a =>
+    '<tr><td style="font-weight:600">'+a.agent+'</td><td class="mono">'+F.num(a.n)+'</td><td class="mono">'+F.usd(a.revenue)+'</td><td class="mono">'+F.usd(a.cash)+'</td><td class="mono" style="color:#dc2626">'+F.usd(a.refunds)+'</td></tr>'
+  ).join('');
+
+  const lbl = $('cb-cross-lbl'); if (lbl) lbl.textContent = cb.crossRefs.length+' ventas';
+  const cbb = $('cb-cross-body');
+  if (cbb) cbb.innerHTML = cb.crossRefs.slice(0,200).map(r => {
+    const typeLbl = r.type==='Total' ? '<span style="color:#dc2626;font-weight:700">Cancelación</span>' : '<span style="color:#d97706;font-weight:700">Descuento</span>';
+    return '<tr><td class="mono">'+r.folio+'</td><td style="font-weight:600;color:var(--ind);cursor:pointer" onclick="openAgent(\''+r.agent.replace(/'/g,"\\'")+'\')">'+r.agent+'</td><td class="mono">'+r.date+'</td><td>'+typeLbl+'</td><td class="mono">'+F.usd(r.salesRefundAmt)+'</td><td>'+(r.billingAgent||'<span style="color:var(--tx3)">sin match</span>')+'</td></tr>';
+  }).join('');
 }
 
 function openAgent(nombre){
@@ -2390,6 +2857,23 @@ async function init(){
   APP_STATE.currentPeriod    = Store.get('state_period','month');
 
   await DataEngine.loadAll();
+
+  // Agent-Performance/Recurrence/*.csv — fuente cruda real. Si existe, reemplaza
+  // por completo lo que haya cargado loadAll() (JSON embebido/localStorage) con
+  // datos recalculados directo del CSV. Si falla (ej. archivos no publicados aún),
+  // se queda con lo que ya cargó loadAll() como respaldo.
+  await RawEngine.load();
+
+  // Refleja en el header los datos reales ya cargados (antes quedaban fijos/desactualizados)
+  if (RawEngine._loaded) {
+    const hdrAg = $('hdr-agents'); if (hdrAg) hdrAg.textContent = String(DataEngine.agentList.length);
+    const sub = document.querySelector('.hdr-sub');
+    if (sub && DataEngine.months.length) {
+      const first = MES_ES[DataEngine.months[0]] || DataEngine.months[0];
+      const last  = MES_ES[DataEngine.months[DataEngine.months.length-1]] || DataEngine.months[DataEngine.months.length-1];
+      sub.textContent = 'Dashboard Operativo 2026 · ' + first + ' – ' + last + ' (datos reales, Agent-Performance/Recurrence)';
+    }
+  }
 
   // Always default to the LAST available month (most recent data)
   // Don't restore from localStorage — always start fresh on the latest month
