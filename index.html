@@ -3056,7 +3056,8 @@ let CT_DATA = {"meta":{"fuente":"Google Sheet 'Post-Sales-Operations Calls', pes
 
   // calendario del mes: una casilla por día, coloreada por cumplimiento % de
   // Post-Venta total ese día (heatColorFor ya se usa en el heatmap de arriba).
-  function renderCalendarHeat(container, days){
+  function renderCalendarHeat(container, days, opKey){
+    opKey = opKey || 'postventa_total';
     const offset = DOW_ORDER.indexOf(days[0].dow_es); // 0=Lunes ... 6=Domingo
     const cells = new Array(offset).fill(null).concat(days);
     const grid = document.createElement('div');
@@ -3070,7 +3071,7 @@ let CT_DATA = {"meta":{"fuente":"Google Sheet 'Post-Sales-Operations Calls', pes
     cells.forEach(d => {
       const cell = document.createElement('div');
       if (!d){ cell.style.cssText = 'min-height:44px'; grid.appendChild(cell); return; }
-      const pv = d.ops.postventa_total;
+      const pv = d.ops[opKey];
       const isFuture = d.status === 'future';
       const bg = isFuture ? 'var(--surface)' : heatColorFor(pv.cumpl_pct);
       cell.style.cssText = `min-height:44px;border-radius:7px;border:1px solid var(--border);background:${bg};display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9.5px;${d.status==='today_partial'?'box-shadow:inset 0 0 0 2px var(--series-1);':''}`;
@@ -3082,6 +3083,75 @@ let CT_DATA = {"meta":{"fuente":"Google Sheet 'Post-Sales-Operations Calls', pes
       grid.appendChild(cell);
     });
     container.innerHTML = ''; container.appendChild(grid);
+  }
+
+  // barras agrupadas verticales: 2 barras (Plan gris / Real por severidad) por
+  // cada categoría (ej. una fecha puntual), para comparar ocurrencias
+  // individuales del mismo día de semana (ej. "todos los lunes del mes" uno
+  // al lado del otro) en vez de un solo total acumulado -- pedido explícito
+  // del usuario para ver "cómo fue este lunes vs. lunes previos" de un
+  // vistazo.
+  //
+  // v2: reemplaza las 2 barras (Plan gris / Real de color) por el patrón
+  // "bullet chart" -- 1 sola barra (Real, coloreada según cumplimiento) +
+  // 1 línea de meta (Plan) que la cruza. Con 2 barras casi idénticas en alto
+  // el usuario no distinguía cuál era Plan y cuál era Real sin pasar el
+  // mouse; con este patrón no hace falta leyenda para diferenciarlas: la
+  // barra ES el resultado, la línea ES la meta. Encima/debajo de la línea ya
+  // dice todo (superó o no la meta) sin tener que comparar dos alturas.
+  function renderTargetBarChart(container, groups, opts){
+    opts = opts||{};
+    const W = opts.width || Math.max(240, groups.length*80);
+    const H = opts.height||190;
+    const PAD = {l:opts.padLeft||8, r:8, t:22, b:26};
+    const vals = groups.flatMap(g=>[g.plan||0, g.real||0]);
+    const yMax = Math.max(1, ...vals) * 1.08; // aire arriba para la etiqueta de valor
+    const plotH = H-PAD.t-PAD.b;
+    const yAt = v => H-PAD.b - (v/yMax)*plotH;
+    const groupW = (W-PAD.l-PAD.r)/Math.max(1,groups.length);
+    const barW = Math.min(26, groupW*0.5);
+
+    const root = svg('svg',{viewBox:`0 0 ${W} ${H}`, class:'ct-chart'});
+    for (let g=0; g<=2; g++){
+      const v = yMax*g/2, y=yAt(v);
+      root.appendChild(svg('line',{x1:PAD.l,x2:W-PAD.r,y1:y,y2:y,stroke:'var(--border)','stroke-width':1,'stroke-dasharray':g===0?'0':'2,3'}));
+    }
+
+    groups.forEach((gr,i) => {
+      const gx = PAD.l + i*groupW + groupW/2;
+      const sev = ctSeverity(gr.cumpl);
+      const realColor = gr.real==null ? 'var(--text-muted,#9a9a94)' : (SEV_COLOR[sev] || 'var(--series-3)');
+      const realVal = gr.real||0, planVal = gr.plan||0;
+      const x = gx - barW/2;
+      const yReal = yAt(realVal), yBase = yAt(0);
+      const rect = svg('rect',{x,y:yReal,width:barW,height:Math.max(1,yBase-yReal),rx:3,fill:realColor});
+      const tip = `<strong>${gr.label}</strong><br>Plan: ${fmtMoney(planVal)}<br>Real: ${gr.real==null?'—':fmtMoney(realVal)}` + (gr.cumpl!=null?`<br>Cumpl: ${fmtPct1(gr.cumpl)}`:'');
+      rect.addEventListener('mouseenter', e => showTip(e.clientX, e.clientY-8, tip));
+      rect.addEventListener('mousemove', e => showTip(e.clientX, e.clientY-8, tip));
+      rect.addEventListener('mouseleave', hideTip);
+      root.appendChild(rect);
+
+      // línea de meta (Plan): un tick horizontal más ancho que la barra, cruzándola --
+      // el mismo lenguaje visual en las 7 tarjetas, así se reconoce sin leyenda.
+      const yPlan = yAt(planVal);
+      const tick = svg('line',{x1:x-4,x2:x+barW+4,y1:yPlan,y2:yPlan,stroke:'var(--text-primary)','stroke-width':3,'stroke-linecap':'round'});
+      tick.addEventListener('mouseenter', e => showTip(e.clientX, e.clientY-8, tip));
+      tick.addEventListener('mousemove', e => showTip(e.clientX, e.clientY-8, tip));
+      tick.addEventListener('mouseleave', hideTip);
+      root.appendChild(tick);
+
+      // una sola etiqueta directa por barra (el resultado real) -- el plan se
+      // lee en la posición de la línea y en el tooltip, no hace falta repetirlo.
+      const labelY = Math.min(yReal, yPlan) - 5;
+      const label = svg('text',{x:gx, y:labelY, 'text-anchor':'middle','font-size':9,'font-weight':700,fill:'var(--text-secondary)','pointer-events':'none'});
+      label.textContent = gr.real==null ? '—' : fmtMoneyK(realVal);
+      root.appendChild(label);
+
+      const t = svg('text',{x:gx, y:H-8, 'text-anchor':'middle','font-size':9.5,fill:'var(--text-secondary)','font-weight':600});
+      t.textContent = gr.label;
+      root.appendChild(t);
+    });
+    container.innerHTML=''; container.appendChild(root);
   }
 
   /* ================= DRILL-DOWN ================= */
@@ -3447,10 +3517,30 @@ let CT_DATA = {"meta":{"fuente":"Google Sheet 'Post-Sales-Operations Calls', pes
       return c ? c.cumpl_pct_promedio : null;
     }));
     el.innerHTML = `
+      <div class="ct-filter-row">
+        <label style="font-size:12px;color:var(--text-secondary)">Operación</label>
+        <select class="ct-select" id="ctDowOpSel"></select>
+      </div>
       <div class="ct-card">
-        <h3>Calendario del mes: cumplimiento % de Post-Venta, día por día</h3>
+        <h3 id="ctCalendarHeatTitle">Calendario del mes: cumplimiento %, día por día</h3>
         <p class="ct-q">Un vistazo a la secuencia real del mes (no un promedio) — para ver rachas de días buenos o malos que el heatmap por día de semana no muestra.</p>
         <div id="ctCalendarHeat"></div>
+      </div>
+      <div class="ct-card">
+        <h3 id="ctWeekdayWeekendTitle">Lunes a Viernes vs. Sábado y Domingo — Plan vs Real del mes</h3>
+        <p class="ct-q">Todos los días entre semana sumados contra todos los días de fin de semana sumados (solo días ya cerrados) — la vista más rápida de "¿cerramos más entre semana o el fin de semana?".</p>
+        <div class="ct-grid-2" id="ctWeekdayWeekendGrid"></div>
+      </div>
+      <div class="ct-card">
+        <h3 id="ctDowMoneyTitle">Plan vs Real por día de semana, fecha por fecha</h3>
+        <p class="ct-q">Cada lunes, cada martes, etc. del mes uno al lado del otro (solo días ya cerrados) — para comparar fácil, por ejemplo, este lunes contra los lunes previos, en vez de ver solo un acumulado. El badge de % es el cumplimiento promedio del mes completo para ese día de semana. Pasa el mouse sobre cualquier barra para ver el detalle exacto.</p>
+        <div class="ct-legend-row" style="display:flex;gap:16px;align-items:center;font-size:11px;color:var(--text-secondary);margin:2px 0 12px;flex-wrap:wrap">
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:3px;background:var(--text-primary);border-radius:2px;display:inline-block"></span> Línea = Meta (Plan)</span>
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:var(--series-3);border-radius:3px;display:inline-block"></span> Barra = Real, en línea o sobre el plan</span>
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:var(--series-2);border-radius:3px;display:inline-block"></span> Real en zona de atención</span>
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:var(--bad);border-radius:3px;display:inline-block"></span> Real crítico</span>
+        </div>
+        <div id="ctDowMoneyGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px"></div>
       </div>
       <div class="ct-card">
         <h3>Heatmap: cumplimiento % promedio por día de semana × operación</h3>
@@ -3463,7 +3553,80 @@ let CT_DATA = {"meta":{"fuente":"Google Sheet 'Post-Sales-Operations Calls', pes
         <table class="ct-table" id="ctDowTable"></table>
       </div>
     `;
-    renderCalendarHeat($('#ctCalendarHeat'), CT_DATA.daily);
+
+    const opSel = $('#ctDowOpSel');
+    Object.keys(OP_META).forEach(k => { const o=document.createElement('option'); o.value=k; o.textContent=OP_META[k].label; opSel.appendChild(o); });
+    opSel.value = 'postventa_total';
+
+    // Plan vs Real sumado (no promediado) por día de semana, y agregados
+    // Lunes-a-Viernes / Sábado-y-Domingo -- pedido explícito del usuario, en
+    // forma de gráfica (2 barras: Plan vs Real) para verlo más fácil que en tabla,
+    // y filtrable por operación (no solo el acumulado de Post-Venta total).
+    function sumPlanReal(ds, key){
+      const plan = ds.reduce((s,d)=>s+d.ops[key].plan,0);
+      const real = ds.reduce((s,d)=>s+(d.ops[key].real||0),0);
+      return {plan, real, n:ds.length, cumpl: plan ? 100*real/plan : null};
+    }
+    function renderTwoBarCard(container, title, agg){
+      const sev = ctSeverity(agg.cumpl);
+      container.innerHTML = `<div style="font-size:12.5px;font-weight:700;margin-bottom:6px">${title} <span class="ct-alert ${sev}" style="padding:2px 7px;font-size:10.5px;margin-left:4px">${agg.cumpl==null?'SIN DATOS':fmtPct1(agg.cumpl)}</span> <span style="color:var(--text-secondary);font-weight:400">(${agg.n} día${agg.n===1?'':'s'})</span></div><div class="ct-chart-wrap"></div>`;
+      renderHBarChart(container.querySelector('.ct-chart-wrap'), [
+        {label:'Plan', value:agg.plan, color:'var(--text-muted,#9a9a94)'},
+        {label:'Real', value:agg.real, color: SEV_COLOR[sev]},
+      ], {valFormat:fmtMoney, tipFormat:fmtMoney, padLeft:60});
+    }
+    // como renderTwoBarCard, pero para las 7 tarjetas de día de semana: en vez
+    // de un solo total acumulado, dibuja una barra agrupada por cada fecha
+    // puntual (ej. cada lunes del mes) para poder comparar semana a semana.
+    // El % de cumplimiento del header sigue siendo el promedio del mes
+    // completo -- el usuario pidió mantenerlo visible.
+    function renderDateGroupedCard(container, title, agg, groups){
+      const sev = ctSeverity(agg.cumpl);
+      container.innerHTML = `<div style="font-size:12.5px;font-weight:700;margin-bottom:6px">${title} <span class="ct-alert ${sev}" style="padding:2px 7px;font-size:10.5px;margin-left:4px">${agg.cumpl==null?'SIN DATOS':fmtPct1(agg.cumpl)}</span> <span style="color:var(--text-secondary);font-weight:400">(${agg.n} día${agg.n===1?'':'s'})</span></div><div class="ct-chart-wrap"></div>`;
+      if (!groups.length){
+        container.querySelector('.ct-chart-wrap').innerHTML = '<div class="ct-note" style="margin:0">Sin días cerrados todavía este mes.</div>';
+        return;
+      }
+      renderTargetBarChart(container.querySelector('.ct-chart-wrap'), groups);
+    }
+    const WEEKDAY_DOWS = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
+    const WEEKEND_DOWS = ['Sábado','Domingo'];
+    function drawByOp(){
+      const key = opSel.value;
+      const label = OP_META[key].label;
+      $('#ctCalendarHeatTitle').textContent = `Calendario del mes: cumplimiento % de ${label}, día por día`;
+      $('#ctWeekdayWeekendTitle').textContent = `Lunes a Viernes vs. Sábado y Domingo — Plan vs Real del mes (${label})`;
+      $('#ctDowMoneyTitle').textContent = `Plan vs Real por día de semana (suma del mes, ${label})`;
+      renderCalendarHeat($('#ctCalendarHeat'), CT_DATA.daily, key);
+
+      const elapsedDaily = CT_DATA.daily.filter(d=>d.status==='elapsed');
+      const weekdayAgg = sumPlanReal(elapsedDaily.filter(d=>WEEKDAY_DOWS.includes(d.dow_es)), key);
+      const weekendAgg = sumPlanReal(elapsedDaily.filter(d=>WEEKEND_DOWS.includes(d.dow_es)), key);
+      const wwGrid = $('#ctWeekdayWeekendGrid');
+      wwGrid.innerHTML = '<div></div><div></div>';
+      renderTwoBarCard(wwGrid.children[0], 'Lunes a Viernes', weekdayAgg);
+      renderTwoBarCard(wwGrid.children[1], 'Sábado y Domingo', weekendAgg);
+
+      const dowGrid = $('#ctDowMoneyGrid');
+      dowGrid.innerHTML = DOW_ORDER.map(()=>'<div></div>').join('');
+      DOW_ORDER.forEach((dow,i) => {
+        const ds = elapsedDaily.filter(d=>d.dow_es===dow).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+        const agg = sumPlanReal(ds, key);
+        const groups = ds.map(d => {
+          const pv = d.ops[key];
+          return {
+            label: `${d.fecha.slice(8,10)}/${d.fecha.slice(5,7)}`,
+            plan: pv.plan,
+            real: pv.real,
+            cumpl: pv.cumpl_pct,
+          };
+        });
+        renderDateGroupedCard(dowGrid.children[i], dow, agg, groups);
+      });
+    }
+    opSel.addEventListener('change', drawByOp);
+    drawByOp();
+
     renderHeatmap($('#ctDowHeat'), rows.map(k=>OP_META[k].label), DOW_ORDER, matrix);
     const tbl = $('#ctDowTable');
     let html = `<thead><tr><th>Día</th><th class="num">Plan prom.</th><th class="num">Real prom.</th><th class="num">Gap prom.</th><th class="num">Cumpl.% prom.</th><th>Mejor día</th><th>Peor día</th></tr></thead><tbody>`;
