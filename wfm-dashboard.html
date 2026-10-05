@@ -341,6 +341,25 @@
   .rca-heat td.selday,.rca-heat th.selday{outline:1.5px solid var(--series-1);outline-offset:-1.5px;}
   .rca-heat td.ct-heat-cell{min-width:30px;}
   .rca-alerts .ct-alert{cursor:pointer;font:inherit;font-size:11.5px;font-weight:700;text-align:left;}
+  .rca-days{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:0 0 12px;}
+  .rca-days-l{font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-right:6px;}
+  .rca-day{font:inherit;display:inline-flex;flex-direction:column;align-items:center;min-width:46px;padding:4px 6px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);cursor:pointer;line-height:1.15;}
+  .rca-day b{font-size:11px;} .rca-day span{font-size:11px;font-weight:700;}
+  .rca-day:hover{border-color:var(--series-1);}
+  .rca-day.sev-sobreplan,.rca-day.sev-enlinea{border-color:var(--good);} .rca-day.sev-sobreplan span,.rca-day.sev-enlinea span{color:var(--good);}
+  .rca-day.sev-atencion{border-color:#d9922b;} .rca-day.sev-atencion span{color:#b26f10;}
+  .rca-day.sev-critico{border-color:var(--bad);} .rca-day.sev-critico span{color:var(--bad);}
+  .rca-day.bajo{background:rgba(216,67,67,.10);}
+  .rca-day.sel{background:var(--series-1-soft);outline:2px solid var(--series-1);outline-offset:-1px;}
+  .rca-perf th.sortable{cursor:pointer;user-select:none;white-space:nowrap;} .rca-perf th.sortable:hover{color:var(--series-1);}
+  .rca-perf th.dim{opacity:.45;}
+  .rca-perf td.zero{color:var(--bad);font-weight:800;}
+  .rca-perf tr.rca-totrow td{background:var(--series-1-soft);border-top:1.5px solid var(--border-strong);}
+  .rca-perf tr.rca-totrow.sub td{background:transparent;font-style:italic;}
+  .rca-sum{font-size:12.5px;margin:0 0 8px;color:var(--text-secondary);} .rca-sum b{color:var(--text-primary,inherit);}
+  .rca-sum-hit{color:var(--bad);font-weight:600;}
+  .rca-ctrl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px;}
+  .rca-mas{margin-top:14px;}
   /* ===== Control Tower · diseño master-detalle (oct/2026) ===== */
   .ct-shell{display:grid;grid-template-columns:392px minmax(0,1fr);gap:18px;align-items:start;}
   .ct-side{position:sticky;top:12px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px 10px 10px;max-height:calc(100vh - 24px);overflow:auto;}
@@ -3112,7 +3131,9 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     ap.ops.forEach(function (o) {
       if (!o.ok || !OPS[o.op]) return;
       var key = OPS[o.op].ct;
-      var dias = o.dias.slice().sort();
+      var dias = o.dias.slice().sort().filter(function (f) {              // día sin nadie conectado = día sin operación (p. ej. domingo): no es base ni se analiza
+        return sum(o.agentes, function (a) { return a.d[f] ? a.d[f][0] : 0; }) > 0;
+      });
       var analizables = dias.filter(function (f) { var d = ctDay(ct, key, f); return d && d.status === 'elapsed' && d.ventas_plan != null; });
       var sups = [];
       o.agentes.forEach(function (a) {
@@ -3396,7 +3417,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       });
       o.sups.forEach(function (g) {
         var s = acc[g];
-        out[g].serie.push({ fecha: f, dow: DOW_CORTO[dow(f)], v: s.v, cap: r2(s.cap), cumpl: (b.dias.length && s.cap > 0) ? r2(100 * s.v / s.cap) : null, h: r2(s.h) });
+        var pl = ctDay(model.ct, o.ctKey, f), bajoPlan = pl && pl.ventas_plan != null && pl.ventas_plan < 2;
+        out[g].serie.push({ fecha: f, dow: DOW_CORTO[dow(f)], v: s.v, cap: r2(s.cap), cumpl: (b.dias.length && s.cap > 0 && !bajoPlan) ? r2(100 * s.v / s.cap) : null, h: r2(s.h) });
       });
     });
     o.sups.forEach(function (g) {
@@ -3455,7 +3477,107 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     return out;
   }
 
-  return { OPS: OPS, OPS_ORDER: OPS_ORDER, build: build, analizar: analizar, semanas: semanas, alertas: alertas, serieSupervisores: serieSupervisores, tipoDia: tipoDia };
+
+  /* ---------- tabla por agente con los 8 indicadores (total del período) ---------- */
+  function ratios(t) {
+    return {
+      asp: t.ventas ? t.revenue / t.ventas : null,
+      sph: t.staff ? t.ventas / t.staff : null,
+      cr: t.calls2 ? 100 * t.ventas / t.calls2 : null,
+      revCalls: t.calls2 ? t.revenue / t.calls2 : null,
+    };
+  }
+  function tablaAgentes(model, opKey, fechas, filtros) {
+    filtros = filtros || {};
+    var o = model.ops[opKey]; if (!o) return { ok: false };
+    var D = fechas.filter(function (f) { return o.dias.indexOf(f) >= 0; });
+    if (!D.length) return { ok: false, error: 'Sin días con datos de agentes en el período.' };
+    var B = o.dias.filter(function (f) { return D.indexOf(f) < 0; });
+    var bag = baseAgentes(o, B.length ? B : o.dias);
+    // ASP base de la operación (para el peso en $ de quien no vendió)
+    var vB = 0, rB = 0; (B.length ? B : o.dias).forEach(function (f) { o.agentes.forEach(function (a) { var d = a.d[f]; if (d) { vB += d[1]; rB += (d[2] || 0); } }); });
+    var aspOp = vB ? rB / vB : null;
+    var rows = [], tot = { ventas: 0, revenue: 0, staff: 0, calls2: 0, diasTrab: 0 };
+    o.agentes.forEach(function (a) {
+      if (filtros.sup && grupoDe(a) !== filtros.sup) return;
+      var t = { ventas: 0, revenue: 0, staff: 0, calls2: 0, diasTrab: 0, diasReg: 0 };
+      D.forEach(function (f) { var d = a.d[f]; if (!d) return; t.diasReg++; t.ventas += d[1]; t.revenue += (d[2] || 0); t.staff += d[0]; t.calls2 += (d[6] || 0); if (d[0] > 0) t.diasTrab++; });
+      if (!t.diasReg) return;
+      var b = bag[a.id], rt = ratios(t);
+      // ASP propio en los días base (si no tiene, el de la operación)
+      var av = 0, ar = 0; (B.length ? B : o.dias).forEach(function (f) { var d = a.d[f]; if (d && d[1]) { av += d[1]; ar += (d[2] || 0); } });
+      var aspAg = av ? ar / av : aspOp;
+      var normal = b.n ? b.E : (b.E || 0);
+      rows.push({
+        id: a.id, n: a.n, grupo: grupoDe(a), formador: !!a.formador,
+        ventas: t.ventas, revenue: r2(t.revenue), asp: rt.asp, staff: r2(t.staff), sph: rt.sph, cr: rt.cr, revCalls: rt.revCalls, calls2: t.calls2,
+        diasTrab: t.diasTrab, nDias: D.length, normal: r2(normal), normalUsd: aspAg != null ? r2(normal * aspAg) : null,
+        estado: t.diasTrab === 0 ? 'NO_TRABAJO' : (t.ventas === 0 ? 'SIN_VENTA' : 'VENDIO'),
+      });
+      tot.ventas += t.ventas; tot.revenue += t.revenue; tot.staff += t.staff; tot.calls2 += t.calls2; tot.diasTrab += t.diasTrab;
+    });
+    var rt = ratios(tot);
+    return { ok: true, fechas: D, rows: rows, tot: { ventas: tot.ventas, revenue: r2(tot.revenue), asp: rt.asp, staff: r2(tot.staff), sph: rt.sph, cr: rt.cr, revCalls: rt.revCalls, calls2: tot.calls2 },
+      baseDias: B.length, aspOp: aspOp };
+  }
+
+  /* ---------- mismo indicador por día de la semana (lun…dom) ---------- */
+  var WD_ORDER = [1, 2, 3, 4, 5, 6, 0];
+  var WD_NAME = { 1: 'Lun', 2: 'Mar', 3: 'Mié', 4: 'Jue', 5: 'Vie', 6: 'Sáb', 0: 'Dom' };
+  function metricOf(m, t) {      // t = {ventas,revenue,staff,calls2,nTrab}; aditivos = promedio por día trabajado, razones = sobre sumas
+    switch (m) {
+      case 'ventas': return t.nTrab ? t.ventas / t.nTrab : null;
+      case 'revenue': return t.nTrab ? t.revenue / t.nTrab : null;
+      case 'staff': return t.nTrab ? t.staff / t.nTrab : null;
+      case 'calls2': return t.nTrab ? t.calls2 / t.nTrab : null;
+      case 'asp': return t.ventas ? t.revenue / t.ventas : null;
+      case 'sph': return t.staff ? t.ventas / t.staff : null;
+      case 'cr': return t.calls2 ? 100 * t.ventas / t.calls2 : null;
+      case 'revCalls': return t.calls2 ? t.revenue / t.calls2 : null;
+    }
+    return null;
+  }
+  function tablaDiaSemana(model, opKey, fechas, metric, filtros) {
+    filtros = filtros || {};
+    var o = model.ops[opKey]; if (!o) return { ok: false };
+    var D = fechas.filter(function (f) { return o.dias.indexOf(f) >= 0; });
+    if (!D.length) return { ok: false, error: 'Sin días con datos de agentes en el período.' };
+    var byWd = {}; WD_ORDER.forEach(function (w) { byWd[w] = D.filter(function (f) { return dow(f) === w; }); });
+    function acc(a, days) {
+      var t = { ventas: 0, revenue: 0, staff: 0, calls2: 0, nTrab: 0 };
+      days.forEach(function (f) { var d = a.d[f]; if (!d) return; t.ventas += d[1]; t.revenue += (d[2] || 0); t.staff += d[0]; t.calls2 += (d[6] || 0); if (d[0] > 0) t.nTrab++; });
+      return t;
+    }
+    var rows = o.agentes.filter(function (a) {
+      if (filtros.sup && grupoDe(a) !== filtros.sup) return false;
+      return D.some(function (f) { return !!a.d[f]; });
+    }).map(function (a) {
+      return { id: a.id, n: a.n, grupo: grupoDe(a), cel: WD_ORDER.map(function (w) { var t = acc(a, byWd[w]); return { v: metricOf(metric, t), nTrab: t.nTrab, ventas: t.ventas }; }),
+        tot: metricOf(metric, acc(a, D)), ventasTot: acc(a, D).ventas };
+    });
+    // totales de la operación por día de la semana (aditivos: promedio por día de esa semana)
+    var totCel = WD_ORDER.map(function (w) {
+      var days = byWd[w]; if (!days.length) return { v: null, n: 0 };
+      var t = { ventas: 0, revenue: 0, staff: 0, calls2: 0, nTrab: days.length };
+      days.forEach(function (f) { rows.forEach(function (r) { var a = o.agentes.filter(function (x) { return x.id === r.id; })[0], d = a && a.d[f]; if (d) { t.ventas += d[1]; t.revenue += (d[2] || 0); t.staff += d[0]; t.calls2 += (d[6] || 0); } }); });
+      return { v: metricOf(metric, t), n: days.length };
+    });
+    var tAll = { ventas: 0, revenue: 0, staff: 0, calls2: 0, nTrab: D.length };
+    D.forEach(function (f) { rows.forEach(function (r) { var a = o.agentes.filter(function (x) { return x.id === r.id; })[0], d = a && a.d[f]; if (d) { tAll.ventas += d[1]; tAll.revenue += (d[2] || 0); tAll.staff += d[0]; tAll.calls2 += (d[6] || 0); } }); });
+    return { ok: true, metric: metric, cols: WD_ORDER.map(function (w) { return { wd: w, nombre: WD_NAME[w], n: byWd[w].length }; }), rows: rows, totCel: totCel, totAll: metricOf(metric, tAll), nDias: D.length };
+  }
+
+  /* ---------- tira de días: plan vs real por día (para ir al día bajo) ---------- */
+  function resumenDias(model, opKey) {
+    var o = model.ops[opKey]; if (!o) return [];
+    return o.analizables.map(function (f) {
+      var c = ctDay(model.ct, o.ctKey, f), cu = c.ventas_plan ? 100 * c.ventas_real / c.ventas_plan : null;
+      return { fecha: f, dow: DOW_CORTO[dow(f)], plan: r2(c.ventas_plan), real: c.ventas_real, cumpl: cu == null ? null : r2(cu), sev: sevOf(cu),
+        bajo: cu != null && cu < 95 && Math.abs(c.ventas_real - c.ventas_plan) >= Math.max(2, 0.05 * c.ventas_plan) };
+    });
+  }
+
+  return { tablaAgentes: tablaAgentes, tablaDiaSemana: tablaDiaSemana, resumenDias: resumenDias, WD_NAME: WD_NAME, OPS: OPS, OPS_ORDER: OPS_ORDER, build: build, analizar: analizar, semanas: semanas, alertas: alertas, serieSupervisores: serieSupervisores, tipoDia: tipoDia };
 });
 
 </script>
@@ -5133,7 +5255,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
      Fuente: Apps Script action=agentperf (pestañas Upsell, Recurrence, Bootcamp y Resurrection) + Plan/Real de Planif_2026.
      El cálculo vive en agentperf_rca.js (AgentPerfRCA); aquí solo se dibuja y se filtra.
      STAFF: horas > 0 = trabajó; 0 o "-" = no trabajó. Supervisor = grupo; otro valor en Supervisor = formador (personal nuevo en formación). */
-  const RCA = { op:'upsell', per:null, sup:null, q:'', todos:false };
+  const RCA = { op:'upsell', per:null, sup:null, q:'', todos:false, vista:'total', metric:'ventas', filtro:'todos', piso:0, sort:null, dowSort:null };
   let AP_PAYLOAD = null, AP_MODEL = null, AP_NOTA = '', AP_ALERTS = [];
   const RCA_EST = {
     NO_TRABAJO:   {t:'No trabajó',            c:'var(--text-muted)'},
@@ -5316,6 +5438,129 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     return h;
   }
 
+
+  /* ---------- Desempeño por agente: los 8 indicadores (Ventas, Revenue, ASP, STAFF, SPH, %CR 2 min, Rev./Calls 2 min, Calls ≥2 min) ---------- */
+  const PERF_COLS = [
+    {k:'ventas',  t:'Ventas',          f:v=>v==null?'—':String(Math.round(v*10)/10)},
+    {k:'normal',  t:'Normal/día',      f:v=>v==null?'—':v.toFixed(1), tip:'Ventas que normalmente hace en un día trabajado (promedio de los demás días cargados)'},
+    {k:'normalUsd',t:'Normal $/día',   f:v=>v==null?'—':'$'+Math.round(v), tip:'Lo que normalmente aporta en revenue por día (normal × su ASP)'},
+    {k:'revenue', t:'Revenue',         f:v=>v==null?'—':'$'+Math.round(v).toLocaleString('es-CO')},
+    {k:'asp',     t:'ASP',             f:v=>v==null?'—':'$'+Math.round(v)},
+    {k:'staff',   t:'STAFF (h)',       f:v=>v==null?'—':v.toFixed(1)},
+    {k:'sph',     t:'SPH',             f:v=>v==null?'—':v.toFixed(2), tip:'Ventas por hora conectada'},
+    {k:'cr',      t:'%CR 2 min',       f:v=>v==null?'—':v.toFixed(1)+'%', tip:'%CR 2 Min (Sin Manual): ventas ÷ llamadas ≥2 min'},
+    {k:'revCalls',t:'Rev./Calls 2 min',f:v=>v==null?'—':'$'+v.toFixed(1), tip:'Revenue por llamada ≥2 min (Sin Manual)'},
+    {k:'calls2',  t:'Calls ≥2 min',    f:v=>v==null?'—':String(Math.round(v))},
+  ];
+  const DOW_METRICS = [['ventas','Ventas','Promedio por día trabajado'],['revenue','Revenue','Promedio por día trabajado'],['asp','ASP',''],['staff','STAFF (h)','Promedio por día trabajado'],['sph','SPH',''],['cr','%CR 2 min',''],['revCalls','Rev./Calls 2 min',''],['calls2','Calls ≥2 min','Promedio por día trabajado']];
+  const fmtMetric = (m, v) => { const c = PERF_COLS.find(x => x.k === m); return c ? c.f(v) : (v==null?'—':v.toFixed(1)); };
+  function perfFechas(o){
+    if (RCA.vista === 'dow') return o.analizables.slice();                   // por día de la semana siempre mira todos los días cerrados del mes
+    return rcaFechas(o, RCA.per);
+  }
+  function estadoChip(e){ return e==='NO_TRABAJO' ? chip('NO_TRABAJO') : (e==='SIN_VENTA' ? chip('SIN_VENTA') : ''); }
+  function passFiltro(estado, ventas){
+    const f = RCA.filtro;
+    if (f==='sin') return ventas === 0;
+    if (f==='conectados') return estado === 'SIN_VENTA';
+    if (f==='notrab') return estado === 'NO_TRABAJO';
+    if (f==='piso') return ventas <= (RCA.piso||0);
+    return true;
+  }
+  function cmpNum(a, b, dir){ if (a==null && b==null) return 0; if (a==null) return 1; if (b==null) return -1; return (a-b)*dir; }
+  function drawTabla(){
+    const el = $('#rcaTabla'); if (!el || !AP_MODEL) return;
+    const o = AP_MODEL.ops[RCA.op]; if (!o) return;
+    const fechas = perfFechas(o), q = (RCA.q||'').toLowerCase();
+    $$('#rcaVista button').forEach(b => b.classList.toggle('active', b.dataset.v === RCA.vista));
+    const mw = $('#rcaMetricWrap'); if (mw) mw.style.display = RCA.vista === 'dow' ? '' : 'none';
+    if (RCA.vista === 'dow'){ drawTablaDow(el, o, fechas, q); return; }
+    const T = AgentPerfRCA.tablaAgentes(AP_MODEL, RCA.op, fechas, { sup: RCA.sup });
+    if (!T.ok){ el.innerHTML = `<div class="ct-note">${esc(T.error||'Sin datos')}</div>`; return; }
+    let rows = T.rows.filter(r => (!q || r.n.toLowerCase().indexOf(q) >= 0) && passFiltro(r.estado, r.ventas));
+    const sort = RCA.sort || {k:'ventas', dir:1};
+    rows.sort((a, b) => {
+      let c = 0;
+      if (sort.k==='n' || sort.k==='grupo') c = String(a[sort.k]).localeCompare(String(b[sort.k]), 'es') * sort.dir;
+      else c = cmpNum(a[sort.k], b[sort.k], sort.dir);
+      if (c) return c;
+      c = (b.normal||0) - (a.normal||0);                                      // a igualdad: pesa más quien normalmente vende más
+      return c || a.n.localeCompare(b.n, 'es');
+    });
+    const sub = rows.reduce((t, r) => { t.ventas += r.ventas; t.revenue += r.revenue; t.staff += r.staff; t.calls2 += r.calls2; return t; }, {ventas:0, revenue:0, staff:0, calls2:0});
+    const subR = { asp: sub.ventas ? sub.revenue/sub.ventas : null, sph: sub.staff ? sub.ventas/sub.staff : null, cr: sub.calls2 ? 100*sub.ventas/sub.calls2 : null, revCalls: sub.calls2 ? sub.revenue/sub.calls2 : null };
+    const filtrado = rows.length !== T.rows.length;
+    const nSin = T.rows.filter(r => r.estado==='SIN_VENTA').length, nNo = T.rows.filter(r => r.estado==='NO_TRABAJO').length;
+    const perdidoNormal = T.rows.filter(r => r.estado!=='VENDIO').reduce((t, r) => { t.v += (r.normal||0) * (T.fechas.length); t.u += (r.normalUsd||0) * (T.fechas.length); return t; }, {v:0, u:0});
+    const totRow = (label, v, r, cls, src) => `<tr class="rca-totrow ${cls||''}"><td></td><td colspan="2"><b>${label}</b></td>${PERF_COLS.map(c => {
+        let val = null;
+        if (c.k==='ventas') val = v.ventas; else if (c.k==='revenue') val = v.revenue; else if (c.k==='staff') val = v.staff; else if (c.k==='calls2') val = v.calls2; else if (r[c.k] !== undefined) val = r[c.k];
+        if (c.k==='normal') val = src.reduce((t, x) => t + (x.normal||0), 0); else if (c.k==='normalUsd') val = src.reduce((t, x) => t + (x.normalUsd||0), 0);
+        return `<td class="num"><b>${val==null ? '—' : c.f(val)}</b></td>`; }).join('')}<td></td></tr>`;
+    const arrow = k => sort.k===k ? (sort.dir>0 ? ' ▲' : ' ▼') : '';
+    el.innerHTML = `<div class="rca-sum">
+        <span><b>${T.rows.length}</b> agentes</span><span>· <b>${nSin}</b> conectados sin venta</span><span>· <b>${nNo}</b> no trabajaron</span>
+        ${nSin+nNo ? `<span class="rca-sum-hit">· normalmente habrían vendido <b>${f1(perdidoNormal.v)}</b> ventas ≈ <b>$${Math.round(perdidoNormal.u).toLocaleString('es-CO')}</b></span>` : ''}
+      </div>
+      <div style="overflow:auto"><table class="ct-table rca-perf"><thead><tr><th>#</th>
+        <th class="sortable" data-sk="n">Agente${arrow('n')}</th><th class="sortable" data-sk="grupo">Grupo${arrow('grupo')}</th>
+        ${PERF_COLS.map(c => `<th class="num sortable" data-sk="${c.k}" ${c.tip?`title="${esc(c.tip)}"`:''}>${c.t}${arrow(c.k)}</th>`).join('')}<th>Estado</th></tr></thead><tbody>
+        ${totRow('Total operación' + (RCA.sup ? ' · ' + esc(RCA.sup) : ''), T.tot, T.tot, 'tot', T.rows)}
+        ${filtrado ? totRow('Filtrados (' + rows.length + ')', sub, subR, 'sub', rows) : ''}
+        ${rows.map((r, i) => `<tr><td>${i+1}</td><td><b>${esc(r.n)}</b>${r.formador?' <span class="rca-note-s">formador</span>':''}</td><td>${esc(r.grupo)}</td>
+          ${PERF_COLS.map(c => `<td class="num ${c.k==='ventas' && r.ventas===0 ? 'zero':''}">${c.f(r[c.k])}</td>`).join('')}<td>${estadoChip(r.estado)}</td></tr>`).join('') || `<tr><td colspan="14" class="rca-note-s">Ningún agente cumple el filtro.</td></tr>`}
+      </tbody></table></div>
+      <div class="ct-q" style="margin:8px 0 0">${T.fechas.length===1 ? 'Día ' + esc(fechaCorta(T.fechas[0])) : T.fechas.length + ' días (' + esc(fechaDM(T.fechas[0])) + ' – ' + esc(fechaDM(T.fechas[T.fechas.length-1])) + ')'} · "Normal" = promedio de ventas por día trabajado en los otros ${T.baseDias} día(s) cargados · clic en una columna para ordenar de menor a mayor (y otra vez de mayor a menor).</div>`;
+    $$('th.sortable', el).forEach(th => th.addEventListener('click', () => {
+      const k = th.dataset.sk, cur = RCA.sort || {k:'ventas', dir:1};
+      RCA.sort = cur.k === k ? {k, dir:-cur.dir} : {k, dir: (k==='n'||k==='grupo') ? 1 : 1};
+      drawTabla();
+    }));
+  }
+  function drawTablaDow(el, o, fechas, q){
+    const W = AgentPerfRCA.tablaDiaSemana(AP_MODEL, RCA.op, fechas, RCA.metric, { sup: RCA.sup });
+    if (!W.ok){ el.innerHTML = `<div class="ct-note">${esc(W.error||'Sin datos')}</div>`; return; }
+    const sort = RCA.dowSort || {k:'tot', dir:1};
+    const nT = r => r.cel.reduce((t, c) => t + c.nTrab, 0);
+    let rows = W.rows.map(r => ({...r, estado: nT(r)===0 ? 'NO_TRABAJO' : (r.ventasTot===0 ? 'SIN_VENTA' : 'VENDIO')}))
+      .filter(r => (!q || r.n.toLowerCase().indexOf(q) >= 0) && passFiltro(r.estado, r.ventasTot));
+    rows.sort((a, b) => {
+      let c;
+      if (sort.k==='n' || sort.k==='grupo') c = String(a[sort.k]).localeCompare(String(b[sort.k]), 'es') * sort.dir;
+      else if (sort.k==='tot') c = cmpNum(a.tot, b.tot, sort.dir);
+      else { const i = +sort.k; c = cmpNum(a.cel[i].v, b.cel[i].v, sort.dir); }
+      return c || a.n.localeCompare(b.n, 'es');
+    });
+    const arrow = k => String(sort.k)===String(k) ? (sort.dir>0 ? ' ▲' : ' ▼') : '';
+    const mname = (DOW_METRICS.find(m => m[0]===RCA.metric)||[])[1] || RCA.metric, mnote = (DOW_METRICS.find(m => m[0]===RCA.metric)||[])[2] || '';
+    const row2 = ['n','grupo'];
+    const allV = rows.flatMap(r => r.cel.map(c => c.v)).filter(v => v!=null);
+    const mx = Math.max(0.0001, ...allV);
+    el.innerHTML = `<div style="overflow:auto"><table class="ct-table rca-perf"><thead><tr><th>#</th><th class="sortable" data-sk="n">Agente${arrow('n')}</th><th class="sortable" data-sk="grupo">Grupo${arrow('grupo')}</th>
+      ${W.cols.map((c, i) => `<th class="num sortable ${c.n?'':'dim'}" data-sk="${i}" title="${c.n} día(s) de ${c.nombre} en el período">${c.nombre}${c.n>1?` <span class="rca-note-s">×${c.n}</span>`:''}${arrow(i)}</th>`).join('')}
+      <th class="num sortable" data-sk="tot">Total/Prom.${arrow('tot')}</th><th>Estado</th></tr></thead><tbody>
+      <tr class="rca-totrow tot"><td></td><td colspan="2"><b>Total operación${RCA.sup?' · '+esc(RCA.sup):''}</b></td>${W.totCel.map(c => `<td class="num"><b>${c.n ? fmtMetric(RCA.metric, c.v) : '—'}</b></td>`).join('')}<td class="num"><b>${fmtMetric(RCA.metric, W.totAll)}</b></td><td></td></tr>
+      ${rows.map((r, i) => `<tr><td>${i+1}</td><td><b>${esc(r.n)}</b></td><td>${esc(r.grupo)}</td>${r.cel.map(c => {
+          const hasDay = c.nTrab > 0, v = c.v;
+          const bg = (v!=null && RCA.metric!=='asp' && mx>0) ? `rgba(42,120,214,${Math.min(0.32, 0.04 + 0.28*v/mx)})` : 'transparent';
+          return `<td class="num ${hasDay && (RCA.metric==='ventas') && v===0 ? 'zero':''}" style="background:${bg}">${hasDay ? fmtMetric(RCA.metric, v) : '<span class="rca-note-s">–</span>'}</td>`; }).join('')}
+        <td class="num"><b>${fmtMetric(RCA.metric, r.tot)}</b></td><td>${estadoChip(r.estado)}</td></tr>`).join('') || `<tr><td colspan="12" class="rca-note-s">Ningún agente cumple el filtro.</td></tr>`}
+      </tbody></table></div>
+      <div class="ct-q" style="margin:8px 0 0"><b>${esc(mname)}</b> por día de la semana · todos los días cerrados del mes (${W.nDias}) ${mnote ? '· '+esc(mnote)+' (las razones se calculan sobre las sumas)' : ''}. "–" = no trabajó ese día de la semana. Clic en un día para ordenar.</div>`;
+    $$('th.sortable', el).forEach(th => th.addEventListener('click', () => {
+      const k = th.dataset.sk, cur = RCA.dowSort || {k:'tot', dir:1};
+      RCA.dowSort = String(cur.k) === k ? {k, dir:-cur.dir} : {k, dir:1};
+      drawTabla();
+    }));
+  }
+  function diaStripHtml(o){
+    const ds = AgentPerfRCA.resumenDias(AP_MODEL, o.op);
+    if (!ds.length) return '';
+    const cur = RCA.per && RCA.per.indexOf('dia:')===0 ? RCA.per.slice(4) : null;
+    const rango = fechasSel => fechasSel;
+    return `<div class="rca-days"><span class="rca-days-l">Días del mes · cumplimiento vs plan</span>${ds.map(d => `<button class="rca-day sev-${d.sev} ${d.bajo?'bajo':''} ${cur===d.fecha?'sel':''}" data-f="${d.fecha}" title="${d.dow} ${fechaDM(d.fecha)} · plan ${d.plan} · real ${d.real}${d.bajo?' · FUERA DE PLAN':''}"><b>${d.dow} ${+d.fecha.slice(8)}</b><span>${d.cumpl==null?'—':d.cumpl.toFixed(0)+'%'}</span></button>`).join('')}</div>`;
+  }
+
   /* ---------- vista ---------- */
   function renderRca(){
     const el = $('#ctViewRca'); if (!el) return;
@@ -5376,12 +5621,26 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         <label>Agente</label><input class="ct-select" id="rcaQ" type="search" placeholder="Buscar agente…" value="${esc(RCA.q)}" style="min-width:160px"></div>
       <div class="rca-tabs" role="tablist" aria-label="Grupo / supervisor">${tabs.map(s => { const stt = s ? supState[s] : null; const dot = stt==='caida' ? '🔴' : (stt==='atencion' ? '🟠' : ''); return `<button role="tab" class="${(RCA.sup||null)===s?'active':''}" data-sup="${s?esc(s):''}">${s?esc(s):'Todos los grupos'} ${dot}</button>`; }).join('')}</div>
       ${AP_NOTA ? `<div class="ct-note" style="margin:0 0 10px">⚠️ ${esc(AP_NOTA)}</div>` : ''}
+      ${diaStripHtml(o)}
       <div class="ct-kpi-grid">${cards}</div>
-      <div class="ct-card"><h3>🔬 Qué pasó y cuánto impacto tuvo</h3><p class="ct-q">${sc?'Del grupo: capacidad esperada → efecto Staff → efecto productividad → real.':'Ventas esperadas (plan) → capacidad histórica → Staff → productividad de los conectados → real. Las barras suman exacto el gap contra el plan.'}</p>${water}${lectura}</div>
-      ${kpiHtml}
-      ${sc ? '' : supHtml(R, o)}
-      <div class="ct-card" id="rcaAgents">${agentsHtml(R)}</div>
-      <div class="ct-card" id="rcaHeat">${heatHtml(R, o)}</div>
+      <div class="ct-card" id="rcaPerf">
+        <div class="ct-card-head"><h3>🧑‍💼 Desempeño por agente</h3><span class="ct-q" style="margin:0">${esc(R.label)} · ${esc(titulo)}${RCA.vista==='dow'?' · por día de la semana':''}</span></div>
+        <p class="ct-q">Los mismos indicadores de las pestañas de agentes. Si un día quedó bajo el plan, toca el día arriba y la tabla se reordena de menor a mayor venta para ver dónde pesó cada agente (y cuánto vende normalmente).</p>
+        <div class="ct-filter-row rca-ctrl">
+          <div class="ct-seg" id="rcaVista"><button data-v="total" class="${RCA.vista==='total'?'active':''}">Total del período</button><button data-v="dow" class="${RCA.vista==='dow'?'active':''}">Por día de la semana</button></div>
+          <span id="rcaMetricWrap" style="display:${RCA.vista==='dow'?'':'none'}"><select class="ct-select" id="rcaMetric" title="Indicador por día de la semana">${DOW_METRICS.map(m=>`<option value="${m[0]}" ${m[0]===RCA.metric?'selected':''}>${m[1]}</option>`).join('')}</select></span>
+          <label>Mostrar</label><select class="ct-select" id="rcaFiltro"><option value="todos">Todos los agentes</option><option value="sin">No vendieron (0 ventas)</option><option value="conectados">Trabajaron y no vendieron</option><option value="notrab">No trabajaron</option><option value="piso">Piso: ventas ≤ …</option></select>
+          <input class="ct-select" id="rcaPiso" type="number" min="0" step="1" value="${RCA.piso}" style="width:70px" title="Piso de ventas: muestra a quienes vendieron este número o menos">
+        </div>
+        <div id="rcaTabla"></div>
+      </div>
+      <details class="detail-toggle rca-mas"><summary>Más análisis: cascada del gap, KPIs, supervisores, impacto vs plan y mapa agente × día</summary>
+        <div class="ct-card" style="margin-top:10px"><h3>🔬 Qué pasó y cuánto impacto tuvo</h3><p class="ct-q">${sc?'Del grupo: capacidad esperada → efecto Staff → efecto productividad → real.':'Ventas esperadas (plan) → capacidad histórica → Staff → productividad de los conectados → real. Las barras suman exacto el gap contra el plan.'}</p>${water}${lectura}</div>
+        ${kpiHtml}
+        ${sc ? '' : supHtml(R, o)}
+        <div class="ct-card" id="rcaAgents">${agentsHtml(R)}</div>
+        <div class="ct-card" id="rcaHeat">${heatHtml(R, o)}</div>
+      </details>
       <details class="detail-toggle"><summary>Cómo se calcula (y límites del análisis)</summary><div class="ct-note" style="margin-top:6px">
         <b>Staff:</b> horas &gt; 0 = trabajó; 0 o "-" = no trabajó. <b>Esperado por agente:</b> promedio de ventas por día trabajado en los demás días cargados (suavizado hacia el promedio de su grupo); se espera que trabaje si lo hizo ≥50% de esos días.
         <b>② Staff</b> = ausentes esperados (−esperado) + turnos parciales + refuerzos no esperados. <b>③ Productividad</b> = ventas reales − esperado × (horas/horas típicas) de los conectados. <b>① Plan vs capacidad</b> = capacidad histórica − plan. <b>④</b> = Real Planif_2026 − suma de las pestañas de agentes.
@@ -5397,11 +5656,19 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     q.addEventListener('input', () => {
       clearTimeout(tmo); tmo = setTimeout(() => {
         RCA.q = q.value.trim();
+        drawTabla();
         const R2 = AgentPerfRCA.analizar(M, RCA.op, fechas, { sup: RCA.sup, agente: RCA.q });
-        $('#rcaAgents').innerHTML = agentsHtml(R2); $('#rcaHeat').innerHTML = heatHtml(R2, o);
+        if ($('#rcaAgents')) { $('#rcaAgents').innerHTML = agentsHtml(R2); $('#rcaHeat').innerHTML = heatHtml(R2, o); }
         const m2 = $('#rcaMore'); if (m2) m2.addEventListener('click', () => { RCA.todos = !RCA.todos; renderRca(); });
       }, 180);
     });
+    $$('.rca-day', el).forEach(b => b.addEventListener('click', () => { RCA.per = 'dia:' + b.dataset.f; RCA.vista = 'total'; RCA.sort = null; renderRca(); }));
+    $$('#rcaVista button', el).forEach(b => b.addEventListener('click', () => { RCA.vista = b.dataset.v; drawTabla(); }));
+    $('#rcaMetric').addEventListener('change', e => { RCA.metric = e.target.value; drawTabla(); });
+    $('#rcaFiltro').value = RCA.filtro;
+    $('#rcaFiltro').addEventListener('change', e => { RCA.filtro = e.target.value; drawTabla(); });
+    $('#rcaPiso').addEventListener('input', e => { RCA.piso = Math.max(0, +e.target.value || 0); RCA.filtro = 'piso'; $('#rcaFiltro').value = 'piso'; drawTabla(); });
+    drawTabla();
   }
 
   async function bootCT(recarga){
