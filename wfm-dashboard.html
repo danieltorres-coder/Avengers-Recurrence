@@ -326,6 +326,21 @@
   .ct-verdict .det{font-size:12px;color:var(--text-secondary);margin-top:5px;line-height:1.5;}
   .ct-verdict .sec{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:8px;font-size:12px;}
   .ct-wwtable td.pct{font-weight:700;}
+
+  /* ===== Causa raíz · Agent Performance ===== */
+  .rca-filters label{font-size:12px;color:var(--text-secondary);}
+  .rca-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;}
+  .rca-tabs button{font:inherit;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);cursor:pointer;}
+  .rca-tabs button:hover{border-color:var(--series-1);}
+  .rca-tabs button.active{background:var(--series-1-soft);border-color:var(--series-1);color:var(--series-1);}
+  .rca-chip{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;border:1px solid var(--cc);color:var(--cc);white-space:nowrap;}
+  .rca-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--cc);margin-right:3px;vertical-align:middle;}
+  .rca-note-s{font-size:10.5px;color:var(--text-muted);font-weight:600;}
+  .rca-suprow{cursor:pointer;} .rca-suprow:hover td{background:var(--series-1-soft);} .rca-suprow.sel td{background:var(--series-1-soft);}
+  .rca-kpi.explica{border-left:4px solid var(--bad);}
+  .rca-heat td.selday,.rca-heat th.selday{outline:1.5px solid var(--series-1);outline-offset:-1.5px;}
+  .rca-heat td.ct-heat-cell{min-width:30px;}
+  .rca-alerts .ct-alert{cursor:pointer;font:inherit;font-size:11.5px;font-weight:700;text-align:left;}
   /* ===== Control Tower · diseño master-detalle (oct/2026) ===== */
   .ct-shell{display:grid;grid-template-columns:392px minmax(0,1fr);gap:18px;align-items:start;}
   .ct-side{position:sticky;top:12px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px 10px 10px;max-height:calc(100vh - 24px);overflow:auto;}
@@ -421,9 +436,11 @@
     <aside class="ct-side" id="ctSide" aria-label="Operaciones"></aside>
     <div class="ct-main">
     <div id="ctHero"></div>
+    <div id="ctAlerts"></div>
     <div class="ct-nav" id="ctNav">
       <button data-view="exec" class="active">📌 Ejecutivo</button>
       <button data-view="detalle">🧮 Detalle diario / acumulado</button>
+      <button data-view="rca">🔬 Causa raíz</button>
       <button data-view="daily">📈 Plan vs Real</button>
       <button data-view="dow">📅 Día de semana</button>
       <button data-view="weekly">🗓️ Semanal</button>
@@ -463,6 +480,7 @@
 
     <!-- ---------- DETALLE DIARIO / ACUMULADO (Planif_2026) ---------- -->
     <div class="ct-view" data-view="detalle" id="ctViewDetalle"></div>
+    <div class="ct-view" data-view="rca" id="ctViewRca"><div class="ct-note">Cargando Agent Performance…</div></div>
     </div><!-- /ct-main -->
     </div><!-- /ct-shell -->
   </section>
@@ -3033,6 +3051,414 @@ let CT_DATA = {"meta":{"fuente":"Google Sheet 'Post-Sales-Operations Calls', pes
 });
 
 </script>
+<script id="agentPerfDataScript">
+/* Copia local de la última lectura de Agent Performance (se usa solo si el Web App no responde o aún no tiene action=agentperf). */
+const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-05T14:50:24.755Z","tz":"America/Bogota","kpis":["staff","ventas","revenue","asp","sph","cr","calls2","revcalls","upf","upfsplit","inst"],"supervisores":{"upsell":["Deisy Torres","Jhon Alfonso","Ricardo Torres"],"recurrence":["Omar Callejas","William Salcedo"],"bootcamp":["Karen Benitez"],"resurrection":["Karen Benitez"]},"hasta":"2026-10-03","historico":{"diasExtra":0,"desde":null},"ops":[{"op":"upsell","tab":"Upsell","label":"Upsell","codes":["2.1"],"ok":true,"fechaActualizado":"2026-10-03","dias":["2026-10-01","2026-10-02","2026-10-03"],"agentes":[{"id":"upsell|11","n":"Juan Rubio","s":"Deisy Torres","d":{"2026-10-01":[6.46,2,650,325,0.3096,0.6667,3,216.6667,null,null,null],"2026-10-02":[7.52,5,1318,263.6,0.6649,0.5,10,131.8,null,null,null],"2026-10-03":[0,0,0,0,0,0,0,0,null,null,null]},"res":{"efect":0.6667,"sinVenta":1,"prom":2.333}},{"id":"upsell|12","n":"Sonia Florez","s":"Jhon Alfonso","d":{"2026-10-01":[6.54,1,280,280,0.1529,0.1,10,28,null,null,null],"2026-10-02":[6.57,5,810,162,0.761,0.3333,15,54,null,null,null],"2026-10-03":[6.56,5,1568,313.6,0.7622,0.5556,9,174.2222,null,null,null]},"res":{"efect":1,"sinVenta":0,"prom":3.667}},{"id":"upsell|13","n":"Catalina Tenjo","s":"Jhon Alfonso","d":{"2026-10-01":[8,2,340,170,0.25,0.3333,6,56.6667,null,null,null],"2026-10-02":[7.62,4,1220,305,0.5249,0.8,5,244,null,null,null],"2026-10-03":[0,0,0,0,0,0,0,0,null,null,null]},"res":{"efect":0.6667,"sinVenta":1,"prom":2}},{"id":"upsell|14","n":"Jhoana Garcia","s":"Ricardo Torres","d":{"2026-10-01":[6.56,3,870,290,0.4573,0.3,10,87,null,null,null],"2026-10-02":[6.92,3,480,160,0.4335,0.1667,18,26.6667,null,null,null],"2026-10-03":[4.27,3,510,170,0.7026,0.25,12,42.5,null,null,null]},"res":{"efect":1,"sinVenta":0,"prom":3}},{"id":"upsell|15","n":"Miguel Parra","s":"Ricardo Torres","d":{"2026-10-01":[6.34,1,299,299,0.1577,0.2,5,59.8,null,null,null],"2026-10-02":[6.81,3,846,282,0.4405,0.75,4,211.5,null,null,null],"2026-10-03":[6.39,2,539,269.5,0.313,0.2,10,53.9,null,null,null]},"res":{"efect":1,"sinVenta":0,"prom":2}},{"id":"upsell|16","n":"Jhon Barona","s":"Ricardo Torres","d":{"2026-10-01":[5.82,3,562,187.3333,0.5155,0.3333,9,62.4444,null,null,null],"2026-10-02":[5.75,3,738,246,0.5217,0.25,12,61.5,null,null,null],"2026-10-03":[6.82,2,575,287.5,0.2933,0.1,20,28.75,null,null,null]},"res":{"efect":1,"sinVenta":0,"prom":2.667}},{"id":"upsell|17","n":"Jenny Vargas","s":"Deisy Torres","d":{"2026-10-01":[4.44,2,560,280,0.4505,0.6667,3,186.6667,null,null,null],"2026-10-02":[6.49,3,640,213.3333,0.4622,0.2308,13,49.2308,null,null,null],"2026-10-03":[0,0,0,0,0,0,0,0,null,null,null]},"res":{"efect":0.6667,"sinVenta":1,"prom":1.667}},{"id":"upsell|18","n":"Mariana Saldarriaga","s":"Jhon Alfonso","d":{"2026-10-01":[6.87,3,300,100,0.4367,0.2,15,20,null,null,null],"2026-10-02":[6.59,4,958,239.5,0.607,0.3333,12,79.8333,null,null,null],"2026-10-03":[0,0,0,0,0,0,0,0,null,null,null]},"res":{"efect":0.6667,"sinVenta":1,"prom":2.333}},{"id":"upsell|19","n":"Jenny Bejarano","s":"Deisy Torres","d":{"2026-10-01":[6.5,2,400,200,0.3077,0.6667,3,133.3333,null,null,null],"2026-10-02":[4.92,0,0,0,0,0,4,0,null,null,null],"2026-10-03":[6.48,3,750,250,0.463,0.75,4,187.5,null,null,null]},"res":{"efect":0.6667,"sinVenta":1,"prom":1.667}},{"id":"upsell|20","n":"Alison Tique","s":"Ricardo Torres","d":{"2026-10-01":[6.41,1,310,310,0.156,0.0556,18,17.2222,null,null,null],"2026-10-02":[7.06,2,600,300,0.2833,0.087,23,26.087,null,null,null],"2026-10-03":[6.39,3,840,280,0.4695,0.2727,11,76.3636,null,null,null]},"res":{"efect":1,"sinVenta":0,"prom":2}},{"id":"upsell|21","n":"Andrea Bernal","s":"Jhon Alfonso","d":{"2026-10-01":[5.84,1,350,350,0.1712,0.1,10,35,null,null,null],"2026-10-02":[6.04,3,415,138.3333,0.4967,0.2143,14,29.6429,null,null,null],"2026-10-03":[0,0,null,null,null,null,null,null,null,null,null]},"res":{"efect":1,"sinVenta":0,"prom":2}},{"id":"upsell|22","n":"Jose Castro","s":"Ricardo Torres","d":{"2026-10-01":[6.55,5,959,191.8,0.7634,0.5556,9,106.5556,null,null,null],"2026-10-02":[5.57,2,275,137.5,0.3591,0.2,10,27.5,null,null,null],"2026-10-03":[6.59,0,0,0,0,0,17,0,null,null,null]},"res":{"efect":0.6667,"sinVenta":1,"prom":2.333}},{"id":"upsell|23","n":"Dayana Acosta","s":"Deisy Torres","d":{"2026-10-01":[6.31,1,350,350,0.1585,0.2,5,70,null,null,null],"2026-10-02":[6.25,3,677,225.6667,0.48,0.3333,9,75.2222,null,null,null],"2026-10-03":[0,0,0,0,0,0,0,0,null,null,null]},"res":{"efect":0.6667,"sinVenta":1,"prom":1.333}},{"id":"upsell|24","n":"Wendy Gutierrez","s":"Deisy Torres","d":{"2026-10-01":[6.55,1,180,180,0.1527,0.25,4,45,null,null,null],"2026-10-02":[6.52,2,840,420,0.3067,0.2857,7,120,null,null,null],"2026-10-03":[0,0,0,0,0,0,0,0,null,null,null]},"res":{"efect":0.6667,"sinVenta":1,"prom":1}},{"id":"upsell|25","n":"Gladys Murillo","s":"Jhon Alfonso","d":{"2026-10-01":[6.41,3,1048,349.3333,0.468,0.2143,14,74.8571,null,null,null],"2026-10-02":[6.47,1,150,150,0.1546,0.0769,13,11.5385,null,null,null],"2026-10-03":[0,0,0,0,0,0,0,0,null,null,null]},"res":{"efect":0.6667,"sinVenta":1,"prom":1.333}},{"id":"upsell|26","n":"Angel Bernal","s":"Deisy Torres","d":{"2026-10-01":[6.22,2,405,202.5,0.3215,0.5,4,101.25,null,null,null],"2026-10-02":[4.2,1,350,350,0.2381,0.125,8,43.75,null,null,null],"2026-10-03":[0,0,null,null,null,null,null,null,null,null,null]},"res":{"efect":1,"sinVenta":0,"prom":1.5}},{"id":"upsell|27","n":"Andrea Ramirez","s":"Jhon Alfonso","d":{"2026-10-01":[6.05,3,540,180,0.4959,0.2308,13,41.5385,null,null,null],"2026-10-02":[0,0,0,0,0,0,0,0,null,null,null],"2026-10-03":[0,0,0,0,0,0,0,0,null,null,null]},"res":{"efect":0.3333,"sinVenta":2,"prom":1}},{"id":"upsell|28","n":"Daniela Santana","s":"Ricardo Torres","d":{"2026-10-01":[6.48,2,283,141.5,0.3086,0.1818,11,25.7273,null,null,null],"2026-10-02":[6.5,3,594,198,0.4615,0.1765,17,34.9412,null,null,null],"2026-10-03":[6.5,2,275,137.5,0.3077,0.1818,11,25,null,null,null]},"res":{"efect":1,"sinVenta":0,"prom":2.333}},{"id":"upsell|29","n":"Julieth Cardenas","s":"Jhon Alfonso","d":{"2026-10-01":[6.41,2,625,312.5,0.312,0.1429,14,44.6429,null,null,null],"2026-10-02":[6.01,1,33,33,0.1664,0.1,10,3.3,null,null,null],"2026-10-03":[5.95,3,358,119.3333,0.5042,0.2308,13,27.5385,null,null,null]},"res":{"efect":1,"sinVenta":0,"prom":2}},{"id":"upsell|30","n":"Diana Aponte","s":"Ricardo Torres","d":{"2026-10-01":[5.11,2,345,172.5,0.3914,0.2,10,34.5,null,null,null],"2026-10-02":[6.46,3,373,124.3333,0.4644,0.2,15,24.8667,null,null,null],"2026-10-03":[7.59,2,348,174,0.2635,0.1053,19,18.3158,null,null,null]},"res":{"efect":1,"sinVenta":0,"prom":2.333}},{"id":"upsell|31","n":"Luisa Vega","s":"Ricardo Torres","d":{"2026-10-01":[6.52,3,260,86.6667,0.4601,0.3,10,26,null,null,null],"2026-10-02":[6.54,1,105,105,0.1529,0.0556,18,5.8333,null,null,null],"2026-10-03":[6.56,3,373,124.3333,0.4573,0.15,20,18.65,null,null,null]},"res":{"efect":1,"sinVenta":0,"prom":2.333}},{"id":"upsell|32","n":"Deisy Pacheco","s":"Ricardo Torres","d":{"2026-10-01":[6.76,2,440,220,0.2959,0.2857,7,62.8571,null,null,null],"2026-10-02":[6.71,2,290,145,0.2981,0.1111,18,16.1111,null,null,null],"2026-10-03":[0,0,0,0,0,0,0,0,null,null,null]},"res":{"efect":0.6667,"sinVenta":1,"prom":1.333}},{"id":"upsell|33","n":"Oscar Losada","s":"Deisy Torres","d":{"2026-10-01":[6.52,1,360,360,0.1534,0.1429,7,51.4286,null,null,null],"2026-10-02":[4.78,1,240,240,0.2092,0.2,5,48,null,null,null],"2026-10-03":[0,0,0,0,0,0,0,0,null,null,null]},"res":{"efect":0.6667,"sinVenta":1,"prom":0.667}},{"id":"upsell|34","n":"Diego Diaz","s":"Deisy Torres","d":{"2026-10-01":[7.2,0,0,0,0,0,8,0,null,null,null],"2026-10-02":[6.8,1,810,810,0.1471,0.0833,12,67.5,null,null,null],"2026-10-03":[6.93,1,70,70,0.1443,0.0909,11,6.3636,null,null,null]},"res":{"efect":0.6667,"sinVenta":1,"prom":0.667}},{"id":"upsell|35","n":"Angie Aldana","s":"Deisy Torres","d":{"2026-10-01":[1.75,1,198,198,0.5714,0,0,0,null,null,null],"2026-10-02":[0,0,0,0,0,0,0,0,null,null,null],"2026-10-03":[0,0,0,0,0,0,0,0,null,null,null]},"res":{"efect":0.3333,"sinVenta":2,"prom":0.333}},{"id":"upsell|36","n":"Isabela Blandon","s":"Ricardo Torres","d":{"2026-10-01":[6.66,0,0,0,0,0,11,0,null,null,null],"2026-10-02":[6.86,2,308,154,0.2915,0.1,20,15.4,null,null,null],"2026-10-03":[6.56,1,200,200,0.1524,0.0625,16,12.5,null,null,null]},"res":{"efect":0.6667,"sinVenta":1,"prom":1}},{"id":"upsell|37","n":"Alan Camacho","s":"Jhon Alfonso","d":{"2026-10-01":[6.42,1,70,70,0.1558,0.2,5,14,null,null,null],"2026-10-02":[6.41,1,70,70,0.156,0.1667,6,11.6667,null,null,null],"2026-10-03":[0,0,0,0,0,0,0,0,null,null,null]},"res":{"efect":0.6667,"sinVenta":1,"prom":0.667}},{"id":"upsell|38","n":"Diana Ariza","s":"Jhon Alfonso","d":{"2026-10-01":[0,0,null,null,null,null,null,null,null,null,null],"2026-10-02":[0,0,null,null,null,null,null,null,null,null,null],"2026-10-03":[0,0,null,null,null,null,null,null,null,null,null]},"res":{"efect":null,"sinVenta":null,"prom":0}},{"id":"upsell|39","n":"Harold Huertas","s":"Jhon Alfonso","d":{"2026-10-01":[0,0,0,0,0,0,0,0,null,null,null],"2026-10-02":[0,0,0,0,0,0,0,0,null,null,null],"2026-10-03":[0,0,0,0,0,0,0,0,null,null,null]},"res":{"efect":0,"sinVenta":null,"prom":0}},{"id":"upsell|40","n":"Laura Hernandez","s":"Jhon Alfonso","d":{"2026-10-01":[6.52,0,0,0,0,0,12,0,null,null,null],"2026-10-02":[2.61,0,0,0,0,0,3,0,null,null,null],"2026-10-03":[0,0,null,null,null,null,null,null,null,null,null]},"res":{"efect":0,"sinVenta":null,"prom":0}},{"id":"upsell|41","n":"Mateo Montenegro","s":"Jhon Alfonso","d":{"2026-10-01":[4.37,0,0,0,0,0,6,0,null,null,null],"2026-10-02":[0,0,null,null,null,null,null,null,null,null,null],"2026-10-03":[0,0,null,null,null,null,null,null,null,null,null]},"res":{"efect":0,"sinVenta":null,"prom":0}},{"id":"upsell|42","n":"Jenny Taborda","s":"Deisy Torres","d":{"2026-10-01":[0,0,null,null,null,null,null,null,null,null,null],"2026-10-02":[0,0,null,null,null,null,null,null,null,null,null],"2026-10-03":[0,0,null,null,null,null,null,null,null,null,null]},"res":{"efect":null,"sinVenta":null,"prom":0}},{"id":"upsell|43","n":"Nedsy Gonzalez","s":"Josue Sequera","d":{"2026-10-01":[0,0,null,null,null,null,null,null,null,null,null],"2026-10-02":[0,0,null,null,null,null,null,null,null,null,null],"2026-10-03":[0,0,null,null,null,null,null,null,null,null,null]},"formador":true,"res":{"efect":null,"sinVenta":null,"prom":0}}],"warnings":[]},{"op":"recurrence","tab":"Recurrence","label":"Recurrence","codes":["2.2"],"ok":true,"fechaActualizado":"2026-10-02","dias":["2026-10-01","2026-10-02"],"agentes":[{"id":"recurrence|12","n":"Corina Sanmiguel","s":"William Salcedo","d":{"2026-10-01":[6,3,600,200,0.5,0.25,12,50,1,0,0],"2026-10-02":[6.61,3,245,81.6667,0.4539,0.1579,19,12.8947,0.6667,0,0.3333]},"res":{"efect":1,"sinVenta":0,"prom":3}},{"id":"recurrence|13","n":"Brigitte Barragan","s":"William Salcedo","d":{"2026-10-01":[6.67,3,468,156,0.4498,0.1429,21,22.2857,1,0,0],"2026-10-02":[6.07,3,655.5,218.5,0.4942,0.1765,17,38.5588,0.6667,0,0.3333]},"res":{"efect":1,"sinVenta":0,"prom":3}},{"id":"recurrence|14","n":"Brandon Romero","s":"Omar Callejas","d":{"2026-10-01":[6.5,1,325,325,0.1538,0.0556,18,18.0556,1,0,0],"2026-10-02":[6.48,2,650,325,0.3086,0.125,16,40.625,1,0,0]},"res":{"efect":1,"sinVenta":0,"prom":1.5}},{"id":"recurrence|15","n":"Jazmin Sanchez","s":"William Salcedo","d":{"2026-10-01":[6.46,1,80,80,0.1548,0.0833,12,6.6667,1,0,0],"2026-10-02":[5.6,3,530,176.6667,0.5357,0.25,12,44.1667,1,0,0]},"res":{"efect":1,"sinVenta":0,"prom":2}},{"id":"recurrence|16","n":"Jhon Umbarila","s":"William Salcedo","d":{"2026-10-01":[6.17,3,530,176.6667,0.4862,0.2,15,35.3333,1,0,0],"2026-10-02":[6.49,1,165,165,0.1541,0.0455,22,7.5,1,0,0]},"res":{"efect":1,"sinVenta":0,"prom":2}},{"id":"recurrence|17","n":"Johan Sierra","s":"William Salcedo","d":{"2026-10-01":[5.45,1,710,710,0.1835,0.1,10,71,1,0,0],"2026-10-02":[6.76,1,150,150,0.1479,0.0833,12,12.5,1,0,0]},"res":{"efect":1,"sinVenta":0,"prom":1}},{"id":"recurrence|18","n":"Cheryl Perez","s":"Omar Callejas","d":{"2026-10-01":[6.38,2,335,167.5,0.3135,0.1176,17,19.7059,1,0,0],"2026-10-02":[6.53,2,275,137.5,0.3063,0.1111,18,15.2778,0.5,0,0.5]},"res":{"efect":1,"sinVenta":0,"prom":2}},{"id":"recurrence|19","n":"Jenniffer Rivero","s":"William Salcedo","d":{"2026-10-01":[6.63,2,320,160,0.3017,0.1053,19,16.8421,0.5,0,0.5],"2026-10-02":[4.08,2,200,100,0.4902,0.1818,11,18.1818,1,0,0]},"res":{"efect":1,"sinVenta":0,"prom":2}},{"id":"recurrence|20","n":"Luis Rivas","s":"Omar Callejas","d":{"2026-10-01":[6.91,2,305.21,152.605,0.2894,0.2222,9,33.9122,1,0,0],"2026-10-02":[6.49,1,190,190,0.1541,0.125,8,23.75,0,0,1]},"res":{"efect":1,"sinVenta":0,"prom":1.5}},{"id":"recurrence|21","n":"Allan Barrios","s":"Omar Callejas","d":{"2026-10-01":[6.62,1,427.68,427.68,0.1511,0.05,20,21.384,0,0,1],"2026-10-02":[6.54,2,465.11,232.555,0.3058,0.2,10,46.511,0.5,0.5,0]},"res":{"efect":1,"sinVenta":0,"prom":1.5}},{"id":"recurrence|22","n":"Leidy Mora","s":"Omar Callejas","d":{"2026-10-01":[4.13,0,0,0,0,0,8,0,0,0,0],"2026-10-02":[8.29,3,620,206.6667,0.3619,0.1304,23,26.9565,1,0,0]},"res":{"efect":0.5,"sinVenta":1,"prom":1.5}},{"id":"recurrence|23","n":"Rosa Leon","s":"Omar Callejas","d":{"2026-10-01":[6.38,2,170,85,0.3135,0.1538,13,13.0769,1,0,0],"2026-10-02":[6.45,1,200,200,0.155,0.1,10,20,1,0,0]},"res":{"efect":1,"sinVenta":0,"prom":1.5}},{"id":"recurrence|24","n":"Paula Vega","s":"William Salcedo","d":{"2026-10-01":[6.47,2,380,190,0.3091,0.1333,15,25.3333,1,0,0],"2026-10-02":[6.57,1,120,120,0.1522,0.0476,21,5.7143,1,0,0]},"res":{"efect":1,"sinVenta":0,"prom":1.5}},{"id":"recurrence|25","n":"Eliana Ibarra","s":"Omar Callejas","d":{"2026-10-01":[6.89,2,459.58,229.79,0.2903,0.1176,17,27.0341,0.5,0.5,0],"2026-10-02":[7.12,0,0,0,0,0,19,0,0,0,0]},"res":{"efect":0.5,"sinVenta":1,"prom":1}},{"id":"recurrence|26","n":"Nini Cuentas","s":"Omar Callejas","d":{"2026-10-01":[5.3,2,130,65,0.3774,0.1053,19,6.8421,0.5,0,0.5],"2026-10-02":[6.01,1,25,25,0.1664,0.0526,19,1.3158,0,0,1]},"res":{"efect":1,"sinVenta":0,"prom":1.5}},{"id":"recurrence|27","n":"Jessica Rueda","s":"William Salcedo","d":{"2026-10-01":[6.73,1,130,130,0.1486,0.0769,13,10,1,0,0],"2026-10-02":[6.8,1,286,286,0.1471,0.0625,16,17.875,1,0,0]},"res":{"efect":1,"sinVenta":0,"prom":1}},{"id":"recurrence|28","n":"Jennys Sosa","s":"William Salcedo","d":{"2026-10-01":[6.73,2,275,137.5,0.2972,0.0741,27,10.1852,0,0.5,0.5],"2026-10-02":[6.58,0,0,0,0,0,28,0,0,0,0]},"res":{"efect":0.5,"sinVenta":1,"prom":1}},{"id":"recurrence|29","n":"Julieth Mendez","s":"Omar Callejas","d":{"2026-10-01":[6.52,1,274,274,0.1534,0.0357,28,9.7857,1,0,0],"2026-10-02":[5.12,0,0,0,0,0,17,0,0,0,0]},"res":{"efect":0.5,"sinVenta":1,"prom":0.5}},{"id":"recurrence|30","n":"Delia Tua","s":"William Salcedo","d":{"2026-10-01":[6.99,1,130,130,0.1431,0.0385,26,5,1,0,0],"2026-10-02":[6.53,1,110,110,0.1531,0.0556,18,6.1111,1,0,0]},"res":{"efect":1,"sinVenta":0,"prom":1}},{"id":"recurrence|31","n":"Ingrid Alba","s":"William Salcedo","d":{"2026-10-01":[6.5,1,125.59,125.59,0.1538,0.0526,19,6.61,1,0,0],"2026-10-02":[6.52,0,0,0,0,0,22,0,0,0,0]},"res":{"efect":0.5,"sinVenta":1,"prom":0.5}},{"id":"recurrence|32","n":"Astrid Gordillo","s":"William Salcedo","d":{"2026-10-01":[0,0,0,0,0,0,0,0,0,0,0],"2026-10-02":[0,0,0,0,0,0,0,0,0,0,0]},"res":{"efect":0,"sinVenta":null,"prom":0}},{"id":"recurrence|33","n":"Cielo Carrillo","s":"William Salcedo","d":{"2026-10-01":[6.88,0,0,0,0,0,22,0,0,0,0],"2026-10-02":[6.87,0,0,0,0,0,23,0,0,0,0]},"res":{"efect":0,"sinVenta":null,"prom":0}},{"id":"recurrence|34","n":"Gloria Munoz","s":"Omar Callejas","d":{"2026-10-01":[0,0,0,0,0,0,0,0,0,0,0],"2026-10-02":[0,0,0,0,0,0,0,0,0,0,0]},"res":{"efect":0,"sinVenta":null,"prom":0}},{"id":"recurrence|35","n":"Jhon Cordoba","s":"William Salcedo","d":{"2026-10-01":[0,0,null,null,null,null,null,null,null,null,null],"2026-10-02":[0,0,null,null,null,null,null,null,null,null,null]},"res":{"efect":null,"sinVenta":null,"prom":0}},{"id":"recurrence|36","n":"Luis Acero","s":"William Salcedo","d":{"2026-10-01":[0,0,null,null,null,null,null,null,null,null,null],"2026-10-02":[0,0,null,null,null,null,null,null,null,null,null]},"res":{"efect":null,"sinVenta":null,"prom":0}},{"id":"recurrence|37","n":"Sara Galvis","s":"Omar Callejas","d":{"2026-10-01":[0,0,0,0,0,0,0,0,0,0,0],"2026-10-02":[8.24,0,0,0,0,0,0,0,0,0,0]},"res":{"efect":0,"sinVenta":null,"prom":0}}],"warnings":[]},{"op":"bootcamp","tab":"Bootcamp","label":"Bootcamp","codes":["2.5"],"ok":true,"fechaActualizado":"2026-10-02","dias":["2026-10-01","2026-10-02"],"agentes":[{"id":"bootcamp|11","n":"Jean Zambrano","s":"Karen Benitez","d":{"2026-10-01":[6.48,1,362.88,362.88,0.1543,0.1,10,36.288,null,1,null],"2026-10-02":[6.61,2,816.48,408.24,0.3026,0.1818,11,74.2255,null,1,null]},"res":{"efect":1,"sinVenta":0,"prom":1.5}},{"id":"bootcamp|12","n":"Juan Castellanos","s":"Karen Benitez","d":{"2026-10-01":[6.25,2,1179.36,589.68,0.32,0.2,10,117.936,null,1,null],"2026-10-02":[6.53,0,0,0,0,0,17,0,null,null,null]},"res":{"efect":0.5,"sinVenta":1,"prom":1}},{"id":"bootcamp|13","n":"Hernan Giraldo","s":"Karen Benitez","d":{"2026-10-01":[6.24,1,453.6,453.6,0.1603,0.1111,9,50.4,null,1,null],"2026-10-02":[6.82,0,0,0,0,0,9,0,null,null,null]},"res":{"efect":0.5,"sinVenta":1,"prom":0.5}},{"id":"bootcamp|14","n":"Andres Gonzalez","s":"Karen Benitez","d":{"2026-10-01":[6.55,0,0,0,0,0,14,0,null,null,null],"2026-10-02":[6.48,0,0,0,0,0,23,0,null,null,null]},"res":{"efect":0,"sinVenta":null,"prom":0}},{"id":"bootcamp|15","n":"Claudia Canadulce","s":"Karen Benitez","d":{"2026-10-01":[6.57,0,0,0,0,0,20,0,null,null,null],"2026-10-02":[6.52,0,0,0,0,0,20,0,null,null,null]},"res":{"efect":0,"sinVenta":null,"prom":0}},{"id":"bootcamp|16","n":"Daniela Figueroa","s":"Karen Benitez","d":{"2026-10-01":[6.68,0,0,0,0,0,23,0,null,null,null],"2026-10-02":[6.48,0,0,0,0,0,23,0,null,null,null]},"res":{"efect":0,"sinVenta":null,"prom":0}},{"id":"bootcamp|17","n":"Laura Gomez","s":"Karen Benitez","d":{"2026-10-01":[6.51,0,0,0,0,0,15,0,null,null,null],"2026-10-02":[6.36,0,0,0,0,0,26,0,null,null,null]},"res":{"efect":0,"sinVenta":null,"prom":0}},{"id":"bootcamp|18","n":"Leidy Guzman","s":"Karen Benitez","d":{"2026-10-01":[6.25,0,0,0,0,0,16,0,null,null,null],"2026-10-02":[3.18,0,0,0,0,0,13,0,null,null,null]},"res":{"efect":0,"sinVenta":null,"prom":0}},{"id":"bootcamp|19","n":"Leidy Reyes","s":"Karen Benitez","d":{"2026-10-01":[6.54,0,0,0,0,0,17,0,null,null,null],"2026-10-02":[6.68,0,0,0,0,0,29,0,null,null,null]},"res":{"efect":0,"sinVenta":null,"prom":0}},{"id":"bootcamp|20","n":"Manuel Aragosa","s":"Karen Benitez","d":{"2026-10-01":[6.5,0,0,0,0,0,19,0,null,null,null],"2026-10-02":[6.77,0,0,0,0,0,17,0,null,null,null]},"res":{"efect":0,"sinVenta":null,"prom":0}},{"id":"bootcamp|21","n":"Sandra Diaz","s":"Karen Benitez","d":{"2026-10-01":[6.58,0,0,0,0,0,19,0,null,null,null],"2026-10-02":[3.96,0,0,0,0,0,13,0,null,null,null]},"res":{"efect":0,"sinVenta":null,"prom":0}},{"id":"bootcamp|22","n":"Yohana Arellano","s":"Karen Benitez","d":{"2026-10-01":[6.76,0,0,0,0,0,16,0,null,null,null],"2026-10-02":[6.73,0,0,0,0,0,30,0,null,null,null]},"res":{"efect":0,"sinVenta":null,"prom":0}}],"warnings":[]},{"op":"resurrection","tab":"Resurrection","label":"Resurrection","codes":["2.4","1.4"],"ok":true,"fechaActualizado":"2026-10-02","dias":["2026-10-01","2026-10-02"],"agentes":[{"id":"resurrection|12","n":"Juan Parra","s":"Karen Benitez","d":{"2026-10-01":[3.45,3,685,228.3333,0.8696,137,5,0.6,0.6667,0,0.3333],"2026-10-02":[6.11,0,0,0,0,0,6,0,0,0,0]},"res":{"efect":0.5,"sinVenta":1,"prom":1.5}},{"id":"resurrection|13","n":"Juan Parra (2)","s":"Karen Benitez","d":{"2026-10-01":[3.45,3,685,228.3333,0.8696,137,5,137,0.6667,0,0.3333],"2026-10-02":[6.11,0,0,0,0,0,6,0,0,0,0]},"dup":true,"res":{"efect":0.5,"sinVenta":1,"prom":1.5}},{"id":"resurrection|14","n":"Nancy Sanchez","s":"Karen Benitez","d":{"2026-10-01":[6.35,3,320,106.6667,0.4724,17.7778,18,17.7778,0.6667,0,0.3333],"2026-10-02":[7.02,0,0,0,0,0,23,0,0,0,0]},"res":{"efect":0.5,"sinVenta":1,"prom":1.5}},{"id":"resurrection|15","n":"Jairo Garzon","s":"Karen Benitez","d":{"2026-10-01":[6.62,1,70,70,0.1511,5,14,5,1,0,0],"2026-10-02":[6.52,1,70,70,0.1534,8.75,8,8.75,1,0,0]},"res":{"efect":1,"sinVenta":0,"prom":1}},{"id":"resurrection|16","n":"Cristian Fajardo","s":"Karen Benitez","d":{"2026-10-01":[6.53,0,0,0,0,0,7,0,0,0,0],"2026-10-02":[5.48,1,50,50,0.1825,5,10,5,0,0,1]},"res":{"efect":0.5,"sinVenta":1,"prom":0.5}},{"id":"resurrection|17","n":"Karen Penagos","s":"Karen Benitez","d":{"2026-10-01":[6.57,1,40,40,0.1522,4.4444,9,4.4444,0,0,1],"2026-10-02":[0,0,0,0,0,0,0,0,0,0,0]},"res":{"efect":0.5,"sinVenta":1,"prom":0.5}},{"id":"resurrection|18","n":"Daniel Mendez","s":"Karen Benitez","d":{"2026-10-01":[6.49,0,0,0,0,0,15,0,0,0,0],"2026-10-02":[6.45,0,0,0,0,0,23,0,0,0,0]},"res":{"efect":0,"sinVenta":null,"prom":0}}],"warnings":["\"Resurrection\": nombre repetido \"Juan Parra\" (Karen Benitez) filas 12 y 13; la segunda se llama \"Juan Parra (2)\"."]}],"warnings":["\"Resurrection\": nombre repetido \"Juan Parra\" (Karen Benitez) filas 12 y 13; la segunda se llama \"Juan Parra (2)\"."]};
+</script>
+<script id="agentPerfScript">
+/*
+ * agentperf_rca.js  ·  Análisis de causa raíz Agent Performance  (sin DOM; probado con Node)
+ * ----------------------------------------------------------------------------------------
+ * Entrada : ap  = respuesta de Apps Script action=agentperf (operaciones → agentes → días)
+ *           ct  = CT_DATA del Control Tower (usa ct.detalle[op].dias: plan/real de ventas por día)
+ * Reglas  : STAFF > 0 = trabajó; 0 o "-" = NO trabajó (ya normalizado por el Apps Script).
+ *
+ * Identidad del gap (exacta, por día y sumable por período) :
+ *     Real_Planif − Plan  =  ① Plan vs capacidad  +  ② Staff  +  ③ Productividad  +  ④ No atribuible
+ *   ① = Cap − Plan                 Cap = Σ E_i de los agentes "esperados" (trabajaron ≥50% de los días base)
+ *   ② = Σ [ausentes −E_i ]  +  Σ [turno parcial  E_i·(h/H_i − 1) ]  +  Σ [no esperados que trabajaron +ventas]
+ *   ③ = Σ conectados  [ ventas_i − E_i·(h/H_i) ]   → sin venta / bajo su promedio / sobre su promedio
+ *   ④ = Real_Planif − Σ ventas de las pestañas de agentes (diferencia entre fuentes)
+ *   E_i = ventas promedio por día trabajado del agente en los días base (suavizado hacia su grupo, k=2)
+ *   Días base = otros días cargados del mismo tipo (L–V / S–D) si hay ≥2; si no, todos los otros días.
+ */
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory();
+  else root.AgentPerfRCA = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var OPS = {
+    upsell:       { ct: 'upsell',       label: '2.1.- Upsell' },
+    recurrence:   { ct: 'rec22',        label: '2.2.- Recurrence' },
+    bootcamp:     { ct: 'bootcamp',     label: '2.5.- Bootcamp' },
+    resurrection: { ct: 'resurrection', label: 'Resurrection (2.4 + 1.4)' },
+  };
+  var OPS_ORDER = ['upsell', 'recurrence', 'resurrection', 'bootcamp'];
+  var K_SHRINK = 2;           // suavizado del promedio individual hacia el de su grupo
+  var P_ESPERADO = 0.5;       // trabajó ≥50% de los días base => se espera que trabaje
+  var H_TIPICA = 6.5;         // turno completo (h) cuando no hay referencia
+  var DOW = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  var DOW_CORTO = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+
+  function dow(f) { return new Date(f + 'T00:00:00Z').getUTCDay(); }
+  function esFinde(f) { var d = dow(f); return d === 0 || d === 6; }
+  function tipoDia(f) { return esFinde(f) ? 'SD' : 'LV'; }
+  function r2(x) { return x === null || x === undefined || !isFinite(x) ? null : Math.round(x * 100) / 100; }
+  function sum(a, f) { var s = 0; for (var i = 0; i < a.length; i++) s += f(a[i]); return s; }
+  function sevOf(c) { return c == null ? 'na' : c >= 100 ? 'sobreplan' : c >= 95 ? 'enlinea' : c >= 85 ? 'atencion' : 'critico'; }
+
+  function ctDay(ct, key, f) {
+    var g = ct && ct.detalle && ct.detalle[key];
+    if (!g) return null;
+    for (var i = 0; i < g.dias.length; i++) if (g.dias[i].fecha === f) return g.dias[i];
+    return null;
+  }
+
+  /* ---------- modelo ---------- */
+  function build(ap, ct) {
+    var m = { ok: false, hasta: ap && ap.hasta, ops: {}, orden: [], warnings: (ap && ap.warnings) || [] };
+    if (!ap || !ap.ops) return m;
+    ap.ops.forEach(function (o) {
+      if (!o.ok || !OPS[o.op]) return;
+      var key = OPS[o.op].ct;
+      var dias = o.dias.slice().sort();
+      var analizables = dias.filter(function (f) { var d = ctDay(ct, key, f); return d && d.status === 'elapsed' && d.ventas_plan != null; });
+      var sups = [];
+      o.agentes.forEach(function (a) {
+        var nm = a.formador ? 'Formación · ' + a.s : a.s;
+        if (sups.indexOf(nm) < 0) sups.push(nm);
+      });
+      m.ops[o.op] = {
+        op: o.op, label: OPS[o.op].label, ctKey: key, codes: o.codes, fechaActualizado: o.fechaActualizado,
+        dias: dias, analizables: analizables, agentes: o.agentes, sups: sups,
+      };
+      m.orden.push(o.op);
+    });
+    m.orden.sort(function (a, b) { return OPS_ORDER.indexOf(a) - OPS_ORDER.indexOf(b); });
+    m.ct = ct;
+    m.ok = m.orden.length > 0;
+    return m;
+  }
+
+  function grupoDe(a) { return a.formador ? 'Formación · ' + a.s : a.s; }
+
+  /* ---------- baseline ---------- */
+  function diasBase(o, D, tipo) {
+    var otros = o.dias.filter(function (f) { return D.indexOf(f) < 0; });
+    var mismo = otros.filter(function (f) { return tipoDia(f) === tipo; });
+    if (mismo.length >= 2) return { dias: mismo, comparable: true };
+    return { dias: otros, comparable: false };
+  }
+
+  function baseAgentes(o, B) {
+    // por agente: n días trabajados, ventas prom/día trabajado, horas prom, p
+    var porGrupo = {}, out = {};
+    o.agentes.forEach(function (a) {
+      var n = 0, v = 0, h = 0;
+      B.forEach(function (f) { var d = a.d[f]; if (d && d[0] > 0) { n++; v += d[1]; h += d[0]; } });
+      out[a.id] = { n: n, avgV: n ? v / n : 0, avgH: n ? h / n : 0, p: B.length ? n / B.length : 0 };
+      var g = grupoDe(a); porGrupo[g] = porGrupo[g] || { n: 0, v: 0 };
+      porGrupo[g].n += n; porGrupo[g].v += v;
+    });
+    var nOp = 0, vOp = 0;
+    Object.keys(porGrupo).forEach(function (g) { nOp += porGrupo[g].n; vOp += porGrupo[g].v; });
+    var gOp = nOp ? vOp / nOp : 0;
+    o.agentes.forEach(function (a) {
+      var b = out[a.id], g = porGrupo[grupoDe(a)];
+      var gAvg = g && g.n ? g.v / g.n : gOp;
+      b.E = (b.n * b.avgV + K_SHRINK * gAvg) / (b.n + K_SHRINK);
+      b.H = b.avgH >= 3 ? b.avgH : H_TIPICA;
+      b.esperado = B.length > 0 && b.p >= P_ESPERADO;
+    });
+    return out;
+  }
+
+  /* ---------- análisis de un conjunto de días (día o período) ---------- */
+  function analizar(model, opKey, fechas, filtros) {
+    filtros = filtros || {};
+    var o = model.ops[opKey];
+    if (!o) return { ok: false, error: 'operación sin datos de agentes' };
+    var ct = model.ct;
+    var D = fechas.filter(function (f) { return o.analizables.indexOf(f) >= 0; }).sort();
+    if (!D.length) return { ok: false, error: 'No hay días cerrados con datos de agentes en el período elegido.' };
+
+    // baseline POR DÍA (leave-one-out): cada día se compara contra los demás días cargados (mismo tipo L–V / S–D si hay ≥2).
+    // El período es la suma de sus días, por eso la identidad sigue siendo exacta.
+    var baseCache = {}, comparableAll = true, hayBase = true, nBase = Infinity;
+    D.forEach(function (f) {
+      var b = diasBase(o, [f], tipoDia(f));
+      baseCache[f] = { B: b.dias, comparable: b.comparable, ag: baseAgentes(o, b.dias) };
+      if (!b.dias.length) hayBase = false;
+      if (!b.comparable) comparableAll = false;
+      nBase = Math.min(nBase, b.dias.length);
+    });
+    if (!isFinite(nBase)) nBase = 0;
+
+    var agAcc = {};                       // id -> acumulados
+    o.agentes.forEach(function (a) {
+      agAcc[a.id] = { id: a.id, n: a.n, s: a.s, grupo: grupoDe(a), formador: !!a.formador, E: 0, expected: 0, real: 0, hrs: 0, imp2: 0, imp3: 0, diasNoTrab: 0, diasSinVenta: 0, dias: [], esperado: false };
+    });
+    var supAcc = {};
+    o.sups.forEach(function (g) { supAcc[g] = { s: g, formador: g.indexOf('Formación') === 0, cap: 0, v: 0, imp2: 0, imp3: 0, h: 0, nAg: 0, noTrab: 0, sinVenta: 0, esp: 0, trab: 0, hEsp: 0 }; });
+
+    var tot = { plan: 0, realP: 0, vTab: 0, revP: 0, revTab: 0, cap: 0, imp2: 0, imp3: 0, sinVenta: 0, bajo: 0, sobre: 0, ausentes: 0, parcial: 0, extra: 0,
+                hrs: 0, calls: 0, agEsp: 0, agTrab: 0, agTrabEsp: 0, hEsp: 0, callsEff: 0, convEff: 0 };
+    var porDia = [];
+    var ref = { n: 0, h: 0, cphW: 0, hW: 0, crW: 0, cW: 0, aspW: 0, vW: 0 };
+
+    D.forEach(function (f) {
+      var bc = baseCache[f], bag = bc.ag, hayBaseD = bc.B.length > 0;
+      var c = ctDay(ct, o.ctKey, f);
+      var dayCap = 0, dayI2 = 0, dayI3 = 0, dayV = 0, dayH = 0, dayCalls = 0, dayRev = 0, dayEsp = 0, dayTrab = 0;
+      o.agentes.forEach(function (a) {
+        var d = a.d[f]; if (!d) return;
+        var st = d[0], v = d[1], b = bag[a.id], acc = agAcc[a.id], sa = supAcc[grupoDe(a)];
+        var esperado = hayBaseD && b.esperado, estado, i2 = 0, i3 = 0, exp = 0;
+        dayV += v; dayH += st; dayCalls += (d[6] || 0); dayRev += (d[2] || 0);
+        if (st > 0) { dayTrab++; sa.trab++; }
+        if (esperado) { sa.esp++; sa.hEsp += b.H; }
+        if (esperado) {
+          dayCap += b.E; dayEsp++; exp = b.E; acc.esperado = true;
+          if (st <= 0) { i2 = -b.E; estado = 'NO_TRABAJO'; tot.ausentes += i2; acc.diasNoTrab++; sa.noTrab++; }
+          else {
+            var r = Math.min(1.5, st / b.H);
+            i2 = b.E * (r - 1); i3 = v - b.E * r; exp = b.E * r;
+            if (i2 < 0) tot.parcial += i2; else tot.extra += i2;
+            if (v === 0 && b.E * r >= 0.5) { estado = 'SIN_VENTA'; acc.diasSinVenta++; sa.sinVenta++; }
+            else if (i3 <= -1) estado = 'CAIDA';
+            else if (i3 <= -0.5) estado = 'BAJO';
+            else if (i3 >= 0.5) estado = 'SOBRE';
+            else estado = 'OK';
+            if (i3 < 0) tot.bajo += (v === 0 ? 0 : i3); if (v === 0 && i3 < 0) tot.sinVenta += i3; if (i3 > 0) tot.sobre += i3;
+            if (st / b.H < 0.7 && estado === 'OK') estado = 'PARCIAL';
+          }
+        } else {
+          if (st > 0) { i2 = v; tot.extra += i2; estado = hayBaseD ? 'EXTRA' : (v === 0 ? 'SIN_VENTA' : 'OK'); if (!hayBaseD && v === 0) { acc.diasSinVenta++; sa.sinVenta++; } }
+          else { estado = hayBaseD ? 'NO_PROGRAMADO' : 'NO_TRABAJO'; if (!hayBaseD) { acc.diasNoTrab++; sa.noTrab++; } }
+        }
+        acc.E += esperado ? b.E : 0; acc.expected += exp; acc.real += v; acc.hrs += st; acc.imp2 += i2; acc.imp3 += i3;
+        acc.dias.push({ fecha: f, staff: st, v: v, estado: estado, exp: r2(exp) });
+        sa.cap += esperado ? b.E : 0; sa.v += v; sa.imp2 += i2; sa.imp3 += i3; sa.h += st;
+        dayI2 += i2; dayI3 += i3;
+      });
+      // horas base (para KPIs hora)
+      var B = bc.B, hB = sum(B, function (x) { return sum(o.agentes, function (a) { return a.d[x] ? a.d[x][0] : 0; }); });
+      var vB = sum(B, function (x) { return sum(o.agentes, function (a) { return a.d[x] ? a.d[x][1] : 0; }); });
+      var cB = sum(B, function (x) { return sum(o.agentes, function (a) { return a.d[x] ? (a.d[x][6] || 0) : 0; }); });
+      var rB = sum(B, function (x) { return sum(o.agentes, function (a) { return a.d[x] ? (a.d[x][2] || 0) : 0; }); });
+      var cph = hB ? cB / hB : null, cr = cB ? vB / cB : null;
+      if (hayBaseD && cph != null && cr != null) {
+        tot.callsEff += (dayCalls - cph * dayH) * cr;
+        tot.convEff += dayV - cr * dayCalls;
+        ref.n++; ref.h += hB / B.length; ref.cphW += cph * dayH; ref.hW += dayH; ref.crW += cr * dayCalls; ref.cW += dayCalls;
+        ref.aspW += (vB ? rB / vB : 0) * dayV; ref.vW += dayV;
+      }
+      var plan = c.ventas_plan, realP = c.ventas_real;
+      porDia.push({ fecha: f, dow: DOW_CORTO[dow(f)], plan: r2(plan), realP: realP, vTab: dayV, cap: r2(dayCap), imp2: r2(dayI2), imp3: r2(dayI3),
+        gap: r2(realP - plan), cumpl: plan ? r2(100 * realP / plan) : null, agEsp: dayEsp, agTrab: dayTrab, horas: r2(dayH) });
+      tot.plan += plan; tot.realP += realP; tot.vTab += dayV; tot.revP += (c.rev_real || 0); tot.revTab += dayRev;
+      tot.cap += dayCap; tot.imp2 += dayI2; tot.imp3 += dayI3; tot.hrs += dayH; tot.calls += dayCalls;
+      tot.agEsp += dayEsp; tot.agTrab += dayTrab;
+      tot.hEsp += sum(o.agentes, function (a) { var b = bag[a.id]; return (hayBaseD && b.esperado && a.d[f]) ? b.H : 0; });
+      // referencia por día para KPIs (se acumula al final)
+      porDia[porDia.length - 1]._ref = { hB: hB, vB: vB, cB: cB, rB: rB, nB: B.length };
+    });
+
+    var nD = D.length;
+    var gap = tot.realP - tot.plan;
+    var efectos = hayBase ? {
+      cap: r2(tot.cap - tot.plan), staff: r2(tot.imp2), prod: r2(tot.imp3), noAtr: r2(tot.realP - tot.vTab),
+      detalleStaff: { ausentes: r2(tot.ausentes), parcial: r2(tot.parcial), extra: r2(tot.extra) },
+      detalleProd: { sinVenta: r2(tot.sinVenta), bajo: r2(tot.bajo), sobre: r2(tot.sobre) },
+    } : null;
+
+    // confianza
+    var conf = !hayBase ? 'sin base' : (nBase < 5 || !comparableAll) ? 'baja' : nBase < 10 ? 'media' : 'alta';
+    var baseNota = !hayBase ? 'No hay otros días cargados para comparar: solo se muestra el estado de Staff y ventas.'
+      : (comparableAll ? 'Base: ' + nBase + ' día(s) del mismo tipo (L–V / S–D).' : 'Base: ' + nBase + ' día(s) cargados (no hay suficientes del mismo tipo de día, p. ej. fin de semana vs. hábiles) — lectura orientativa.');
+
+    // KPIs: período real vs referencia (cada día contra su propia base leave-one-out, ponderada por horas / llamadas / ventas del día)
+    var kpis = [];
+    function kp(k, label, real, refv, fmt, efecto, unidad) {
+      var dl = (real != null && refv) ? 100 * (real - refv) / refv : null;
+      kpis.push({ k: k, label: label, real: real, ref: refv, deltaPct: dl == null ? null : r2(dl), fmt: fmt, efecto: efecto == null ? null : r2(efecto), unidad: unidad || 'ventas' });
+    }
+    if (hayBase && ref.n) {
+      var cphRef = ref.hW ? ref.cphW / ref.hW : null, crRef = ref.cW ? ref.crW / ref.cW : null, aspRef = ref.vW ? ref.aspW / ref.vW : null;
+      kp('horas', 'Horas conectadas / día', tot.hrs / nD, ref.h / ref.n, 'h', tot.imp2);
+      kp('cph', 'Llamadas ≥2 min por hora', tot.hrs ? tot.calls / tot.hrs : null, cphRef, 'n2', tot.callsEff);
+      kp('cr', '%CR 2 min', tot.calls ? 100 * tot.vTab / tot.calls : null, crRef == null ? null : 100 * crRef, 'pct', tot.convEff);
+      kp('sph', 'Ventas por hora (SPH)', tot.hrs ? tot.vTab / tot.hrs : null, (cphRef != null && crRef != null) ? cphRef * crRef : null, 'n3', null);
+      var aspR = tot.vTab ? tot.revTab / tot.vTab : null;
+      kp('asp', 'ASP', aspR, aspRef, 'usd', (aspR != null && aspRef != null) ? tot.vTab * (aspR - aspRef) : null, 'usd');
+      kp('rev', 'Revenue / llamada ≥2 min', tot.calls ? tot.revTab / tot.calls : null, (crRef != null && aspRef != null) ? crRef * aspRef : null, 'usd2', null);
+      // mix contado/financiado (ponderado por ventas) — solo si la pestaña lo trae (Recurrence, Bootcamp, Resurrection)
+      var upR = 0, upW = 0, inR = 0, inW = 0, upB = 0, upBW = 0, inB = 0, inBW = 0;
+      D.forEach(function (f) {
+        var Bd = baseCache[f].B;
+        o.agentes.forEach(function (a) {
+          var d = a.d[f];
+          if (d && d[1]) { if (d[8] != null) { upR += d[8] * d[1]; upW += d[1]; } if (d[10] != null) { inR += d[10] * d[1]; inW += d[1]; } }
+          Bd.forEach(function (x) {
+            var e = a.d[x]; if (!e || !e[1]) return;
+            if (e[8] != null) { upB += e[8] * e[1]; upBW += e[1]; }
+            if (e[10] != null) { inB += e[10] * e[1]; inBW += e[1]; }
+          });
+        });
+      });
+      if (upW && upBW) kp('upf', '% Contado (upfront)', 100 * upR / upW, 100 * upB / upBW, 'pct', null);
+      if (inW && inBW) kp('inst', '% Financiado (installments)', 100 * inR / inW, 100 * inB / inBW, 'pct', null);
+    }
+    var gabs = Math.abs(gap) || 1;
+    kpis.forEach(function (x) {
+      x.explica = x.efecto != null && x.unidad === 'ventas' && gap < 0 && x.efecto < 0 && Math.abs(x.efecto) >= 0.15 * gabs;
+      if (x.k === 'asp') x.explica = x.deltaPct != null && Math.abs(x.deltaPct) >= 8;
+      if (x.k === 'sph' || x.k === 'rev') x.explica = false;
+    });
+
+    // supervisores + serie diaria por supervisor
+    var sups = Object.keys(supAcc).map(function (g) {
+      var s = supAcc[g]; s.nAg = o.agentes.filter(function (a) { return grupoDe(a) === g; }).length;
+      s.cumplCap = s.cap ? r2(100 * s.v / s.cap) : null;
+      s.cap = r2(s.cap); s.v = r2(s.v); s.imp2 = r2(s.imp2); s.imp3 = r2(s.imp3); s.imp = r2(s.imp2 + s.imp3); s.h = r2(s.h);
+      return s;
+    });
+    var supSerie = serieSupervisores(model, opKey);
+    sups.forEach(function (s) { var z = supSerie[s.s]; s.serie = z ? z.serie : []; s.estado = z ? z.estado : 'na'; s.tendencia = z ? z.tendencia : null; });
+    sups.sort(function (a, b) { return a.imp - b.imp; });
+    var gapSup = sum(sups, function (s) { return Math.min(0, s.imp); }) || 0;
+    sups.forEach(function (s) { s.shareNeg = gapSup && s.imp < 0 ? r2(100 * s.imp / gapSup) : 0; });
+
+    // agentes (con filtros)
+    var ags = Object.keys(agAcc).map(function (id) { return agAcc[id]; });
+    ags.forEach(function (a) {
+      a.imp = a.imp2 + a.imp3;
+      // estado dominante: la categoría que más resta
+      var cnt = { NO_TRABAJO: 0, SIN_VENTA: 0, CAIDA: 0, BAJO: 0, SOBRE: 0, OK: 0, PARCIAL: 0, EXTRA: 0, NO_PROGRAMADO: 0 };
+      a.dias.forEach(function (d) { if (cnt[d.estado] !== undefined) cnt[d.estado]++; });
+      var peor = ['NO_TRABAJO', 'SIN_VENTA', 'CAIDA', 'BAJO'].filter(function (k) { return cnt[k] > 0; })
+        .sort(function (x, y) { return cnt[y] - cnt[x]; })[0];
+      a.estado = a.imp <= -0.5 && peor ? peor : (a.imp >= 0.5 ? 'SOBRE' : (cnt.NO_PROGRAMADO === a.dias.length ? 'NO_PROGRAMADO' : (cnt.EXTRA ? 'EXTRA' : 'OK')));
+      a.E = r2(a.E / nD); a.expected = r2(a.expected); a.real = r2(a.real); a.hrs = r2(a.hrs);
+      a.imp2 = r2(a.imp2); a.imp3 = r2(a.imp3); a.imp = r2(a.imp);
+    });
+    if (filtros.sup) ags = ags.filter(function (a) { return a.grupo === filtros.sup; });
+    if (filtros.agente) { var q = String(filtros.agente).toLowerCase(); ags = ags.filter(function (a) { return a.n.toLowerCase().indexOf(q) >= 0; }); }
+    var negTot = sum(ags, function (a) { return Math.min(0, a.imp); }) || 0, acum = 0;
+    ags.sort(function (a, b) { return a.imp - b.imp; });
+    ags.forEach(function (a) { if (a.imp < 0 && negTot) { acum += a.imp; a.acumPct = r2(100 * acum / negTot); } else a.acumPct = null; });
+
+    // alcance por supervisor (cascada propia)
+    var scope = null;
+    if (filtros.sup && supAcc[filtros.sup]) {
+      var s = supAcc[filtros.sup];
+      scope = { sup: filtros.sup, cap: r2(s.cap), v: r2(s.v), imp2: r2(s.imp2), imp3: r2(s.imp3), cumplCap: s.cap ? r2(100 * s.v / s.cap) : null,
+        staff: { agEsp: r2(s.esp / nD), agTrab: r2(s.trab / nD), hEsp: r2(s.hEsp / nD), hTrab: r2(s.h / nD) } };
+    }
+
+    var cumpl = tot.plan ? 100 * tot.realP / tot.plan : null;
+    var revPlan = sum(D, function (f) { return ctDay(ct, o.ctKey, f).rev_plan || 0; });
+    var heat = { dias: o.dias.filter(function (f) { return o.analizables.indexOf(f) >= 0 || true; }), filas: [] };
+    var agHeat = o.agentes.filter(function (a) {
+      if (filtros.sup && grupoDe(a) !== filtros.sup) return false;
+      if (filtros.agente && a.n.toLowerCase().indexOf(String(filtros.agente).toLowerCase()) < 0) return false;
+      return true;
+    });
+    heat.filas = agHeat.map(function (a) {
+      return { id: a.id, n: a.n, grupo: grupoDe(a), cel: heat.dias.map(function (f) {
+        var d = a.d[f]; if (!d) return null;
+        var est = d[0] > 0 ? (d[1] > 0 ? 'V' : 'S') : 'N';       // V trabajó y vendió, S trabajó sin venta, N no trabajó
+        return { e: est, v: d[1], h: d[0] };
+      }) };
+    });
+
+    return {
+      ok: true, op: opKey, label: o.label, fechas: D, periodo: nD === 1 ? 'dia' : 'periodo', dow: nD === 1 ? DOW[dow(D[0])] : null,
+      plan: r2(tot.plan), realP: tot.realP, vTab: tot.vTab, gap: r2(gap), cumpl: cumpl == null ? null : r2(cumpl), sev: sevOf(cumpl), revPlan: revPlan, revReal: tot.revP,
+      confianza: conf, baseNota: baseNota, comparable: comparableAll, hayBase: hayBase, nBase: nBase,
+      staff: { agEsp: r2(tot.agEsp / nD), agTrab: r2(tot.agTrab / nD), hEsp: r2(tot.hEsp / nD), hTrab: r2(tot.hrs / nD) },
+      cap: r2(tot.cap), efectos: efectos, kpis: kpis, sups: sups, agentes: ags, scope: scope, porDia: porDia, heat: heat,
+      causa: causaPrincipal(efectos, gap),
+    };
+  }
+
+  function causaPrincipal(ef, gap) {
+    if (!ef) return null;
+    var c = [['Plan por encima de la capacidad histórica', ef.cap], ['Staff', ef.staff], ['Productividad de los conectados', ef.prod], ['Diferencia entre fuentes (no atribuible a agentes)', ef.noAtr]]
+      .filter(function (x) { return x[1] < 0; }).sort(function (a, b) { return a[1] - b[1]; });
+    return c.length ? { nombre: c[0][0], valor: c[0][1] } : null;
+  }
+
+  /* ---------- serie diaria por supervisor (cada día vs base de los demás días) ---------- */
+  function serieSupervisores(model, opKey) {
+    var o = model.ops[opKey], out = {};
+    o.sups.forEach(function (g) { out[g] = { serie: [] }; });
+    var dias = o.analizables;
+    dias.forEach(function (f) {
+      var D = [f], t = tipoDia(f), b = diasBase(o, D, t), ag = baseAgentes(o, b.dias);
+      var acc = {};
+      o.sups.forEach(function (g) { acc[g] = { cap: 0, v: 0, h: 0 }; });
+      o.agentes.forEach(function (a) {
+        var d = a.d[f]; if (!d) return; var bb = ag[a.id], s = acc[grupoDe(a)];
+        s.v += d[1]; s.h += d[0];
+        if (b.dias.length && bb.esperado) s.cap += bb.E;
+      });
+      o.sups.forEach(function (g) {
+        var s = acc[g];
+        out[g].serie.push({ fecha: f, dow: DOW_CORTO[dow(f)], v: s.v, cap: r2(s.cap), cumpl: (b.dias.length && s.cap > 0) ? r2(100 * s.v / s.cap) : null, h: r2(s.h) });
+      });
+    });
+    o.sups.forEach(function (g) {
+      var z = out[g], s = z.serie.filter(function (x) { return x.cumpl != null; });
+      z.estado = 'na'; z.tendencia = null; z.baseOk = o.dias.length >= 4 && s.length >= 3;
+      if (!s.length) return;
+      if (!z.baseOk) { z.estado = 'poca'; return; }          // con <3 días de historia no se alerta (evita falsos positivos)
+      var last = s[s.length - 1], prev = s.slice(0, -1).slice(-3);
+      var avgPrev = prev.length ? sum(prev, function (x) { return x.cumpl; }) / prev.length : null;
+      z.tendencia = avgPrev == null ? null : r2(last.cumpl - avgPrev);
+      var last2 = s.slice(-2);
+      if (last.cumpl < 80 || (last2.length === 2 && last2[0].cumpl < 90 && last2[1].cumpl < 90) || (z.tendencia != null && z.tendencia <= -15)) z.estado = 'caida';
+      else if (last.cumpl < 95) z.estado = 'atencion';
+      else z.estado = 'ok';
+    });
+    return out;
+  }
+
+  /* ---------- semanas y alertas ---------- */
+  function semanas(model, opKey) {
+    var o = model.ops[opKey], w = {};
+    o.analizables.forEach(function (f) {
+      var d = new Date(f + 'T00:00:00Z'), k = (d.getUTCDay() + 6) % 7;       // lunes=0
+      var ini = new Date(d.getTime() - k * 86400000).toISOString().slice(0, 10);
+      (w[ini] = w[ini] || []).push(f);
+    });
+    return Object.keys(w).sort().map(function (ini) { return { ini: ini, fechas: w[ini].sort() }; });
+  }
+
+  function alertas(model) {
+    var out = [];
+    model.orden.forEach(function (opKey) {
+      var o = model.ops[opKey];
+      o.analizables.forEach(function (f) {
+        var r = analizar(model, opKey, [f]);
+        if (!r.ok) return;
+        var dias = r.porDia[0];
+        if (r.sev === 'atencion' || r.sev === 'critico') {
+          if (Math.abs(r.gap) >= Math.max(2, 0.05 * r.plan)) {
+            out.push({ tipo: 'op', op: opKey, label: o.label, fecha: f, dow: dias.dow, sev: r.sev, gap: r.gap, cumpl: r.cumpl, causa: r.causa,
+              confianza: r.confianza, texto: o.label + ' · ' + dias.dow + ' ' + f.slice(5) + ' · ' + (r.gap >= 0 ? '+' : '') + r.gap.toFixed(1) + ' ventas (' + r.cumpl.toFixed(0) + '% del plan)' + (r.causa ? ' · causa principal: ' + r.causa.nombre : '') });
+          }
+        }
+      });
+      var ss = serieSupervisores(model, opKey);
+      Object.keys(ss).forEach(function (g) {
+        var z = ss[g]; if (z.estado !== 'caida') return;  // 'poca' = sin base suficiente
+        var last = z.serie.filter(function (x) { return x.cumpl != null; }).slice(-1)[0];
+        if (!last) return;
+        out.push({ tipo: 'sup', op: opKey, label: o.label, sup: g, fecha: last.fecha, dow: last.dow, sev: last.cumpl < 80 ? 'critico' : 'atencion', cumpl: last.cumpl, tendencia: z.tendencia,
+          texto: g + ' (' + o.label + ') viene en caída · ' + last.dow + ' ' + last.fecha.slice(5) + ' al ' + last.cumpl.toFixed(0) + '% de su capacidad esperada' + (z.tendencia != null ? ' (' + (z.tendencia > 0 ? '+' : '') + z.tendencia.toFixed(0) + ' pp vs días previos)' : '') });
+      });
+    });
+    var rank = { critico: 0, atencion: 1 };
+    out.sort(function (a, b) { return (a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0) || (rank[a.sev] - rank[b.sev]); });
+    return out;
+  }
+
+  return { OPS: OPS, OPS_ORDER: OPS_ORDER, build: build, analizar: analizar, semanas: semanas, alertas: alertas, serieSupervisores: serieSupervisores, tipoDia: tipoDia };
+});
+
+</script>
 <script id="ctAppScript">
 /* ===================================================================
    Post-Venta · WFM Control Tower
@@ -4615,6 +5041,7 @@ let CT_DATA = {"meta":{"fuente":"Google Sheet 'Post-Sales-Operations Calls', pes
     CT_SEL = key;
     { const pp = parentOf(key); if (pp) CT_OPEN[pp] = true; }
     renderSide(); renderHero(); syncSelects(key);
+    rcaSyncOp(key);
     const dsel = document.getElementById('ctDetOpSel'); if (dsel && Array.from(dsel.options).some(o=>o.value===key)){ dsel.value = key; renderDetalle(); }
   }
 
@@ -4661,7 +5088,7 @@ let CT_DATA = {"meta":{"fuente":"Google Sheet 'Post-Sales-Operations Calls', pes
     $$('#ctDetMode button', el).forEach(b=>b.addEventListener('click',()=>{ CT_DET_MODE=b.dataset.v; renderDetalle(); }));
   }
 
-  const VIEW_OF = {renderExec:'ctViewExec',renderDaily:'ctViewDaily',renderDow:'ctViewDow',renderWeekly:'ctViewWeekly',renderByOp:'ctViewByOp',renderAcq:'ctViewAcq',renderCritical:'ctViewCritical',renderPatterns:'ctViewPatterns',renderGoal:'ctViewGoal'};
+  const VIEW_OF = {renderRca:'ctViewRca',renderAlertStrip:'ctAlerts',renderExec:'ctViewExec',renderDaily:'ctViewDaily',renderDow:'ctViewDow',renderWeekly:'ctViewWeekly',renderByOp:'ctViewByOp',renderAcq:'ctViewAcq',renderCritical:'ctViewCritical',renderPatterns:'ctViewPatterns',renderGoal:'ctViewGoal'};
   function safe(fn, name){
     try { fn(); } catch(err){
       if (CT_DATA.meta.dias_transcurridos_completos) console.error('[Control Tower] '+name+':', err);
@@ -4702,11 +5129,287 @@ let CT_DATA = {"meta":{"fuente":"Google Sheet 'Post-Sales-Operations Calls', pes
       safe(renderDow,'Día de semana');
     }
   }
+  /* ================= CAUSA RAÍZ · AGENT PERFORMANCE (oct/2026) =================
+     Fuente: Apps Script action=agentperf (pestañas Upsell, Recurrence, Bootcamp y Resurrection) + Plan/Real de Planif_2026.
+     El cálculo vive en agentperf_rca.js (AgentPerfRCA); aquí solo se dibuja y se filtra.
+     STAFF: horas > 0 = trabajó; 0 o "-" = no trabajó. Supervisor = grupo; otro valor en Supervisor = formador (personal nuevo en formación). */
+  const RCA = { op:'upsell', per:null, sup:null, q:'', todos:false };
+  let AP_PAYLOAD = null, AP_MODEL = null, AP_NOTA = '', AP_ALERTS = [];
+  const RCA_EST = {
+    NO_TRABAJO:   {t:'No trabajó',            c:'var(--text-muted)'},
+    SIN_VENTA:    {t:'Conectado sin venta',   c:'var(--bad)'},
+    CAIDA:        {t:'Caída vs su historial', c:'var(--bad)'},
+    BAJO:         {t:'Bajo su promedio',      c:'var(--series-2)'},
+    PARCIAL:      {t:'Turno parcial',         c:'var(--series-2)'},
+    OK:           {t:'En línea',              c:'var(--series-3)'},
+    SOBRE:        {t:'Sobre su promedio',     c:'var(--series-3)'},
+    EXTRA:        {t:'Refuerzo no esperado',  c:'var(--series-4)'},
+    NO_PROGRAMADO:{t:'No programado',         c:'var(--text-muted)'},
+  };
+  const SUP_EST = {caida:{t:'Viene en caída',c:'var(--bad)'}, atencion:{t:'Atención',c:'var(--series-2)'}, ok:{t:'En línea',c:'var(--series-3)'}, poca:{t:'Poca historia',c:'var(--text-muted)'}, na:{t:'Sin datos',c:'var(--text-muted)'}};
+  const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const sg1 = n => n==null ? '—' : (n>0.049?'+':(n<-0.049?'−':'')) + Math.abs(n).toFixed(1);
+  const f1 = n => n==null ? '—' : n.toFixed(1);
+  const DOWC = ['dom','lun','mar','mié','jue','vie','sáb'];
+  const fechaCorta = f => { const d = new Date(f+'T00:00:00Z'); return DOWC[d.getUTCDay()] + ' ' + f.slice(8) + '/' + f.slice(5,7); };
+  const MESC = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const fechaDM = f => (+f.slice(8)) + ' ' + MESC[(+f.slice(5,7))-1];
+
+  function rcaOpFromCt(key){
+    if (key==='upsell') return 'upsell';
+    if (key==='rec22' || key==='recurrence') return 'recurrence';
+    if (key==='resurrection' || key==='res24' || key==='res14') return 'resurrection';
+    if (key==='bootcamp') return 'bootcamp';
+    return null;
+  }
+  function rcaSyncOp(key){
+    const op = rcaOpFromCt(key); if (!op || !AP_MODEL || !AP_MODEL.ops[op] || RCA.op===op) return;
+    RCA.op = op; RCA.sup = null; RCA.per = null;
+    if ($('#ctViewRca') && $('#ctViewRca').classList.contains('active')) renderRca();
+  }
+
+  async function cargarAgentPerf(){
+    if (typeof AgentPerfRCA === 'undefined') return;
+    let p = null, nota = '';
+    try {
+      if (typeof WFM_ENDPOINT === 'undefined' || typeof WFM_TOKEN === 'undefined') throw new Error('sin WFM_ENDPOINT/WFM_TOKEN');
+      const resp = await fetch(WFM_ENDPOINT + '?token=' + encodeURIComponent(WFM_TOKEN) + '&action=agentperf', { method:'GET', redirect:'follow' });
+      if (!resp.ok) throw new Error('El servidor respondió ' + resp.status);
+      const j = await resp.json();
+      if (j && j.ok && j.ops) p = j;
+      else throw new Error('el Apps Script publicado todavía no tiene la acción agentperf — publica la nueva versión de Code.gs');
+    } catch (err) {
+      console.warn('[Causa raíz] ' + err.message);
+      if (typeof AP_DATA_FALLBACK !== 'undefined') { p = AP_DATA_FALLBACK; nota = 'Mostrando la copia local de Agent Performance (' + (p.hasta||'—') + '): ' + err.message + '.'; }
+    }
+    AP_PAYLOAD = p; AP_NOTA = nota;
+    rebuildAP();
+  }
+  function rebuildAP(){
+    if (!AP_PAYLOAD){ AP_MODEL = null; AP_ALERTS = []; safe(renderRca,'Causa raíz'); safe(renderAlertStrip,'Alertas'); return; }
+    AP_MODEL = AgentPerfRCA.build(AP_PAYLOAD, CT_DATA);
+    AP_ALERTS = AP_MODEL.ok ? AgentPerfRCA.alertas(AP_MODEL) : [];
+    safe(renderRca,'Causa raíz'); safe(renderAlertStrip,'Alertas');
+  }
+
+  /* ---------- alertas (visibles en todas las vistas) ---------- */
+  function renderAlertStrip(){
+    const el = $('#ctAlerts'); if (!el) return;
+    if (!AP_ALERTS.length){ el.innerHTML = ''; return; }
+    const top = AP_ALERTS.slice(0, 5);
+    el.innerHTML = `<div class="ct-card rca-alerts"><div class="ct-card-head"><h3>🚨 Alertas de caída con causa raíz</h3><span class="ct-q" style="margin:0">${AP_ALERTS.length} activa${AP_ALERTS.length>1?'s':''} · clic para ver quién y por qué</span></div>
+      <div class="ct-alert-row" style="margin:8px 0 0">${top.map((a,i)=>`<button class="ct-alert ${a.sev}" data-ai="${i}" title="${esc(a.texto)}">${a.tipo==='sup'?'👤':'📉'} ${esc(a.texto.length>118 ? a.texto.slice(0,115)+'…' : a.texto)}</button>`).join('')}</div></div>`;
+    $$('[data-ai]', el).forEach(b => b.addEventListener('click', () => {
+      const a = top[+b.dataset.ai]; RCA.op = a.op; RCA.per = 'dia:' + a.fecha; RCA.sup = a.tipo==='sup' ? a.sup : null; RCA.q = '';
+      const nb = $('#ctNav button[data-view="rca"]'); if (nb) nb.click();
+      renderRca();
+      const v = $('#ctViewRca'); if (v) v.scrollIntoView({behavior:'smooth', block:'start'});
+    }));
+  }
+
+  /* ---------- períodos ---------- */
+  function rcaPeriodos(o){
+    const M = AP_MODEL, ops = [];
+    if (o.analizables.length > 1) ops.push({v:'mes', t:'Mes a la fecha (' + o.analizables.length + ' días)'});
+    AgentPerfRCA.semanas(M, o.op).forEach(w => { if (w.fechas.length > 1) ops.push({v:'sem:'+w.ini, t:'Semana ' + fechaDM(w.fechas[0]) + ' – ' + fechaDM(w.fechas[w.fechas.length-1]) + ' (' + w.fechas.length + ' días)'}); });
+    o.analizables.slice().reverse().forEach(f => ops.push({v:'dia:'+f, t:'Día · ' + fechaCorta(f)}));
+    return ops;
+  }
+  function rcaFechas(o, per){
+    if (per === 'mes') return o.analizables.slice();
+    if (per && per.indexOf('sem:') === 0){ const w = AgentPerfRCA.semanas(AP_MODEL, o.op).find(x => x.ini === per.slice(4)); return w ? w.fechas : []; }
+    if (per && per.indexOf('dia:') === 0) return [per.slice(4)];
+    return [];
+  }
+
+  /* ---------- gráfica cascada ---------- */
+  function rcaWaterfall(items){
+    const W = 820, H = 250, padL = 14, padR = 14, top = 30, bot = 62;
+    let run = 0; const bars = items.map(it => {
+      if (it.total){ run = it.val; return {...it, y0:0, y1:it.val}; }
+      const y0 = run; run += it.val; return {...it, y0, y1:run};
+    });
+    const vals = bars.flatMap(b => [b.y0, b.y1, 0]);
+    let mx = Math.max(...vals), mn = Math.min(...vals); if (mx === mn){ mx += 1; mn -= 1; }
+    const pad = (mx - mn) * 0.1; mx += pad; if (mn < 0) mn -= pad;
+    const y = v => top + (mx - v) / (mx - mn) * (H - top - bot);
+    const bw = Math.min(70, (W - padL - padR) / bars.length * 0.62), step = (W - padL - padR) / bars.length;
+    let g = `<line x1="${padL}" x2="${W-padR}" y1="${y(0)}" y2="${y(0)}" stroke="var(--border-strong)" stroke-width="1"/>`;
+    bars.forEach((b, i) => {
+      const cx = padL + step * i + step / 2, ya = y(Math.max(b.y0, b.y1)), yb = y(Math.min(b.y0, b.y1));
+      const col = b.total ? 'var(--series-1)' : (b.val < -0.049 ? 'var(--bad)' : (b.val > 0.049 ? 'var(--series-3)' : 'var(--text-muted)'));
+      g += `<rect x="${cx-bw/2}" y="${ya}" width="${bw}" height="${Math.max(2, yb-ya)}" rx="3" fill="${col}" opacity="${b.total?0.85:0.95}"/>`;
+      g += `<text x="${cx}" y="${ya-6}" text-anchor="middle" font-size="12" font-weight="800" fill="var(--text-primary)">${b.total ? f1(b.val) : sg1(b.val)}</text>`;
+      if (i < bars.length - 1){
+        const nx = padL + step * (i+1) + step/2, lv = b.y1;
+        g += `<line x1="${cx+bw/2}" x2="${nx-bw/2}" y1="${y(lv)}" y2="${y(lv)}" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3,3" opacity=".6"/>`;
+      }
+      const lines = String(b.label).split('\n');
+      lines.forEach((ln, k) => { g += `<text x="${cx}" y="${H - bot + 16 + k*13}" text-anchor="middle" font-size="11" fill="var(--text-secondary)">${esc(ln)}</text>`; });
+    });
+    return `<svg class="ct-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Cascada del gap de ventas">${g}</svg>`;
+  }
+
+  function chip(est, mapa){ const m = (mapa||RCA_EST)[est] || {t:est, c:'var(--text-muted)'}; return `<span class="rca-chip" style="--cc:${m.c}">${esc(m.t)}</span>`; }
+  function fmtKpi(k, v){
+    if (v==null) return '—';
+    if (k.fmt==='pct') return v.toFixed(1)+'%';
+    if (k.fmt==='usd') return '$'+v.toFixed(0);
+    if (k.fmt==='usd2') return '$'+v.toFixed(1);
+    if (k.fmt==='n3') return v.toFixed(3);
+    if (k.fmt==='n2') return v.toFixed(2);
+    if (k.fmt==='h') return v.toFixed(1)+' h';
+    return v.toFixed(1);
+  }
+  function kpiCard(k){
+    const dl = k.deltaPct, cls = dl==null ? '' : (dl<=-5 ? 'bad' : (dl>=5 ? 'good' : ''));
+    const efecto = k.efecto==null ? '' : (k.unidad==='usd' ? ` · efecto ≈ ${k.efecto<0?'−':'+'}$${Math.abs(k.efecto).toFixed(0)} de revenue` : ` · efecto ≈ ${sg1(k.efecto)} ventas`);
+    return `<div class="ct-kpi rca-kpi ${k.explica?'explica':''}"><div class="lbl">${esc(k.label)}</div><div class="val">${fmtKpi(k,k.real)}</div>
+      <div class="sub">ref. ${fmtKpi(k,k.ref)} · <b class="${cls==='bad'?'ct-pill-bad':(cls==='good'?'ct-pill-good':'')}">${dl==null?'—':fmtSignedPct1(dl)}</b>${efecto}</div></div>`;
+  }
+
+  /* ---------- secciones ---------- */
+  function supHtml(R, o){
+    const dias = R.porDia.map(d => d.fecha);
+    const serieDias = o.analizables;
+    let h = `<div class="ct-card"><h3>👥 Supervisores · quién viene en caída</h3><p class="ct-q">Cada supervisor contra la capacidad esperada de su equipo (promedio histórico de cada agente que normalmente trabaja ese tipo de día). Haz clic en un supervisor para ver solo su equipo. Las celdas por día muestran % de capacidad; el impacto suma Staff (②) + Productividad (③).</p>
+      <div class="ct-det-wrap" style="overflow:auto"><table class="ct-table"><thead><tr><th>Grupo</th><th class="num">Agentes</th><th class="num">Capacidad</th><th class="num">Real</th><th class="num">% cap.</th><th class="num">② Staff</th><th class="num">③ Prod.</th><th class="num">Impacto</th><th class="num">% de la caída</th>${serieDias.map(f=>`<th class="num" title="% de capacidad ${f}">${fechaDM(f)}</th>`).join('')}<th>Estado</th></tr></thead><tbody>`;
+    R.sups.forEach(s => {
+      const byDay = {}; (s.serie||[]).forEach(x => { byDay[x.fecha] = x; });
+      h += `<tr class="rca-suprow ${RCA.sup===s.s?'sel':''}" data-sup="${esc(s.s)}"><td><b>${esc(s.s)}</b>${s.formador?' <span class="rca-note-s">formador · personal nuevo</span>':''}</td><td class="num">${s.nAg}</td><td class="num">${f1(s.cap)}</td><td class="num">${f1(s.v)}</td>
+        <td class="num"><b>${s.cumplCap==null?'—':s.cumplCap.toFixed(0)+'%'}</b></td><td class="num">${sg1(s.imp2)}</td><td class="num">${sg1(s.imp3)}</td><td class="num"><b class="${s.imp<-0.5?'ct-pill-bad':(s.imp>0.5?'ct-pill-good':'')}">${sg1(s.imp)}</b></td><td class="num">${s.shareNeg?s.shareNeg.toFixed(0)+'%':'—'}</td>
+        ${serieDias.map(f => { const x = byDay[f]; const v = x ? x.cumpl : null; return `<td class="ct-heat-cell" style="background:${v==null?'transparent':heatColorFor(v)}" title="${x?`real ${x.v} / cap. ${x.cap}`:'sin base'}">${v==null?'·':v.toFixed(0)}</td>`; }).join('')}
+        <td>${chip(s.estado, SUP_EST)}${s.tendencia!=null && s.estado!=='poca' ? `<span class="rca-note-s"> ${s.tendencia>0?'+':''}${s.tendencia.toFixed(0)} pp</span>`:''}</td></tr>`;
+    });
+    h += `</tbody></table></div></div>`;
+    return h;
+  }
+  function agentsHtml(R){
+    const list = R.agentes.filter(a => Math.abs(a.imp) >= 0.05 || a.estado==='NO_TRABAJO' || a.estado==='SIN_VENTA' || RCA.q);
+    const show = RCA.todos || RCA.q ? list : list.slice(0, 12);
+    let h = `<div class="ct-card-head"><h3>🧑‍💼 Agentes con mayor impacto${R.scope?` · ${esc(R.scope.sup)}`:''}</h3><span class="ct-q" style="margin:0">${list.length} agente(s) con impacto · ordenado de mayor caída a mayor aporte</span></div>
+      <p class="ct-q">Impacto = ventas reales − lo esperado para ese agente (su promedio por día trabajado, ponderado por horas). Un agente que normalmente vende 3/día y vendió 0 pesa más que uno que vende 0–1. "No trabajó" = STAFF 0 o "-".</p>
+      <div style="overflow:auto"><table class="ct-table"><thead><tr><th>#</th><th>Agente</th><th>Grupo</th><th>Estado</th><th class="num" title="Ventas esperadas por día trabajado (promedio histórico suavizado)">Prom. esperado/día</th><th class="num">Real</th><th class="num">Horas</th><th class="num">Impacto</th><th class="num" title="Acumulado del total de caída">Acum.</th><th>Días</th></tr></thead><tbody>`;
+    show.forEach((a, i) => {
+      h += `<tr><td>${i+1}</td><td><b>${esc(a.n)}</b>${a.formador?' <span class="rca-note-s">formador</span>':''}</td><td>${esc(a.grupo)}</td><td>${chip(a.estado)}</td><td class="num">${f1(a.E)}</td><td class="num">${a.real}</td><td class="num">${f1(a.hrs)}</td>
+        <td class="num"><b class="${a.imp<-0.4?'ct-pill-bad':(a.imp>0.4?'ct-pill-good':'')}">${sg1(a.imp)}</b></td><td class="num">${a.acumPct==null?'—':a.acumPct.toFixed(0)+'%'}</td>
+        <td>${a.dias.map(d => `<i class="rca-dot" style="--cc:${(RCA_EST[d.estado]||{}).c||'var(--border)'}" title="${esc(fechaCorta(d.fecha)+' · '+((RCA_EST[d.estado]||{}).t||d.estado)+' · '+d.v+' ventas · '+d.staff+' h')}"></i>`).join('')}</td></tr>`;
+    });
+    if (!show.length) h += `<tr><td colspan="10" class="rca-note-s">No hay agentes que coincidan con el filtro.</td></tr>`;
+    h += `</tbody></table></div>`;
+    if (!RCA.q && list.length > 12) h += `<div style="margin-top:8px"><button class="ct-expand-btn" id="rcaMore">${RCA.todos?'Ver solo los 12 principales':'Ver los '+list.length+' agentes'}</button></div>`;
+    return h;
+  }
+  function heatHtml(R, o){
+    const dias = R.heat.dias;
+    const sel = {}; R.fechas.forEach(f => { sel[f] = 1; });
+    let h = `<div class="ct-card-head"><h3>🗓️ Agente × día</h3><span class="ct-q" style="margin:0">Número = ventas del día · gris = no trabajó (STAFF 0 o "-") · naranja = conectado sin venta · columna marcada = período analizado</span></div>
+      <div style="overflow:auto"><table class="ct-table rca-heat"><thead><tr><th>Agente</th><th>Grupo</th>${dias.map(f=>`<th class="num ${sel[f]?'selday':''}">${fechaDM(f)}</th>`).join('')}</tr></thead><tbody>`;
+    R.heat.filas.forEach(a => {
+      h += `<tr><td>${esc(a.n)}</td><td>${esc(a.grupo)}</td>${a.cel.map((c, i) => {
+        if (!c) return `<td class="ct-heat-cell ${sel[dias[i]]?'selday':''}" style="color:var(--text-muted)">·</td>`;
+        const bg = c.e==='N' ? 'var(--border)' : (c.e==='S' ? 'rgba(235,104,52,.35)' : `rgba(27,175,122,${Math.min(0.75, 0.18 + c.v*0.14)})`);
+        return `<td class="ct-heat-cell ${sel[dias[i]]?'selday':''}" style="background:${bg}" title="${esc(a.n+' · '+fechaCorta(dias[i])+' · '+c.v+' ventas · '+c.h+' h')}">${c.e==='N'?'–':c.v}</td>`;
+      }).join('')}</tr>`;
+    });
+    h += `</tbody></table></div>`;
+    return h;
+  }
+
+  /* ---------- vista ---------- */
+  function renderRca(){
+    const el = $('#ctViewRca'); if (!el) return;
+    if (!AP_PAYLOAD){ el.innerHTML = '<div class="ct-note">Cargando Agent Performance… Si no aparece, el Apps Script publicado todavía no tiene la acción <code>agentperf</code> y no hay copia local disponible.</div>'; return; }
+    const M = AP_MODEL;
+    if (!M || !M.ok){ el.innerHTML = '<div class="ct-note">No hay datos de agentes legibles en las pestañas Upsell / Recurrence / Bootcamp / Resurrection.</div>'; return; }
+    if (!M.ops[RCA.op]) RCA.op = M.orden[0];
+    const o = M.ops[RCA.op];
+    const warns = (M.warnings||[]);
+    const head = `<div class="ct-filter-row rca-filters">
+        <label>Operación</label><select class="ct-select" id="rcaOp">${M.orden.map(k=>`<option value="${k}" ${k===RCA.op?'selected':''}>${esc(M.ops[k].label)}</option>`).join('')}</select>`;
+    if (!o.analizables.length){
+      el.innerHTML = head + `</div><div class="ct-note">No hay días cerrados con datos de agentes para ${esc(o.label)} en ${esc(mesLabel(CT_DATA.meta.mes))}. Las pestañas de agentes solo traen el mes en curso (último dato: ${esc(o.fechaActualizado||'—')}).</div>`;
+      $('#rcaOp').addEventListener('change', e => { RCA.op = e.target.value; RCA.sup = null; RCA.per = null; renderRca(); });
+      return;
+    }
+    const pers = rcaPeriodos(o);
+    if (!RCA.per || !pers.some(p => p.v === RCA.per)) RCA.per = 'dia:' + o.analizables[o.analizables.length - 1];
+    const fechas = rcaFechas(o, RCA.per);
+    if (RCA.sup && o.sups.indexOf(RCA.sup) < 0) RCA.sup = null;
+    const R = AgentPerfRCA.analizar(M, RCA.op, fechas, { sup: RCA.sup, agente: RCA.q });
+    if (!R.ok){ el.innerHTML = head + `</div><div class="ct-note">${esc(R.error)}</div>`; return; }
+    const tabs = [null].concat(o.sups);
+    const supState = {}; const ss = AgentPerfRCA.serieSupervisores(M, RCA.op); o.sups.forEach(s => { supState[s] = (ss[s]||{}).estado; });
+
+    const sevc = R.sev;
+    const ef = R.efectos, sc = R.scope;
+    const nDias = R.fechas.length;
+    const titulo = nDias === 1 ? `${R.dow} ${fechaDM(R.fechas[0])}` : `${fechaDM(R.fechas[0])} – ${fechaDM(R.fechas[nDias-1])} · ${nDias} días`;
+    let kpiTop;
+    if (sc){
+      kpiTop = `<div class="ct-kpi sev-${sc.cumplCap==null?'na':(sc.cumplCap>=100?'sobreplan':(sc.cumplCap>=95?'enlinea':(sc.cumplCap>=85?'atencion':'critico')))}"><div class="lbl">${esc(sc.sup)} · % de su capacidad</div><div class="val">${sc.cumplCap==null?'—':sc.cumplCap.toFixed(0)+'%'}</div><div class="sub">Capacidad esperada ${f1(sc.cap)} · real ${f1(sc.v)} ventas</div></div>`;
+    } else {
+      kpiTop = `<div class="ct-kpi sev-${sevc}"><div class="lbl">${esc(R.label)} · ${esc(titulo)}</div><div class="val">${R.cumpl==null?'—':R.cumpl.toFixed(0)+'%'} <span style="font-size:13px;font-weight:700;color:var(--text-secondary)">del plan</span></div><div class="sub">Ventas esperadas <b>${f1(R.plan)}</b> · reales <b>${R.realP}</b> · gap <b class="${R.gap<0?'ct-pill-bad':'ct-pill-good'}">${sg1(R.gap)}</b></div></div>`;
+    }
+    const st = (sc && sc.staff) ? sc.staff : R.staff;
+    const cards = kpiTop + `<div class="ct-kpi"><div class="lbl">Staff (promedio/día)</div><div class="val">${f1(st.agTrab)} <span style="font-size:13px;font-weight:700;color:var(--text-secondary)">de ${f1(st.agEsp)} agentes</span></div><div class="sub">${f1(st.hTrab)} h trabajadas${R.hayBase?` · ${f1(st.hEsp)} h esperadas`:''}</div></div>
+      <div class="ct-kpi"><div class="lbl">Confianza del análisis</div><div class="val" style="font-size:17px;text-transform:capitalize">${esc(R.confianza)}</div><div class="sub">${esc(R.baseNota)}</div></div>`;
+
+    let water = '';
+    if (!ef){ water = `<div class="ct-note">${esc(R.baseNota)}</div>`; }
+    else if (sc){
+      water = rcaWaterfall([{label:'Capacidad\nesperada', val:sc.cap, total:true},{label:'② Staff\n(ausentes/parcial)', val:sc.imp2},{label:'③ Productividad\n(conectados)', val:sc.imp3},{label:'Real\ndel grupo', val:sc.v, total:true}]);
+    } else {
+      water = rcaWaterfall([{label:'Ventas esperadas\n(plan)', val:R.plan, total:true},{label:'① Plan vs\ncapacidad', val:ef.cap},{label:'Capacidad\nhistórica', val:R.cap, total:true},{label:'② Staff', val:ef.staff},{label:'③ Productividad\nconectados', val:ef.prod},{label:'Real\nagentes', val:R.vTab, total:true},{label:'④ No atribuible\n(fuentes)', val:ef.noAtr},{label:'Real\nPlanif_2026', val:R.realP, total:true}]);
+    }
+    const dS = ef && ef.detalleStaff, dP = ef && ef.detalleProd;
+    const lectura = !ef ? '' : `<div class="ct-verdict ${R.gap<0?'down':'up'}"><div class="main">${R.causa && !sc ? `Principal causa del gap: <b>${esc(R.causa.nombre)}</b> (${sg1(R.causa.valor)} ventas)` : (sc ? 'Lectura del grupo' : 'Sin causa negativa dominante')}</div>
+      <div class="det">${sc ? '' : `① Plan vs capacidad ${sg1(ef.cap)} · `}② Staff ${sg1(sc?sc.imp2:ef.staff)} (ausentes ${sg1(dS.ausentes)}, turno parcial ${sg1(dS.parcial)}, refuerzos ${sg1(dS.extra)}) · ③ Productividad ${sg1(sc?sc.imp3:ef.prod)} (sin venta ${sg1(dP.sinVenta)}, bajo su promedio ${sg1(dP.bajo)}, sobre su promedio ${sg1(dP.sobre)})${sc?'':` · ④ ${sg1(ef.noAtr)}`}</div>
+      ${ef.noAtr && Math.abs(ef.noAtr) >= 2 && !sc ? `<div class="det">④ es la diferencia entre lo que suma Planif_2026 y lo que suman las pestañas de agentes: Planif puede tener más ventas que la pestaña de la operación (p. ej. clasificación 2.7 → 2.2). No se atribuye a ningún agente.</div>` : ''}</div>`;
+
+    const kShow = R.kpis.filter(k => k.explica), kRest = R.kpis.filter(k => !k.explica);
+    const kpiHtml = !R.kpis.length ? '' : `<div class="ct-card"><h3>📊 KPIs que explican la caída</h3><p class="ct-q">Solo se destacan los que pesan ≥15% del gap (o un ASP que se movió ≥8%). Referencia = promedio de los demás días cargados.</p>
+      ${kShow.length ? `<div class="ct-kpi-grid">${kShow.map(kpiCard).join('')}</div>` : `<div class="ct-note" style="margin-top:0">Ningún KPI de productividad explica una caída relevante en este período.</div>`}
+      <details class="detail-toggle"><summary>Ver todos los KPIs (${kRest.length})</summary><div class="ct-kpi-grid" style="margin-top:8px">${kRest.map(kpiCard).join('')}</div></details></div>`;
+
+    el.innerHTML = head + `<label>Período</label><select class="ct-select" id="rcaPer">${pers.map(p=>`<option value="${p.v}" ${p.v===RCA.per?'selected':''}>${esc(p.t)}</option>`).join('')}</select>
+        <label>Agente</label><input class="ct-select" id="rcaQ" type="search" placeholder="Buscar agente…" value="${esc(RCA.q)}" style="min-width:160px"></div>
+      <div class="rca-tabs" role="tablist" aria-label="Grupo / supervisor">${tabs.map(s => { const stt = s ? supState[s] : null; const dot = stt==='caida' ? '🔴' : (stt==='atencion' ? '🟠' : ''); return `<button role="tab" class="${(RCA.sup||null)===s?'active':''}" data-sup="${s?esc(s):''}">${s?esc(s):'Todos los grupos'} ${dot}</button>`; }).join('')}</div>
+      ${AP_NOTA ? `<div class="ct-note" style="margin:0 0 10px">⚠️ ${esc(AP_NOTA)}</div>` : ''}
+      <div class="ct-kpi-grid">${cards}</div>
+      <div class="ct-card"><h3>🔬 Qué pasó y cuánto impacto tuvo</h3><p class="ct-q">${sc?'Del grupo: capacidad esperada → efecto Staff → efecto productividad → real.':'Ventas esperadas (plan) → capacidad histórica → Staff → productividad de los conectados → real. Las barras suman exacto el gap contra el plan.'}</p>${water}${lectura}</div>
+      ${kpiHtml}
+      ${sc ? '' : supHtml(R, o)}
+      <div class="ct-card" id="rcaAgents">${agentsHtml(R)}</div>
+      <div class="ct-card" id="rcaHeat">${heatHtml(R, o)}</div>
+      <details class="detail-toggle"><summary>Cómo se calcula (y límites del análisis)</summary><div class="ct-note" style="margin-top:6px">
+        <b>Staff:</b> horas &gt; 0 = trabajó; 0 o "-" = no trabajó. <b>Esperado por agente:</b> promedio de ventas por día trabajado en los demás días cargados (suavizado hacia el promedio de su grupo); se espera que trabaje si lo hizo ≥50% de esos días.
+        <b>② Staff</b> = ausentes esperados (−esperado) + turnos parciales + refuerzos no esperados. <b>③ Productividad</b> = ventas reales − esperado × (horas/horas típicas) de los conectados. <b>① Plan vs capacidad</b> = capacidad histórica − plan. <b>④</b> = Real Planif_2026 − suma de las pestañas de agentes.
+        Cada día se compara contra los demás días cargados del mismo tipo (L–V / S–D) y, si no hay al menos 2, contra todos (confianza baja). Con pocos días de historia los resultados son orientativos; los avisos por supervisor se activan con ≥3 días de base.
+        Fuente de agentes: pestañas espejo (IMPORTRANGE) con datos hasta ${esc(o.fechaActualizado||'—')}; "Formación" agrupa a personas nuevas a cargo de un formador (no es supervisor de la operación).${warns.length?`<br><b>Avisos de datos:</b> ${warns.map(esc).join(' · ')}`:''}</div></details>`;
+
+    $('#rcaOp').addEventListener('change', e => { RCA.op = e.target.value; RCA.sup = null; RCA.per = null; renderRca(); });
+    $('#rcaPer').addEventListener('change', e => { RCA.per = e.target.value; renderRca(); });
+    $$('.rca-tabs button', el).forEach(b => b.addEventListener('click', () => { RCA.sup = b.dataset.sup || null; renderRca(); }));
+    $$('.rca-suprow', el).forEach(r => r.addEventListener('click', () => { RCA.sup = r.dataset.sup; renderRca(); window.scrollTo({top: el.getBoundingClientRect().top + window.scrollY - 60, behavior:'smooth'}); }));
+    const more = $('#rcaMore'); if (more) more.addEventListener('click', () => { RCA.todos = !RCA.todos; renderRca(); });
+    let tmo; const q = $('#rcaQ');
+    q.addEventListener('input', () => {
+      clearTimeout(tmo); tmo = setTimeout(() => {
+        RCA.q = q.value.trim();
+        const R2 = AgentPerfRCA.analizar(M, RCA.op, fechas, { sup: RCA.sup, agente: RCA.q });
+        $('#rcaAgents').innerHTML = agentsHtml(R2); $('#rcaHeat').innerHTML = heatHtml(R2, o);
+        const m2 = $('#rcaMore'); if (m2) m2.addEventListener('click', () => { RCA.todos = !RCA.todos; renderRca(); });
+      }, 180);
+    });
+  }
+
   async function bootCT(recarga){
     await actualizarCTDataEnVivo();
     if (CT_DATA.meta && CT_DATA.meta.mes) CT_MES = CT_DATA.meta.mes;
     initAll();
     cargarMesPrevio();
+    if (AP_PAYLOAD) rebuildAP(); else cargarAgentPerf();
   }
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', bootCT); else bootCT();
 })();
