@@ -419,6 +419,33 @@
     .ct-side{position:static;max-height:none;}
     .ct-hero-val .big{font-size:36px;}
   }
+
+  /* ===== Expandir gráficas (pantalla casi completa para pantallazo) + vista Vie–Dom ===== */
+  .ct-card,.ct-hero{position:relative;}
+  .ct-xbtn.on{border-color:var(--series-1);color:var(--series-1);background:var(--series-1-soft);}
+  .ct-xbtn.abs{position:absolute;top:10px;right:12px;z-index:2;}
+  .ct-xbackdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:80;display:none;}
+  .ct-xbackdrop.show{display:block;}
+  body.ct-xlock{overflow:hidden;}
+  .ct-expanded{position:fixed !important;inset:2.5vh 2.5vw;z-index:90;margin:0 !important;overflow:auto;background:var(--surface);box-shadow:0 20px 60px rgba(0,0,0,.45);border-radius:14px;padding:20px 24px !important;max-height:95vh;}
+  .ct-expanded .ct-chart{max-width:100%;}
+  .ct-expanded .ct-xbtn.abs{position:sticky;float:right;top:0;margin:0 0 6px 8px;}
+  .ct-drill-box.wide{max-width:96vw;max-height:92vh;}
+  .ct-proj{margin-top:14px;border:1px solid var(--border);border-left:4px solid #F2B01E;border-radius:12px;padding:12px 14px;background:var(--surface);}
+  .ct-proj-h{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;font-size:13.5px;} .ct-proj-h span{font-size:11.5px;color:var(--text-secondary);font-weight:400;line-height:1.45;}
+  .ct-proj-p h4{margin:2px 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);}
+  .ct-proj-p .ct-stat b.pj{color:#B7791F;} .ct-proj-p .ct-stat b.neg{color:var(--bad);} .ct-proj-p .ct-stat b.pos{color:var(--series-3);}
+  .ct-proj-t{margin-top:10px;font-size:12.5px;line-height:1.55;color:var(--text-secondary);} .ct-proj-t b{color:var(--text-primary);}
+  .wk-ag{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface);}
+  .wk-ag-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:13px;margin-bottom:4px;}
+  .wk-gap{font-size:12.5px;font-weight:800;color:var(--bad);}
+  .wk-mini{width:100%;height:auto;display:block;}
+  .wk-dows{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:6px 0 4px;}
+  .wk-dow{display:flex;flex-direction:column;align-items:center;font-size:10px;color:var(--text-muted);font-weight:700;padding:3px 0;border-radius:6px;border:1px solid var(--border);}
+  .wk-dow b{font-size:11.5px;color:var(--text-primary);}
+  .wk-dow.none b{color:var(--text-muted);font-weight:500;}
+  .ct-det td.neg{color:var(--bad);font-weight:700;} .ct-det td.pos{color:var(--series-3);font-weight:700;}
+  .ct-det tr.tot td{background:var(--series-1-soft);font-weight:800;border-top:1.5px solid var(--border-strong);}
 </style>
 
 <div class="load-state" id="loadState">Cargando datos desde Google Sheets…</div>
@@ -463,6 +490,7 @@
       <button data-view="daily">📈 Plan vs Real</button>
       <button data-view="dow">📅 Día de semana</button>
       <button data-view="weekly">🗓️ Semanal</button>
+      <button data-view="fds">🏁 Vie–Dom</button>
       <button data-view="byop">🧩 Por operación</button>
       <button data-view="acq">🔗 ACQ</button>
       <button data-view="critical">🚨 Días críticos</button>
@@ -481,6 +509,9 @@
 
     <!-- ---------- SEMANAL ---------- -->
     <div class="ct-view" data-view="weekly" id="ctViewWeekly"></div>
+
+    <!-- ---------- VIERNES–DOMINGO ---------- -->
+    <div class="ct-view" data-view="fds" id="ctViewFds"></div>
 
     <!-- ---------- POR OPERACIÓN (mensual) ---------- -->
     <div class="ct-view" data-view="byop" id="ctViewByOp"></div>
@@ -3581,6 +3612,269 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
 });
 
 </script>
+<script id="weekendCalcScript">
+/*
+ * weekend_calc.js · Viernes–Domingo (sin DOM; probado con Node)
+ * ------------------------------------------------------------------
+ * Entradas:
+ *   ct = CT_DATA (usa ct.detalle[op].dias: plan/real de revenue y ventas por día + acum)
+ *   ap = respuesta de Apps Script action=agentperf (operaciones → agentes → días: [staff h, ventas, revenue, ...])
+ * Salidas (todas puras, sin tocar el DOM):
+ *   viernes(ct)                     → lista de viernes con al menos 1 día del fin de semana cerrado
+ *   resumen(ct, fri)                → plan vs real Vie–Dom por operación + gap acumulado del mes antes/después
+ *   asesores(ct, ap, apOp, fri)     → quién conectó, quién vendió, quién no, y cuánto promediaba de L–J
+ *   topGap(ct, ap, apOp, opts)      → asesores con mayor gap del mes frente a sus pares, día por día
+ * Reglas: STAFF > 0 = trabajó (igual que Causa raíz). "Debía trabajar" = conectó (la hoja no trae turno programado).
+ */
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory();
+  else root.WeekendCalc = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var OPS = [
+    { key: 'upsell',       ap: 'upsell',       label: '2.1.- Upsell' },
+    { key: 'rec22',        ap: 'recurrence',   label: '2.2.- Recurrence' },
+    { key: 'resurrection', ap: 'resurrection', label: '2.4.- + 1.4.- Resurrection' },
+    { key: 'bootcamp',     ap: 'bootcamp',     label: '2.5.- Bootcamp' },
+  ];
+  var TOTAL = { key: 'postventa_total', ap: null, label: 'Post-Venta (total)' };
+  var DOW = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  var DOW_C = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  var MIN_DIAS_GAP = 3;     // días trabajados mínimos para entrar al ranking de gap
+
+  function dow(f) { return new Date(f + 'T00:00:00Z').getUTCDay(); }
+  function addDays(f, n) { var d = new Date(f + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+  function sum(a, f) { var s = 0; for (var i = 0; i < a.length; i++) s += f(a[i]) || 0; return s; }
+  function num(x) { return (x === null || x === undefined || !isFinite(x)) ? 0 : +x; }
+  function pctOf(a, b) { return b > 0 ? 100 * a / b : null; }
+  function ctDay(ct, key, f) {
+    var g = ct && ct.detalle && ct.detalle[key];
+    if (!g) return null;
+    for (var i = 0; i < g.dias.length; i++) if (g.dias[i].fecha === f) return g.dias[i];
+    return null;
+  }
+  function cerrado(ct, f) {
+    var d = ctDay(ct, TOTAL.key, f);
+    return !!(d && d.status === 'elapsed');
+  }
+  function opAp(ap, apOp) {
+    if (!ap || !ap.ops) return null;
+    for (var i = 0; i < ap.ops.length; i++) if (ap.ops[i].op === apOp && ap.ops[i].ok) return ap.ops[i];
+    return null;
+  }
+  function finde(fri) { return [fri, addDays(fri, 1), addDays(fri, 2)]; }
+
+  /* viernes con al menos el viernes cerrado, más reciente primero */
+  function viernes(ct) {
+    var g = ct && ct.detalle && ct.detalle[TOTAL.key];
+    if (!g) return [];
+    return g.dias.filter(function (d) { return dow(d.fecha) === 5 && d.status === 'elapsed'; })
+      .map(function (d) { return d.fecha; }).sort().reverse();
+  }
+
+  /* días del fin de semana que existen en el mes cargado y ya están cerrados */
+  function diasFinde(ct, fri) {
+    return finde(fri).filter(function (f) { return ctDay(ct, TOTAL.key, f) && cerrado(ct, f); });
+  }
+
+  /* ============ 1) RESUMEN POR OPERACIÓN ============ */
+  function resumen(ct, fri) {
+    var W = diasFinde(ct, fri), pendientes = finde(fri).filter(function (f) { return W.indexOf(f) < 0; });
+    var jue = addDays(fri, -1);
+    var res = { fri: fri, dias: W, pendientes: pendientes, ops: [], total: null };
+    if (!W.length) return res;
+    OPS.concat([TOTAL]).forEach(function (op) {
+      var g = ct.detalle[op.key]; if (!g) return;
+      var dd = W.map(function (f) {
+        var d = ctDay(ct, op.key, f);
+        var plan = num(d.rev_plan), real = num(d.rev_real);
+        return { fecha: f, dow: dow(f), plan: plan, real: real, gap: real - plan, cumpl: pctOf(real, plan),
+                 vplan: num(d.ventas_plan), vreal: num(d.ventas_real), opera: plan > 0 || real > 0 };
+      });
+      var plan = sum(dd, function (x) { return x.plan; }), real = sum(dd, function (x) { return x.real; });
+      var vplan = sum(dd, function (x) { return x.vplan; }), vreal = sum(dd, function (x) { return x.vreal; });
+      var antes = ctDay(ct, op.key, jue), despues = ctDay(ct, op.key, W[W.length - 1]);
+      var mA = antes && antes.acum ? { gap: antes.acum.gap_abs, cumpl: pctOf(antes.acum.rev_real, antes.acum.rev_plan) } : null;
+      var mD = despues && despues.acum ? { gap: despues.acum.gap_abs, cumpl: pctOf(despues.acum.rev_real, despues.acum.rev_plan) } : null;
+      var cumpl = pctOf(real, plan);
+      var veredicto = cumpl == null ? 'na' : cumpl >= 100 ? 'impulso' : cumpl >= 95 ? 'enlinea' : 'freno';
+      var r = {
+        key: op.key, label: (g.label || op.label), dias: dd, plan: plan, real: real, gap: real - plan, cumpl: cumpl,
+        vplan: vplan, vreal: vreal, aspPlan: vplan > 0 ? plan / vplan : null, aspReal: vreal > 0 ? real / vreal : null,
+        mtdAntes: mA, mtdDespues: mD, veredicto: veredicto,
+        trabajaDomingo: dd.some(function (x) { return x.dow === 0 && x.opera; }),
+      };
+      if (op.key === TOTAL.key) res.total = r; else res.ops.push(r);
+    });
+    // serie del gap acumulado del mes, de lunes a domingo, para ver si el fin de semana empujó o frenó
+    var lun = addDays(fri, -4), serie = [];
+    for (var i = 0; i < 7; i++) {
+      var f = addDays(lun, i);
+      if (!ctDay(ct, TOTAL.key, f) || !cerrado(ct, f)) continue;
+      var pt = { fecha: f, dow: dow(f), v: {} };
+      OPS.concat([TOTAL]).forEach(function (op) { var d = ctDay(ct, op.key, f); if (d && d.acum) pt.v[op.key] = d.acum.gap_abs; });
+      serie.push(pt);
+    }
+    res.serie = serie;
+    return res;
+  }
+
+  /* ============ 2) POR ASESOR ============ */
+  function asesores(ct, ap, apOp, fri) {
+    var o = opAp(ap, apOp); if (!o) return null;
+    var hasta = ap.hasta || '9999-99-99';
+    var W = diasFinde(ct, fri).filter(function (f) { return f <= hasta; });
+    var out = { op: apOp, fri: fri, dias: [], agentes: [], resumen: null, hasta: hasta };
+    if (!W.length) return out;
+    // días en que la operación tuvo a alguien conectado (un domingo sin nadie = la operación no abre)
+    var operativos = W.filter(function (f) { return sum(o.agentes, function (a) { return a.d[f] ? a.d[f][0] : 0; }) > 0; });
+    out.dias = W.map(function (f) { return { fecha: f, dow: dow(f), opera: operativos.indexOf(f) >= 0 }; });
+    // base "normal": lunes a jueves anteriores a ese viernes con datos de agentes
+    var base = o.dias.filter(function (f) { var w = dow(f); return w >= 1 && w <= 4 && f < fri && f <= hasta; });
+    out.baseDias = base.length;
+    var ags = o.agentes.map(function (a) {
+      var h = 0, v = 0, rev = 0, dt = 0, porDia = {};
+      operativos.forEach(function (f) {
+        var d = a.d[f]; var hh = d ? num(d[0]) : 0, vv = d ? num(d[1]) : 0, rr = d ? num(d[2]) : 0;
+        porDia[f] = { h: hh, v: vv, rev: rr, trab: hh > 0 };
+        if (hh > 0) { dt++; h += hh; v += vv; rev += rr; }
+      });
+      var n = 0, bv = 0, br = 0;
+      base.forEach(function (f) { var d = a.d[f]; if (d && num(d[0]) > 0) { n++; bv += num(d[1]); br += num(d[2]); } });
+      var nV = n ? bv / n : null, nR = n ? br / n : null;
+      var esp = nV != null ? nV * dt : null, espRev = nR != null ? nR * dt : null;
+      var estado = dt === 0 ? 'NO_TRABAJO' : (v === 0 ? 'SIN_VENTA' : (esp != null && v < esp - 0.5 ? 'BAJO' : 'OK'));
+      return { id: a.id, n: a.n, grupo: a.s || '—', diasTrab: dt, horas: h, ventas: v, revenue: rev,
+               normalV: nV, normalRev: nR, nBase: n, esperado: esp, esperadoRev: espRev,
+               diff: esp != null ? v - esp : null, estado: estado, porDia: porDia };
+    });
+    var trab = ags.filter(function (a) { return a.diasTrab > 0; });
+    var sin = ags.filter(function (a) { return a.estado === 'SIN_VENTA'; });
+    var ctKey = ({ upsell: 'upsell', recurrence: 'rec22', resurrection: 'resurrection', bootcamp: 'bootcamp' })[apOp];
+    var porDia = out.dias.map(function (d) {
+      var dc = ctDay(ct, ctKey, d.fecha) || {};
+      if (!d.opera) return { fecha: d.fecha, dow: d.dow, opera: false, trab: 0, vend: 0, ventas: 0, revenue: 0, vplan: num(dc.ventas_plan), rplan: num(dc.rev_plan) };
+      var t = ags.filter(function (a) { return a.porDia[d.fecha].trab; });
+      var vd = t.filter(function (a) { return a.porDia[d.fecha].v > 0; });
+      return { fecha: d.fecha, dow: d.dow, opera: true, trab: t.length, vend: vd.length,
+               ventas: sum(t, function (a) { return a.porDia[d.fecha].v; }), revenue: sum(t, function (a) { return a.porDia[d.fecha].rev; }),
+               vplan: num(dc.ventas_plan), rplan: num(dc.rev_plan) };
+    });
+    out.agentes = ags;
+    out.porDia = porDia;
+    out.resumen = {
+      tab: ags.length, conectaron: trab.length, vendieron: trab.length - sin.length, sinVenta: sin.length, noTrabajaron: ags.length - trab.length,
+      espSinVenta: sum(sin, function (a) { return a.esperado; }), espSinVentaRev: sum(sin, function (a) { return a.esperadoRev; }),
+      ventas: sum(ags, function (a) { return a.ventas; }), revenue: sum(ags, function (a) { return a.revenue; }),
+    };
+    return out;
+  }
+
+  /* ============ 3) ASESORES CON MAYOR GAP (frente a sus pares, día por día) ============ */
+  // Esperado del agente en un día = horas conectadas × (ventas/hora de TODA la operación ese día).
+  // Delta = ventas reales − esperado. La suma de deltas de todos los agentes en un día es 0, así que el ranking
+  // mide productividad relativa (quién queda por debajo de lo que el resto vendió por hora ese mismo día).
+  function topGap(ct, ap, apOp, opts) {
+    opts = opts || {};
+    var o = opAp(ap, apOp); if (!o) return null;
+    var hasta = ap.hasta || '9999-99-99', N = opts.n || 8;
+    var dias = o.dias.slice().sort().filter(function (f) {
+      return f <= hasta && cerrado(ct, f) && sum(o.agentes, function (a) { return a.d[f] ? a.d[f][0] : 0; }) > 0;
+    });
+    var tasa = {};
+    dias.forEach(function (f) {
+      var h = sum(o.agentes, function (a) { return a.d[f] ? num(a.d[f][0]) : 0; });
+      var v = sum(o.agentes, function (a) { return a.d[f] && num(a.d[f][0]) > 0 ? num(a.d[f][1]) : 0; });
+      tasa[f] = h > 0 ? v / h : 0;
+    });
+    var ventasOp = sum(o.agentes, function (a) { return sum(dias, function (f) { return a.d[f] && num(a.d[f][0]) > 0 ? num(a.d[f][1]) : 0; }); });
+    var revOp = sum(o.agentes, function (a) { return sum(dias, function (f) { return a.d[f] && num(a.d[f][0]) > 0 ? num(a.d[f][2]) : 0; }); });
+    var asp = ventasOp > 0 ? revOp / ventasOp : null;
+    var lista = o.agentes.map(function (a) {
+      var gap = 0, v = 0, h = 0, dt = 0;
+      var dd = dias.map(function (f) {
+        var d = a.d[f], hh = d ? num(d[0]) : 0, vv = d ? num(d[1]) : 0;
+        if (hh > 0) { var exp = hh * tasa[f]; gap += vv - exp; v += vv; h += hh; dt++; return { f: f, dow: dow(f), trab: true, h: hh, v: vv, exp: exp, delta: vv - exp }; }
+        return { f: f, dow: dow(f), trab: false, h: 0, v: 0, exp: 0, delta: 0 };
+      });
+      var porDow = {};
+      dd.forEach(function (x) { if (!x.trab) return; var p = porDow[x.dow] || (porDow[x.dow] = { n: 0, s: 0 }); p.n++; p.s += x.delta; });
+      Object.keys(porDow).forEach(function (k) { porDow[k].avg = porDow[k].s / porDow[k].n; });
+      return { id: a.id, n: a.n, grupo: a.s || '—', gap: gap, gapRev: asp != null ? gap * asp : null, ventas: v, horas: h, diasTrab: dt, dias: dd, porDow: porDow };
+    }).filter(function (a) { return a.diasTrab >= MIN_DIAS_GAP; });
+    lista.sort(function (a, b) { return a.gap - b.gap; });
+    return { op: apOp, dias: dias, asp: asp, tasa: tasa, agentes: lista.slice(0, N), total: lista.length };
+  }
+
+  return { OPS: OPS, DOW: DOW, DOW_C: DOW_C, viernes: viernes, resumen: resumen, asesores: asesores, topGap: topGap, addDays: addDays, dow: dow };
+});
+
+/*
+ * proj_calc.js · Proyección de cierre y ritmo requerido (sin DOM; probado con Node)
+ * Entrada: filas diarias {fecha, closed, rp, rr, vp, vr}  (rp/rr = revenue plan/real, vp/vr = ventas plan/real).
+ *   closed = día completamente cerrado. Los días de hoy (parcial) y futuros son "restantes".
+ * Método: ritmo de cumplimiento = Real acumulado ÷ Plan acumulado de los días cerrados.
+ *   Proyección del día d = Real a la fecha + ritmo × (Plan acumulado d − Plan a la fecha).
+ *   Respeta la forma del plan (días sin operación, semanas más fuertes), a diferencia del run-rate lineal.
+ */
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory();
+  else root.ProjCalc = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+  function rows(det) {
+    return (det && det.dias || []).map(function (d) {
+      return { fecha: d.fecha, closed: d.status === 'elapsed', rp: d.rev_plan, rr: d.rev_real, vp: d.ventas_plan, vr: d.ventas_real };
+    });
+  }
+  function metrica(rs, pk, rk) {
+    var planMes = 0, planMtd = 0, real = 0, opEl = 0, opRem = 0, planRem = 0, nClosed = 0, haySerie = rs.some(function (r) { return r[pk] != null; });
+    if (!haySerie) return null;
+    rs.forEach(function (r) {
+      var p = r[pk] || 0; planMes += p;
+      if (r.closed) { planMtd += p; real += r[rk] || 0; nClosed++; if (p > 0) opEl++; }
+      else { planRem += p; if (p > 0) opRem++; }
+    });
+    if (!nClosed) return null;
+    var cumpl = planMtd > 0 ? real / planMtd : null;
+    var proy = cumpl == null ? null : real + cumpl * planRem;
+    var falta = Math.max(0, planMes - real);
+    var req = opRem > 0 ? falta / opRem : null;
+    var ritmo = opEl > 0 ? real / opEl : null;                 // lo que se hace hoy por día operativo
+    var planDiaRest = opRem > 0 ? planRem / opRem : null;      // lo que el plan pide por día operativo restante
+    var proyDia = (opRem > 0 && proy != null) ? (proy - real) / opRem : null;   // ritmo proyectado por día restante
+    return {
+      planMes: planMes, planMtd: planMtd, real: real, gap: real - planMtd, cumpl: cumpl == null ? null : 100 * cumpl,
+      proy: proy, gapProy: proy == null ? null : proy - planMes, falta: falta, cumplido: real >= planMes,
+      diasOpRestan: opRem, diasOpCerrados: opEl, reqDia: req, planDiaRest: planDiaRest, ritmoDia: ritmo, proyDia: proyDia,
+      extraVsRitmo: (req != null && ritmo != null) ? req - ritmo : null,
+      extraVsRitmoPct: (req != null && ritmo) ? 100 * (req / ritmo - 1) : null,
+      extraVsPlan: (req != null && planDiaRest != null) ? req - planDiaRest : null,
+      runRate: nClosed > 0 ? real / nClosed * rs.length : null
+    };
+  }
+  /* serie acumulada proyectada: null hasta el último día cerrado (punto de empalme), luego proyección */
+  function serie(rs, pk, rk) {
+    var m = metrica(rs, pk, rk); if (!m || m.cumpl == null) return null;
+    var c = m.cumpl / 100, cumPlan = 0, cumReal = 0, lastIdx = -1;
+    rs.forEach(function (r, i) { if (r.closed) lastIdx = i; });
+    var out = [];
+    rs.forEach(function (r, i) {
+      cumPlan += r[pk] || 0;
+      if (r.closed) { cumReal += r[rk] || 0; out.push(i === lastIdx ? cumReal : null); }
+      else out.push(m.real + c * (cumPlan - m.planMtd));
+    });
+    return { puntos: out, lastIdx: lastIdx, m: m };
+  }
+  /* revenue y ventas de una vez */
+  function proyectar(rs) {
+    return { rev: metrica(rs, 'rp', 'rr'), vol: metrica(rs, 'vp', 'vr'), serieRev: serie(rs, 'rp', 'rr'), serieVol: serie(rs, 'vp', 'vr') };
+  }
+  return { rows: rows, metrica: metrica, serie: serie, proyectar: proyectar };
+});
+
+</script>
 <script id="ctAppScript">
 /* ===================================================================
    Post-Venta · WFM Control Tower
@@ -4245,7 +4539,9 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       });
       const rawPlanPts = days.map(d => ({y: d.ops[key].plan, label: d.fecha}));
       const rawRealPts = days.map(d => ({y: d.ops[key].real, label: d.fecha}));
-      lastSeries = {key, planPts, realPts, gapBars, cumplPts, rawPlanPts, rawRealPts, xLabels: days.map(d=>d.fecha.slice(8,10))};
+      let projPts = null;
+      try { const sp = ProjCalc.serie(days.map(d => ({fecha:d.fecha, closed:d.status==='elapsed', rp:d.ops[key].plan, rr:d.ops[key].real})), 'rp', 'rr'); if (sp) projPts = sp.puntos.map((v,i) => ({y:v, label:days[i].fecha})); } catch(e){ console.warn('[Proyección]', e); }
+      lastSeries = {key, planPts, realPts, projPts, gapBars, cumplPts, rawPlanPts, rawRealPts, xLabels: days.map(d=>d.fecha.slice(8,10))};
       $('#ctDailyRawChart').closest('.ct-card').querySelector('h3').textContent = `Revenue diario: Plan vs Real (${OP_META[key].label}, sin acumular)`;
       renderLineChart($('#ctDailyRawChart'), [
         {label:'Plan (día)', color:'var(--text-muted,#9a9a94)', points:rawPlanPts, dash:'4,3'},
@@ -4254,7 +4550,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       renderLineChart($('#ctDailyCumChart'), [
         {label:'Plan acumulado', color:'var(--text-muted,#9a9a94)', points:planPts, dash:'4,3'},
         {label:'Real acumulado', color:OP_META[key].color, points:realPts},
-      ], {legend:true, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels: lastSeries.xLabels});
+      ].concat(projPts ? [{label:'Proyección al ritmo actual', color:PJ_COLOR, points:projPts, dash:'2,4'}] : []), {legend:true, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels: lastSeries.xLabels});
       renderBarChart($('#ctDailyGapChart'), gapBars, {yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels:true});
       renderLineChart($('#ctDailyCumplChart'), [{label:'Cumplimiento %', color:OP_META[key].color, points:cumplPts}], {refLine:100, refLineLabel:'100% plan', legend:true, yFormat:v=>v.toFixed(0)+'%', tipFormat:v=>fmtPct1(v), xLabels: lastSeries.xLabels});
       drawDayDetail();
@@ -4357,38 +4653,38 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       const which = btn.dataset.expand;
       const tmpId = 'ctExpandTmp';
       if (which==='rawsel'){
-        ctDrill(`Revenue diario: Plan vs Real (${OP_META[lastSeries.key].label})`, `<div id="${tmpId}" style="width:900px;max-width:100%"></div>`, {wide:true});
+        ctDrill(`Revenue diario: Plan vs Real (${OP_META[lastSeries.key].label})`, `<div id="${tmpId}" style="width:100%"></div>`, {wide:true});
         renderLineChart($('#'+tmpId), [
           {label:'Plan (día)', color:'var(--text-muted,#9a9a94)', points:lastSeries.rawPlanPts, dash:'4,3'},
           {label:'Real (día)', color:OP_META[lastSeries.key].color, points:lastSeries.rawRealPts},
-        ], {legend:true, width:900, height:340, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels:lastSeries.xLabels});
+        ], {legend:true, width:1100, height:420, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels:lastSeries.xLabels});
       } else if (which==='rawop'){
         const k = btn.dataset.op;
         const days2 = CT_DATA.daily;
-        ctDrill(`Revenue diario: Plan vs Real (${OP_META[k].label})`, `<div id="${tmpId}" style="width:900px;max-width:100%"></div>`, {wide:true});
+        ctDrill(`Revenue diario: Plan vs Real (${OP_META[k].label})`, `<div id="${tmpId}" style="width:100%"></div>`, {wide:true});
         renderLineChart($('#'+tmpId), [
           {label:'Plan (día)', color:'var(--text-muted,#9a9a94)', points: days2.map(d=>({y:d.ops[k].plan, label:d.fecha})), dash:'4,3'},
           {label:'Real (día)', color:OP_META[k].color, points: days2.map(d=>({y:d.ops[k].real, label:d.fecha}))},
-        ], {legend:true, width:900, height:340, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels: days2.map(d=>d.fecha.slice(8,10))});
+        ], {legend:true, width:1100, height:420, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels: days2.map(d=>d.fecha.slice(8,10))});
       } else if (which==='cum'){
-        ctDrill('Plan vs Real acumulado', `<div id="${tmpId}" style="width:900px;max-width:100%"></div>`, {wide:true});
+        ctDrill('Plan vs Real acumulado', `<div id="${tmpId}" style="width:100%"></div>`, {wide:true});
         renderLineChart($('#'+tmpId), [
           {label:'Plan acumulado', color:'var(--text-muted,#9a9a94)', points:lastSeries.planPts, dash:'4,3'},
           {label:'Real acumulado', color:OP_META[lastSeries.key].color, points:lastSeries.realPts},
-        ], {legend:true, width:900, height:340, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels:lastSeries.xLabels});
+        ].concat(lastSeries.projPts ? [{label:'Proyección al ritmo actual', color:PJ_COLOR, points:lastSeries.projPts, dash:'2,4'}] : []), {legend:true, width:1100, height:420, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels:lastSeries.xLabels});
       } else if (which==='gap'){
-        ctDrill('Gap $ diario', `<div id="${tmpId}" style="width:900px;max-width:100%"></div>`, {wide:true});
-        renderBarChart($('#'+tmpId), lastSeries.gapBars, {width:900, height:340, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels:true});
+        ctDrill('Gap $ diario', `<div id="${tmpId}" style="width:100%"></div>`, {wide:true});
+        renderBarChart($('#'+tmpId), lastSeries.gapBars, {width:1100, height:420, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels:true});
       } else if (which==='cumpl'){
-        ctDrill('Cumplimiento % diario', `<div id="${tmpId}" style="width:900px;max-width:100%"></div>`, {wide:true});
-        renderLineChart($('#'+tmpId), [{label:'Cumplimiento %', color:OP_META[lastSeries.key].color, points:lastSeries.cumplPts}], {refLine:100, refLineLabel:'100% plan', legend:true, width:900, height:340, yFormat:v=>v.toFixed(0)+'%', tipFormat:v=>fmtPct1(v), xLabels:lastSeries.xLabels});
+        ctDrill('Cumplimiento % diario', `<div id="${tmpId}" style="width:100%"></div>`, {wide:true});
+        renderLineChart($('#'+tmpId), [{label:'Cumplimiento %', color:OP_META[lastSeries.key].color, points:lastSeries.cumplPts}], {refLine:100, refLineLabel:'100% plan', legend:true, width:1100, height:420, yFormat:v=>v.toFixed(0)+'%', tipFormat:v=>fmtPct1(v), xLabels:lastSeries.xLabels});
       } else if (which==='expansion'){
         const days = CT_DATA.daily;
-        ctDrill('Expansión Activación → Upsell', `<div id="${tmpId}" style="width:900px;max-width:100%"></div>`, {wide:true});
+        ctDrill('Expansión Activación → Upsell', `<div id="${tmpId}" style="width:100%"></div>`, {wide:true});
         renderLineChart($('#'+tmpId), [
           {label:'Expansión real', color:'var(--series-1)', points: days.map(d=>({y:d.upsell_expansion.real_pct, label:d.fecha}))},
           {label:'Meta (26%)', color:'var(--text-muted,#9a9a94)', points: days.map(d=>({y:d.upsell_expansion.meta_pct, label:d.fecha})), dash:'4,3'},
-        ], {legend:true, width:900, height:340, yFormat:v=>v.toFixed(0)+'%', tipFormat:v=>fmtPct1(v), xLabels: days.map(d=>d.fecha.slice(8,10))});
+        ], {legend:true, width:1100, height:420, yFormat:v=>v.toFixed(0)+'%', tipFormat:v=>fmtPct1(v), xLabels: days.map(d=>d.fecha.slice(8,10))});
       }
     });
     function drawDayDetail(){
@@ -5049,7 +5345,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
 
   function renderHeroChart(container, series, metric, mode, color){
     const W=900,H=300,PAD={l:58,r:18,t:20,b:30};
-    const vals = series.flatMap(p=>[p.plan,p.real]).filter(v=>v!=null);
+    const vals = series.flatMap(p=>[p.plan,p.real,p.proj,p.req]).filter(v=>v!=null);
     if (!vals.length){ container.innerHTML = '<div class="ct-note">Sin datos para este mes todavía.</div>'; return; }
     let yMax = Math.max(...vals)*1.08, yMin = 0;
     if (metric==='asp'){ yMin = Math.max(0, Math.min(...vals)*0.8); }
@@ -5088,6 +5384,24 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       lbl.textContent = fmtByMetric(metric,lastVal).replace(/^\$(\d+)$/,'$$$1');
       root.appendChild(lbl);
     }
+    // proyección (amarillo punteado): acumulado = hacia dónde cierra el mes; diario = lo que hace falta por día
+    const pjPts = series.map((p,i)=>p.proj!=null?[x(i),y(p.proj)]:null).filter(Boolean);
+    if (pjPts.length>1){
+      root.appendChild(svg('polyline',{points:pjPts.map(q=>q.join(',')).join(' '),fill:'none',stroke:PJ_COLOR,'stroke-width':2.6,'stroke-dasharray':'2,4','stroke-linecap':'round','stroke-linejoin':'round'}));
+      const e = pjPts[pjPts.length-1], pv = series.filter(p=>p.proj!=null).pop().proj;
+      root.appendChild(svg('circle',{cx:e[0],cy:e[1],r:4.5,fill:PJ_COLOR,stroke:'var(--surface)','stroke-width':1.5}));
+      const lb = svg('text',{x:e[0]-8,y:e[1]-10,'text-anchor':'end','font-size':11.5,'font-weight':700,fill:'var(--text-primary)'});
+      lb.textContent = 'Proy. cierre ' + (metric==='rev' ? fmtMoneyK(pv) : fmt0(pv));
+      root.appendChild(lb);
+    }
+    const rqPts = series.map((p,i)=>p.req!=null?[x(i),y(p.req)]:null).filter(Boolean);
+    if (rqPts.length>1){
+      root.appendChild(svg('polyline',{points:rqPts.map(q=>q.join(',')).join(' '),fill:'none',stroke:PJ_COLOR,'stroke-width':2.6,'stroke-dasharray':'2,4','stroke-linecap':'round'}));
+      const e = rqPts[rqPts.length-1], rv = series.filter(p=>p.req!=null).pop().req;
+      const lb = svg('text',{x:e[0],y:e[1]-8,'text-anchor':'end','font-size':11.5,'font-weight':700,fill:'var(--text-primary)'});
+      lb.textContent = 'Necesario/día ' + (metric==='rev' ? fmtMoneyK(rv) : (Math.round(rv*10)/10).toLocaleString('es-CO'));
+      root.appendChild(lb);
+    }
     // hover
     const guide = svg('line',{y1:PAD.t,y2:H-PAD.b,stroke:'var(--border-strong)','stroke-width':1,opacity:0});
     root.appendChild(guide);
@@ -5100,7 +5414,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       guide.setAttribute('x1',x(i)); guide.setAttribute('x2',x(i)); guide.setAttribute('opacity',1);
       const gap = (p.real!=null && p.plan!=null) ? p.real-p.plan : null;
       const pct = (p.real!=null && p.plan) ? 100*(p.real/p.plan-1) : null;
-      showTip(e.clientX, e.clientY-8, `<strong>${p.fecha}</strong>${mode==='acum'?' (acumulado)':''}<br>Plan: ${fmtByMetric(metric,p.plan)}<br>Real: ${fmtByMetric(metric,p.real)}` + (gap!=null?`<br>Gap: ${metric==='vol'?(gap>=0?'+':'')+fmt0(gap):(gap>=0?'+':'-')+fmtByMetric(metric,Math.abs(gap))} (${fmtSignedPct1(pct)})`:''));
+      showTip(e.clientX, e.clientY-8, `<strong>${p.fecha}</strong>${mode==='acum'?' (acumulado)':''}<br>Plan: ${fmtByMetric(metric,p.plan)}<br>Real: ${fmtByMetric(metric,p.real)}` + (p.proj!=null&&!p.closed?`<br><span style="color:${PJ_COLOR}">●</span> Proyección: ${fmtByMetric(metric,p.proj)}`:'') + (p.req!=null?`<br><span style="color:${PJ_COLOR}">●</span> Necesario por día: ${fmtByMetric(metric,p.req)}`:'') + (gap!=null?`<br>Gap: ${metric==='vol'?(gap>=0?'+':'')+fmt0(gap):(gap>=0?'+':'-')+fmtByMetric(metric,Math.abs(gap))} (${fmtSignedPct1(pct)})`:''));
     };
     hit.addEventListener('mousemove', move);
     hit.addEventListener('mouseleave', ()=>{ guide.setAttribute('opacity',0); hideTip(); });
@@ -5132,6 +5446,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
                stat('ASP plan / real', `$${a.asp_plan?a.asp_plan.toFixed(0):'—'} / $${a.asp_real?a.asp_real.toFixed(0):'—'}`) + stat('Variación ASP', fmtSignedPct1(a.var_asp_pct));
     }
     const series = heroSeries(key, metric, mode);
+    const prs = projRows(key); let PJ = null;
+    try { if (prs && prs.some(r=>r.closed)){ PJ = ProjCalc.proyectar(prs); PJ.rows = prs; projAttach(series, PJ, metric, mode); } } catch(e){ console.warn('[Proyección]', e); PJ = null; }
     el.innerHTML = `${warnHtml}<div class="ct-hero">
       <div class="ct-hero-top">
         <div><h3>${label}</h3><div class="sub">${CT_DATA.meta.mes?mesLabel(CT_DATA.meta.mes):''} · datos al ${CT_DATA.meta.hoy} · ${CT_DATA.meta.dias_transcurridos_completos} días cerrados</div></div>
@@ -5142,9 +5458,11 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         <div class="ct-seg" id="ctHeroMode"><button data-v="acum" class="${mode==='acum'?'active':''}">Acumulado</button><button data-v="dia" class="${mode==='dia'?'active':''}">Diario</button></div>
         ${det ? `<div class="ct-seg" id="ctHeroMetric"><button data-v="rev" class="${metric==='rev'?'active':''}">Revenue</button><button data-v="vol" class="${metric==='vol'?'active':''}">Ventas</button><button data-v="asp" class="${metric==='asp'?'active':''}">ASP</button></div>` : ''}
         <span style="font-size:12px;color:var(--text-muted)"><svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="var(--text-muted)" stroke-width="2" stroke-dasharray="5,4"/></svg> Plan &nbsp; <svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="${col}" stroke-width="2"/></svg> Real</span>
+        ${projLegend(metric, mode)}
       </div>
       <div class="ct-hero-chart" id="ctHeroChart"></div>
       <div class="ct-stats">${stats}</div>
+      ${projHtml(PJ)}
     </div>`;
     if (series) renderHeroChart($('#ctHeroChart'), series, metric, mode, col);
     $$('#ctHeroMode button', el).forEach(b=>b.addEventListener('click',()=>{ CT_HERO_MODE=b.dataset.v; renderHero(); }));
@@ -5210,7 +5528,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     $$('#ctDetMode button', el).forEach(b=>b.addEventListener('click',()=>{ CT_DET_MODE=b.dataset.v; renderDetalle(); }));
   }
 
-  const VIEW_OF = {renderRca:'ctViewRca',renderAlertStrip:'ctAlerts',renderExec:'ctViewExec',renderDaily:'ctViewDaily',renderDow:'ctViewDow',renderWeekly:'ctViewWeekly',renderByOp:'ctViewByOp',renderAcq:'ctViewAcq',renderCritical:'ctViewCritical',renderPatterns:'ctViewPatterns',renderGoal:'ctViewGoal'};
+  const VIEW_OF = {renderRca:'ctViewRca',renderAlertStrip:'ctAlerts',renderExec:'ctViewExec',renderDaily:'ctViewDaily',renderDow:'ctViewDow',renderWeekly:'ctViewWeekly',renderByOp:'ctViewByOp',renderAcq:'ctViewAcq',renderCritical:'ctViewCritical',renderPatterns:'ctViewPatterns',renderGoal:'ctViewGoal',renderWeekend:'ctViewFds'};
   function safe(fn, name){
     try { fn(); } catch(err){
       if (CT_DATA.meta.dias_transcurridos_completos) console.error('[Control Tower] '+name+':', err);
@@ -5222,7 +5540,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     $('#ctAsOf').textContent = `Datos al ${CT_DATA.meta.hoy} · ${CT_DATA.meta.dias_transcurridos_completos} días cerrados del mes`;
     safe(renderExec,'Ejecutivo'); safe(renderDaily,'Plan vs Real'); safe(renderDow,'Día de semana'); safe(renderWeekly,'Semanal');
     safe(renderByOp,'Por operación'); safe(renderAcq,'ACQ'); safe(renderCritical,'Días críticos'); safe(renderPatterns,'Patrones'); safe(renderGoal,'Meta $500K');
-    safe(renderDetalle,'Detalle'); safe(renderSide,'Sidebar'); safe(renderHero,'Hero');
+    safe(renderDetalle,'Detalle'); safe(renderWeekend,'Vie–Dom'); safe(renderSide,'Sidebar'); safe(renderHero,'Hero');
   }
   // Comparativos entre semanas/meses: pide también el mes anterior (mismo Web App, parámetro `mes`)
   // en segundo plano y vuelve a dibujar solo la vista "Día de semana". Si falla, todo sigue
@@ -5308,10 +5626,10 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     rebuildAP();
   }
   function rebuildAP(){
-    if (!AP_PAYLOAD){ AP_MODEL = null; AP_ALERTS = []; safe(renderRca,'Causa raíz'); safe(renderAlertStrip,'Alertas'); return; }
+    if (!AP_PAYLOAD){ AP_MODEL = null; AP_ALERTS = []; safe(renderRca,'Causa raíz'); safe(renderAlertStrip,'Alertas'); safe(renderWeekend,'Vie–Dom'); return; }
     AP_MODEL = AgentPerfRCA.build(AP_PAYLOAD, CT_DATA);
     AP_ALERTS = AP_MODEL.ok ? AgentPerfRCA.alertas(AP_MODEL) : [];
-    safe(renderRca,'Causa raíz'); safe(renderAlertStrip,'Alertas');
+    safe(renderRca,'Causa raíz'); safe(renderAlertStrip,'Alertas'); safe(renderWeekend,'Vie–Dom');
   }
 
   /* ---------- alertas (visibles en todas las vistas) ---------- */
@@ -5670,6 +5988,363 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     $('#rcaPiso').addEventListener('input', e => { RCA.piso = Math.max(0, +e.target.value || 0); RCA.filtro = 'piso'; $('#rcaFiltro').value = 'piso'; drawTabla(); });
     drawTabla();
   }
+
+  /* ================= BOTÓN "EXPANDIR" EN TODAS LAS GRÁFICAS ================= */
+  // Cada tarjeta (.ct-card) o el héroe con una gráfica recibe un botón "⤢ Expandir": la tarjeta
+  // se abre a pantalla casi completa (para tomar el pantallazo) sin perder interactividad.
+  // Las tarjetas que ya traían su propio botón (modal) conservan ese flujo, ahora más grande.
+  const X_SEL = 'svg.ct-chart, .ct-heat-cell, .wk-mini, .rca-perf';
+  let X_EL = null, X_BD = null;
+  function xBackdrop(){
+    if (!X_BD){
+      X_BD = document.createElement('div'); X_BD.className = 'ct-xbackdrop';
+      X_BD.addEventListener('click', xClose); document.body.appendChild(X_BD);
+    }
+    return X_BD;
+  }
+  function xSync(){
+    $$('.ct-xbtn').forEach(b => {
+      const on = !!X_EL && b._xt === X_EL;
+      b.classList.toggle('on', on);
+      b.textContent = on ? '✕ Cerrar' : '⤢ Expandir';
+    });
+  }
+  function xOpen(target){
+    xClose();
+    X_EL = target; target.classList.add('ct-expanded');
+    xBackdrop().classList.add('show'); document.body.classList.add('ct-xlock');
+    target.scrollTop = 0; xSync();
+  }
+  function xClose(){
+    if (X_EL){ X_EL.classList.remove('ct-expanded'); X_EL = null; }
+    if (X_BD) X_BD.classList.remove('show');
+    document.body.classList.remove('ct-xlock'); xSync();
+  }
+  function xDecorate(){
+    const root = $('#ctSection'); if (!root) return;
+    $$('.ct-card, .ct-hero', root).forEach(card => {
+      if (card.dataset.xd) return;
+      if (!card.querySelector(X_SEL)) return;
+      card.dataset.xd = '1';
+      if (card.querySelector('.ct-expand-btn[data-expand]')) return;           // ya trae su botón (modal)
+      const target = card.classList.contains('ct-hero') ? (card.closest('#ctHero') || card) : card;
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'ct-expand-btn ct-xbtn'; btn._xt = target;
+      btn.title = 'Ver completa en pantalla grande (Esc para cerrar)';
+      btn.textContent = '⤢ Expandir';
+      btn.addEventListener('click', e => { e.stopPropagation(); if (X_EL === target) xClose(); else xOpen(target); });
+      const head = card.querySelector(':scope > .ct-card-head') || card.querySelector('.ct-hero-ctrl');
+      if (head){ if (head.classList.contains('ct-hero-ctrl')) btn.style.marginLeft = 'auto'; head.appendChild(btn); }
+      else { btn.classList.add('abs'); card.appendChild(btn); }
+    });
+    if (X_EL && !X_EL.isConnected) xClose();
+    xSync();
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (X_EL) xClose();
+    const ov = $('#ctDrillOverlay'); if (ov) ov.classList.remove('show');
+  });
+  { let pend = false;
+    const obs = new MutationObserver(() => { if (pend) return; pend = true; requestAnimationFrame(() => { pend = false; xDecorate(); }); });
+    const rootEl = $('#ctSection'); if (rootEl) obs.observe(rootEl, {childList:true, subtree:true});
+    xDecorate();
+  }
+
+  /* ================= VIERNES–DOMINGO (fin de semana) ================= */
+  const WK = { fri:null, vista:'resumen', op:'all', filtro:'todos', sort:{k:'diff', dir:1}, top:8 };
+  const WK_DOW1 = ['D','L','M','X','J','V','S'];
+  const WK_EF = {
+    impulso:{t:'Impulsó el acumulado', c:'var(--series-3)'}, enlinea:{t:'En línea', c:'var(--series-3)'},
+    freno:{t:'Se quedó por debajo', c:'var(--bad)'}, na:{t:'Sin plan', c:'var(--text-muted)'},
+  };
+  const wkSev = c => c==null ? 'na' : (c>=100 ? 'sobreplan' : (c>=95 ? 'enlinea' : (c>=85 ? 'atencion' : 'critico')));
+  const wkPct = c => c==null ? '—' : c.toFixed(1).replace(/\.0$/, '') + '%';
+
+  function renderWeekend(){
+    const el = $('#ctViewFds'); if (!el) return;
+    if (typeof WeekendCalc === 'undefined'){ el.innerHTML = '<div class="ct-note">No se cargó el módulo de cálculo de fin de semana.</div>'; return; }
+    const frs = WeekendCalc.viernes(CT_DATA);
+    if (!frs.length){
+      el.innerHTML = `<div class="ct-note">Todavía no hay un viernes cerrado en ${CT_DATA.meta.mes ? mesLabel(CT_DATA.meta.mes) : 'el mes en pantalla'}. Cuando cierre el viernes aparecerá aquí el acumulado de viernes a domingo.</div>`;
+      return;
+    }
+    if (!WK.fri || frs.indexOf(WK.fri) < 0) WK.fri = frs[0];
+    const R = WeekendCalc.resumen(CT_DATA, WK.fri);
+    const last = R.dias[R.dias.length-1];
+    el.innerHTML = `<div class="ct-filter-row">
+        <label style="font-size:12px;color:var(--text-secondary)">Fin de semana</label>
+        <select class="ct-select" id="wkFri">${frs.map(f => `<option value="${f}" ${f===WK.fri?'selected':''}>Vie ${fechaDM(f)} → Dom ${fechaDM(WeekendCalc.addDays(f,2))}</option>`).join('')}</select>
+        <div class="ct-seg" id="wkVista"><button data-v="resumen" class="${WK.vista==='resumen'?'active':''}">Resumen por operación</button><button data-v="asesor" class="${WK.vista==='asesor'?'active':''}">👤 Por asesor</button></div>
+        ${WK.vista==='asesor' ? `<select class="ct-select" id="wkOp"><option value="all" ${WK.op==='all'?'selected':''}>Todas las operaciones</option>${WeekendCalc.OPS.map(o => `<option value="${o.ap}" ${WK.op===o.ap?'selected':''}>${o.label}</option>`).join('')}</select>` : ''}
+      </div>
+      <div id="wkBody"></div>
+      <div class="ct-note">Corte: ${last ? fechaCorta(last) : '—'}${R.pendientes.length ? ' · todavía no cierran: ' + R.pendientes.map(fechaCorta).join(', ') : ''}. Plan y Real de revenue y ventas vienen de Planif_2026. Solo Upsell trabaja domingos; en las demás operaciones el plan del domingo es $0 y cualquier venta registrada ese día se suma al real.</div>`;
+    $('#wkFri').addEventListener('change', e => { WK.fri = e.target.value; renderWeekend(); });
+    $$('#wkVista button', el).forEach(b => b.addEventListener('click', () => { WK.vista = b.dataset.v; renderWeekend(); }));
+    const so = $('#wkOp'); if (so) so.addEventListener('change', e => { WK.op = e.target.value; renderWeekend(); });
+    if (WK.vista === 'resumen') wkResumen($('#wkBody'), R); else wkAsesores($('#wkBody'), R);
+  }
+
+  /* ---------- vista 1: resumen por operación ---------- */
+  function wkResumen(box, R){
+    const T = R.total;
+    if (!T){ box.innerHTML = '<div class="ct-note">No hay datos de Post-Venta para ese fin de semana.</div>'; return; }
+    const last = R.dias[R.dias.length-1];
+    const rango = `${fechaDM(R.dias[0])} – ${fechaDM(last)}`;
+    const cls = T.veredicto==='impulso' ? 'up' : (T.veredicto==='freno' ? 'down' : 'flat');
+    const mA = T.mtdAntes, mD = T.mtdDespues;
+    const mtdTxt = (mA && mD)
+      ? `Gap acumulado del mes: al jueves <b>${fmtSignedMoney(mA.gap)}</b> (${wkPct(mA.cumpl)} del plan) → al ${fechaCorta(last)} <b>${fmtSignedMoney(mD.gap)}</b> (${wkPct(mD.cumpl)}). El fin de semana ${T.gap>=0?'sumó':'restó'} <b>${fmtMoney(Math.abs(T.gap))}</b> al gap.`
+      : 'No hay gap acumulado del jueves para comparar.';
+    const consejo = T.veredicto==='impulso' ? 'El fin de semana empujó el acumulado: hay que sostener ese ritmo.'
+      : T.veredicto==='enlinea' ? 'El fin de semana quedó cerca del plan: el acumulado casi no se movió.'
+      : (mD && mD.gap < 0 ? `El fin de semana se quedó por debajo del plan y el mes sigue en déficit: hay que fortalecer la semana (para volver al plan acumulado faltan ${fmtMoney(-mD.gap)}).`
+                          : 'El fin de semana se quedó por debajo del plan, aunque el mes todavía va por encima del acumulado: hay que fortalecer la semana para no perder el colchón.');
+    const peor = R.ops.filter(o => o.gap < 0).sort((a,b) => a.gap - b.gap)[0];
+    const mejor = R.ops.filter(o => o.gap > 0).sort((a,b) => b.gap - a.gap)[0];
+    const kpi = (lbl, val, sub, sev) => `<div class="ct-kpi ${sev?'sev-'+sev:''}" style="cursor:default"><div class="lbl">${lbl}</div><div class="val">${val}</div>${sub?`<div class="sub">${sub}</div>`:''}</div>`;
+    const rowT = o => {
+      const ef = WK_EF[o.veredicto];
+      return `<tr><td class="l"><b>${esc(o.label)}</b></td>
+        <td>${fmtMoney(o.plan)}</td><td>${fmtMoney(o.real)}</td><td class="${o.gap<0?'neg':'pos'}">${fmtSignedMoney(o.gap)}</td><td><b>${wkPct(o.cumpl)}</b></td>
+        <td class="grp">${fmt0(o.vplan)} / ${fmt0(o.vreal)}</td><td>${o.aspPlan?'$'+Math.round(o.aspPlan):'—'} / ${o.aspReal?'$'+Math.round(o.aspReal):'—'}</td>
+        <td class="grp">${o.mtdAntes?fmtSignedMoney(o.mtdAntes.gap):'—'}</td><td>${o.mtdDespues?fmtSignedMoney(o.mtdDespues.gap):'—'}</td>
+        <td>${o.mtdAntes&&o.mtdDespues?wkPct(o.mtdAntes.cumpl)+' → '+wkPct(o.mtdDespues.cumpl):'—'}</td>
+        <td class="l">${chip(o.veredicto, {[o.veredicto]:ef})}</td></tr>`;
+    };
+    const heatRow = o => `<tr><td class="l"><b>${esc(o.label)}</b></td>${R.dias.map(f => {
+      const d = o.dias.find(x => x.fecha === f);
+      if (!d || (!d.plan && !d.real)) return '<td><span class="ct-note-s" style="color:var(--text-muted)">no opera</span></td>';
+      const bg = d.cumpl==null ? 'var(--surface)' : heatColorFor(d.cumpl);
+      return `<td class="ct-heat-cell" style="background:${bg};text-align:center"><div style="font-size:14px">${d.cumpl==null?'—':Math.round(d.cumpl)+'%'}</div><div style="font-size:10.5px;font-weight:600;opacity:.8">${fmtMoney(d.real)} / ${fmtMoney(d.plan)}</div></td>`;
+    }).join('')}</tr>`;
+    box.innerHTML = `<div class="ct-verdict ${cls}"><div class="main">${rango}: Post-Venta cerró en ${wkPct(T.cumpl)} del plan del fin de semana (${fmtSignedMoney(T.gap)}) ${chip(T.veredicto, {[T.veredicto]:WK_EF[T.veredicto]})}</div>
+        <div class="det">${mtdTxt}<br>${consejo}</div>
+        <div class="sec">${peor?`<span>📉 Más pesó en el gap: <b>${esc(peor.label)}</b> (${fmtSignedMoney(peor.gap)}, ${wkPct(peor.cumpl)})</span>`:''}${mejor?`<span>📈 Más aportó: <b>${esc(mejor.label)}</b> (${fmtSignedMoney(mejor.gap)}, ${wkPct(mejor.cumpl)})</span>`:''}</div></div>
+      <div class="ct-kpi-grid">
+        ${kpi('Plan Vie–Dom', fmtMoney(T.plan), 'revenue')}
+        ${kpi('Real Vie–Dom', fmtMoney(T.real), 'revenue')}
+        ${kpi('Gap', fmtSignedMoney(T.gap), 'real − plan', wkSev(T.cumpl))}
+        ${kpi('Cumplimiento', wkPct(T.cumpl), '', wkSev(T.cumpl))}
+        ${kpi('Ventas plan / real', `${fmt0(T.vplan)} / ${fmt0(T.vreal)}`, T.vplan? fmtSignedPct1(100*(T.vreal/T.vplan-1)) + ' vs plan' : '')}
+        ${kpi('ASP plan / real', `${T.aspPlan?'$'+Math.round(T.aspPlan):'—'} / ${T.aspReal?'$'+Math.round(T.aspReal):'—'}`, T.aspPlan&&T.aspReal? fmtSignedPct1(100*(T.aspReal/T.aspPlan-1)) + ' vs plan' : '')}
+      </div>
+      <div class="ct-grid-2">
+        <div class="ct-card"><div class="ct-card-head"><h3>Gap Vie–Dom por operación</h3></div><p class="ct-q">Real − plan del fin de semana. Rojo = se quedó por debajo.</p><div id="wkGapBars"></div></div>
+        <div class="ct-card"><div class="ct-card-head"><h3>Gap acumulado del mes, lunes a domingo</h3></div><p class="ct-q">¿El fin de semana empujó el acumulado o lo frenó? (0 = en plan)</p><div id="wkSerie"></div></div>
+      </div>
+      <div class="ct-card"><div class="ct-card-head"><h3>Cumplimiento por día · Vie / Sáb / Dom</h3></div><p class="ct-q">Real ÷ plan de cada día (revenue). Debajo, $ real / $ plan.</p>
+        <div class="ct-det-wrap"><table class="ct-det"><thead><tr><th class="l">Operación</th>${R.dias.map(f => `<th style="text-align:center">${fechaCorta(f)}</th>`).join('')}</tr></thead><tbody>${R.ops.map(heatRow).join('')}${heatRow(T)}</tbody></table></div></div>
+      <div class="ct-card"><div class="ct-card-head"><h3>Detalle Vie–Dom por operación</h3></div><p class="ct-q">Gap MTD = real − plan acumulado del mes, al jueves (antes del fin de semana) y al último día cerrado.</p>
+        <div class="ct-det-wrap"><table class="ct-det"><thead><tr><th class="l">Operación</th><th>Plan</th><th>Real</th><th>Gap</th><th>Cumpl.</th><th class="grp">Ventas plan / real</th><th>ASP plan / real</th><th class="grp">Gap MTD jue</th><th>Gap MTD ${fechaCorta(last).split(' ')[0]}</th><th>Cumpl. MTD</th><th class="l">Efecto</th></tr></thead><tbody>${R.ops.map(rowT).join('')}<tr class="tot">${rowT(T).replace('<tr>','').replace('</tr>','')}</tr></tbody></table></div></div>`;
+    // gráficas
+    const bars = R.ops.concat([T]).map(o => ({label:o.label.replace('2.4.- + 1.4.- ','2.4+1.4 '), value:o.gap, color:o.gap>=0?'var(--series-3)':'var(--bad)'}));
+    renderHBarChart($('#wkGapBars'), bars, {padLeft:150, valFormat:v=>fmtSignedMoney(v), tipFormat:v=>fmtSignedMoney(v)});
+    const sr = R.serie || [];
+    if (sr.length > 1){
+      const defs = [['postventa_total','Post-Venta (total)','var(--text-primary)'],['upsell','2.1.- Upsell',OP_META.upsell.color],['rec22','2.2.- Recurrence',OP_META.rec22.color],['resurrection','Resurrection',OP_META.resurrection.color],['bootcamp','2.5.- Bootcamp',OP_META.bootcamp.color]];
+      renderLineChart($('#wkSerie'), defs.map(([k,l,c]) => ({label:l, color:c, points:sr.map(s => ({y:s.v[k]==null?null:s.v[k], label:fechaCorta(s.fecha)}))})),
+        {legend:true, width:760, height:260, refLine:0, refLineLabel:'En plan (gap 0)', yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtSignedMoney(v), xLabels:sr.map(s=>fechaCorta(s.fecha))});
+    } else $('#wkSerie').innerHTML = '<div class="ct-note">Hace falta más de un día cerrado en la semana.</div>';
+  }
+
+  /* ---------- vista 2: por asesor ---------- */
+  function wkEstadoChip(e){ return chip(e); }
+  function wkAsesores(box, R){
+    if (!AP_PAYLOAD){ box.innerHTML = `<div class="ct-note">Agent Performance todavía no carga${AP_NOTA?': '+esc(AP_NOTA):''}. En cuanto responda el Web App aparece aquí el detalle por asesor.</div>`; return; }
+    const ops = WK.op==='all' ? WeekendCalc.OPS : WeekendCalc.OPS.filter(o => o.ap===WK.op);
+    const parts = ops.map(o => ({o, a:WeekendCalc.asesores(CT_DATA, AP_PAYLOAD, o.ap, WK.fri)})).filter(x => x.a);
+    if (!parts.length){ box.innerHTML = '<div class="ct-note">No hay datos de agentes para esa operación.</div>'; return; }
+    if (parts.every(p => !p.a.dias.length)){ box.innerHTML = `<div class="ct-note">Agent Performance llega hasta ${esc(AP_PAYLOAD.hasta||'—')}: todavía no trae días de ese fin de semana.</div>`; return; }
+    // agregados
+    const rs = parts.map(p => p.a.resumen).filter(Boolean);
+    const S = {tab:0, conectaron:0, vendieron:0, sinVenta:0, noTrabajaron:0, espSinVenta:0, espSinVentaRev:0, ventas:0, revenue:0};
+    rs.forEach(r => Object.keys(S).forEach(k => S[k] += r[k] || 0));
+    const rows = parts.flatMap(p => p.a.agentes.map(x => ({...x, opLabel:p.o.label})));
+    const fechas = Array.from(new Set(parts.flatMap(p => p.a.dias.map(d => d.fecha)))).sort();
+    const porDia = fechas.map(f => {
+      const xs = parts.map(p => p.a.porDia.find(d => d.fecha===f)).filter(Boolean);
+      return {fecha:f, opera:xs.some(x=>x.opera), trab:xs.reduce((t,x)=>t+x.trab,0), vend:xs.reduce((t,x)=>t+x.vend,0), ventas:xs.reduce((t,x)=>t+x.ventas,0), vplan:xs.reduce((t,x)=>t+x.vplan,0)};
+    });
+    const faltan = parts.some(p => p.a.dias.length < R.dias.length);
+    const multi = parts.length > 1;
+    const sort = WK.sort;
+    const F = {
+      todos: r => true, sin: r => r.estado==='SIN_VENTA', bajo: r => r.estado==='SIN_VENTA' || r.estado==='BAJO',
+      notrab: r => r.estado==='NO_TRABAJO', vend: r => r.ventas>0,
+    }[WK.filtro] || (r => true);
+    let list = rows.filter(F);
+    list.sort((a, b) => {
+      let c;
+      if (sort.k==='n' || sort.k==='grupo' || sort.k==='opLabel') c = String(a[sort.k]).localeCompare(String(b[sort.k]), 'es') * sort.dir;
+      else c = cmpNum(a[sort.k], b[sort.k], sort.dir);
+      return c || String(a.n).localeCompare(String(b.n), 'es');
+    });
+    const arrow = k => sort.k===k ? (sort.dir>0 ? ' ▲' : ' ▼') : '';
+    const th = (k, t, tip) => `<th class="${/^(n|grupo|opLabel)$/.test(k)?'':'num '}sortable" data-sk="${k}" ${tip?`title="${esc(tip)}"`:''}>${t}${arrow(k)}</th>`;
+    const tipBase = `"Normal" = promedio de ventas por día trabajado de lunes a jueves anteriores a ese viernes (${parts.map(p=>p.a.baseDias).join('/')} día(s) cargados).`;
+    box.innerHTML = `${faltan?`<div class="ct-note" style="margin:0 0 10px">Agent Performance llega hasta ${esc(AP_PAYLOAD.hasta||'—')}: para alguna operación faltan días del fin de semana.</div>`:''}
+      <div class="ct-kpi-grid">
+        <div class="ct-kpi" style="cursor:default"><div class="lbl">Conectaron</div><div class="val">${S.conectaron} <span style="font-size:13px;font-weight:600;color:var(--text-muted)">de ${S.tab}</span></div><div class="sub">asesores con horas > 0 entre vie y dom</div></div>
+        <div class="ct-kpi sev-sobreplan" style="cursor:default"><div class="lbl">Vendieron</div><div class="val">${S.vendieron}</div><div class="sub">${S.conectaron?Math.round(100*S.vendieron/S.conectaron):0}% de los que conectaron</div></div>
+        <div class="ct-kpi ${S.sinVenta?'sev-critico':''}" style="cursor:default"><div class="lbl">Conectados sin venta</div><div class="val">${S.sinVenta}</div><div class="sub">${S.sinVenta ? `normalmente habrían vendido <b>${f1(S.espSinVenta)}</b> ventas ≈ <b>${fmtMoney(S.espSinVentaRev)}</b>` : 'todos los conectados vendieron'}</div></div>
+        <div class="ct-kpi" style="cursor:default"><div class="lbl">No trabajaron</div><div class="val">${S.noTrabajaron}</div><div class="sub">0 horas de vie a dom</div></div>
+        <div class="ct-kpi" style="cursor:default"><div class="lbl">Ventas Vie–Dom (agentes)</div><div class="val">${fmt0(S.ventas)}</div><div class="sub">${fmtMoney(S.revenue)}</div></div>
+      </div>
+      <div class="ct-card"><div class="ct-card-head"><h3>¿Cuántos conectaron y cuántos vendieron, día por día?</h3></div>
+        <p class="ct-q">La hoja no trae el turno programado: aquí "tenían que trabajar" = quienes conectaron ese día (horas > 0).</p>
+        <div class="ct-det-wrap"><table class="ct-det"><thead><tr><th class="l">Día</th><th>Conectaron</th><th>Vendieron</th><th>% que vendió</th><th>Ventas</th><th>Ventas plan</th></tr></thead><tbody>${porDia.map(d => d.opera
+          ? `<tr><td class="l"><b>${fechaCorta(d.fecha)}</b></td><td>${d.trab}</td><td>${d.vend}</td><td>${d.trab?Math.round(100*d.vend/d.trab)+'%':'—'}</td><td>${fmt0(d.ventas)}</td><td>${d.vplan?f1(d.vplan):'—'}</td></tr>`
+          : `<tr class="fut"><td class="l"><b>${fechaCorta(d.fecha)}</b></td><td colspan="5" style="text-align:left">Sin asesores conectados (la operación no abre)</td></tr>`).join('')}</tbody></table></div></div>
+      <div class="ct-card"><div class="ct-card-head"><h3>Asesores del fin de semana</h3></div>
+        <div class="rca-ctrl"><label style="font-size:12px;color:var(--text-secondary)">Mostrar</label>
+          <select class="ct-select" id="wkFiltro">
+            <option value="todos">Todos los asesores</option><option value="sin">Conectaron y no vendieron</option><option value="bajo">No vendieron o vendieron menos de lo normal</option>
+            <option value="notrab">No trabajaron</option><option value="vend">Vendieron</option></select></div>
+        <div class="rca-sum"><span><b>${S.tab}</b> asesores</span><span>· <b>${S.conectaron}</b> conectaron</span><span>· <b>${S.vendieron}</b> vendieron</span><span>· <b>${S.sinVenta}</b> conectados sin venta</span><span>· <b>${S.noTrabajaron}</b> no trabajaron</span>
+          ${S.sinVenta ? `<span class="rca-sum-hit">· normalmente habrían vendido <b>${f1(S.espSinVenta)}</b> ventas ≈ <b>${fmtMoney(S.espSinVentaRev)}</b></span>` : ''}</div>
+        <div style="overflow:auto"><table class="ct-table rca-perf"><thead><tr><th>#</th>${th('n','Asesor')}${th('grupo','Grupo')}${multi?th('opLabel','Operación'):''}
+          ${th('diasTrab','Días trab.','Días del fin de semana con horas > 0')}${th('horas','Horas')}${th('ventas','Ventas Vie–Dom')}
+          ${th('normalV','Normal L–J / día', tipBase)}${th('esperado','Esperado','Normal × días trabajados en el fin de semana')}${th('diff','Dif.','Ventas − esperado')}
+          ${th('revenue','Revenue')}${th('normalRev','Normal $/día','Revenue promedio por día trabajado de lunes a jueves')}<th>Estado</th></tr></thead><tbody>
+          ${list.map((r, i) => `<tr><td>${i+1}</td><td><b>${esc(r.n)}</b></td><td>${esc(r.grupo)}</td>${multi?`<td>${esc(r.opLabel)}</td>`:''}
+            <td class="num">${r.diasTrab}</td><td class="num">${r.horas?f1(r.horas):'0'}</td><td class="num ${r.ventas===0&&r.diasTrab>0?'zero':''}">${fmt0(r.ventas)}</td>
+            <td class="num">${r.normalV==null?'—':f1(r.normalV)}</td><td class="num">${r.esperado==null?'—':f1(r.esperado)}</td><td class="num ${r.diff!=null&&r.diff<-0.5?'zero':''}">${r.diff==null?'—':sg1(r.diff)}</td>
+            <td class="num">${r.revenue?fmtMoney(r.revenue):'$0'}</td><td class="num">${r.normalRev==null?'—':fmtMoney(r.normalRev)}</td><td>${wkEstadoChip(r.estado)}</td></tr>`).join('') || '<tr><td colspan="13" class="rca-note-s">Ningún asesor cumple el filtro.</td></tr>'}
+        </tbody></table></div>
+        <div class="ct-q" style="margin:8px 0 0">${tipBase} "Esperado" = normal × días trabajados el fin de semana. Sin días de lunes a jueves cargados no hay normal (—).</div></div>
+      <div id="wkTopGap"></div>`;
+    $('#wkFiltro').value = WK.filtro;
+    $('#wkFiltro').addEventListener('change', e => { WK.filtro = e.target.value; wkAsesores(box, R); });
+    $$('th.sortable', box).forEach(h => h.addEventListener('click', () => {
+      const k = h.dataset.sk; WK.sort = sort.k===k ? {k, dir:-sort.dir} : {k, dir:1}; wkAsesores(box, R);
+    }));
+    wkTopGap($('#wkTopGap'), ops);
+  }
+
+  /* ---------- gráfica: asesores con mayor gap del mes (qué días suben y qué días bajan) ---------- */
+  function wkMini(a, ymax){
+    const W = 380, H = 112, PL = 6, PR = 6, PT = 8, PB = 20;
+    const n = a.dias.length, bw = (W-PL-PR)/Math.max(n,1), mid = PT + (H-PT-PB)/2, half = (H-PT-PB)/2;
+    let s = `<svg class="ct-chart wk-mini" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(a.n)}: ventas menos esperado por día">`;
+    a.dias.forEach((d, i) => {
+      const x = PL + i*bw, wk = d.dow===5 || d.dow===6 || d.dow===0;
+      if (wk) s += `<rect x="${x.toFixed(1)}" y="${PT-2}" width="${bw.toFixed(1)}" height="${(H-PT-PB+4)}" fill="var(--series-1-soft)" opacity=".7"/>`;
+    });
+    s += `<line x1="${PL}" x2="${W-PR}" y1="${mid}" y2="${mid}" stroke="var(--border-strong)" stroke-width="1"/>`;
+    a.dias.forEach((d, i) => {
+      const x = PL + i*bw, w = Math.max(2, bw*0.62), bx = x + (bw-w)/2;
+      const lbl = `${WeekendCalc.DOW_C[d.dow]} ${d.f.slice(8)}/${d.f.slice(5,7)}`;
+      if (!d.trab){
+        s += `<rect x="${bx.toFixed(1)}" y="${mid-1.5}" width="${w.toFixed(1)}" height="3" rx="1" fill="var(--text-muted)" opacity=".5"><title>${lbl} · no trabajó</title></rect>`;
+      } else {
+        const h = Math.max(1.5, Math.abs(d.delta)/ymax*half), y = d.delta>=0 ? mid-h : mid;
+        s += `<rect x="${bx.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="1.5" fill="${d.delta>=0?'var(--series-3)':'var(--bad)'}"><title>${lbl} · vendió ${fmt0(d.v)} vs esperado ${f1(d.exp)} (${sg1(d.delta)}) en ${f1(d.h)} h</title></rect>`;
+      }
+      if (n <= 16 || i % 2 === 0) s += `<text x="${(x+bw/2).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${WK_DOW1[d.dow]}</text>`;
+    });
+    return s + '</svg>';
+  }
+  function wkDowCells(a){
+    return [1,2,3,4,5,6,0].map(w => {
+      const p = a.porDow[w];
+      if (!p) return `<span class="wk-dow none" title="${WeekendCalc.DOW[w]}: no trabajó">${WK_DOW1[w]}<b>—</b></span>`;
+      const v = p.avg, bg = v <= -0.75 ? 'rgba(216,67,67,.22)' : (v >= 0.75 ? 'rgba(27,175,122,.24)' : 'var(--surface)');
+      return `<span class="wk-dow" style="background:${bg}" title="${WeekendCalc.DOW[w]}: ${sg1(v)} ventas vs esperado por día trabajado (${p.n} día${p.n>1?'s':''})">${WK_DOW1[w]}<b>${sg1(v)}</b></span>`;
+    }).join('');
+  }
+  function wkTopGap(box, ops){
+    const tgs = ops.map(o => ({o, t:WeekendCalc.topGap(CT_DATA, AP_PAYLOAD, o.ap, {n:60})})).filter(x => x.t && x.t.agentes.length);
+    if (!tgs.length){ box.innerHTML = ''; return; }
+    const todos = tgs.flatMap(x => x.t.agentes.map(a => ({...a, opLabel:x.o.label})));
+    const key = a => a.gapRev!=null ? a.gapRev : a.gap;
+    todos.sort((a, b) => key(a) - key(b));
+    const top = todos.filter(a => a.gap < 0).slice(0, WK.top);
+    const ymax = Math.max(1, ...top.flatMap(a => a.dias.map(d => Math.abs(d.delta))));
+    const multi = tgs.length > 1;
+    const d0 = tgs[0].t.dias[0], d1 = tgs[0].t.dias[tgs[0].t.dias.length-1];
+    box.innerHTML = `<div class="ct-card"><div class="ct-card-head"><h3>Asesores con mayor gap del mes · qué días suben y qué días bajan</h3>
+        <select class="ct-select" id="wkTopN" style="margin-left:auto"><option value="6">Top 6</option><option value="8">Top 8</option><option value="12">Top 12</option><option value="20">Top 20</option></select></div>
+      <p class="ct-q">Cada barra es un día: <b style="color:var(--series-3)">verde</b> = vendió más de lo esperado, <b style="color:var(--bad)">rojo</b> = menos, punto gris = no trabajó. Esperado = horas conectadas × ventas por hora de toda la operación ese mismo día, así que mide productividad frente a sus pares (no el efecto del día). Franja azul = vie–dom. Debajo, el promedio por día de la semana (L M X J V S D) en ventas sobre/bajo lo esperado. Período: ${d0?fechaDM(d0):'—'} – ${d1?fechaDM(d1):'—'}, ${tgs.reduce((t,x)=>t+x.t.total,0)} asesores con ≥3 días trabajados.</p>
+      <div class="ct-grid-2">${top.map((a, i) => `<div class="wk-ag"><div class="wk-ag-h"><div><b>${i+1}. ${esc(a.n)}</b><span class="rca-note-s"> · ${esc(a.grupo)}${multi?' · '+esc(a.opLabel):''}</span></div>
+          <div class="wk-gap">${sg1(a.gap)} ventas${a.gapRev!=null?` ≈ ${fmtSignedMoney(a.gapRev)}`:''}</div></div>
+          ${wkMini(a, ymax)}<div class="wk-dows">${wkDowCells(a)}</div>
+          <div class="rca-note-s">${a.diasTrab} días trabajados · ${fmt0(a.ventas)} ventas en ${f1(a.horas)} h</div></div>`).join('') || '<div class="ct-note">Nadie está por debajo de sus pares en el período.</div>'}</div></div>`;
+    $('#wkTopN').value = String(WK.top);
+    $('#wkTopN').addEventListener('change', e => { WK.top = +e.target.value; wkTopGap(box, ops); });
+  }
+
+
+  /* ================= PROYECCIÓN (línea amarilla) + RITMO REQUERIDO ================= */
+  const PJ_COLOR = '#F2B01E';
+  function projRows(key){
+    try {
+      const det = CT_DATA.detalle && CT_DATA.detalle[key];
+      if (det) return ProjCalc.rows(det);
+      if (CT_DATA.daily && CT_DATA.daily[0] && CT_DATA.daily[0].ops[key])
+        return CT_DATA.daily.map(d => ({fecha:d.fecha, closed:d.status==='elapsed', rp:d.ops[key].plan, rr:d.ops[key].real, vp:null, vr:null}));
+    } catch(e){ console.warn('[Proyección]', e); }
+    return null;
+  }
+  function projLegend(metric, mode){
+    if (metric==='asp') return '';
+    return `<span style="font-size:12px;color:var(--text-muted)"><svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="${PJ_COLOR}" stroke-width="2.4" stroke-dasharray="2,3"/></svg> ${mode==='acum'?'Proyección al ritmo actual':'Necesario por día'}</span>`;
+  }
+  function projAttach(series, PJ, metric, mode){
+    if (!PJ || !series || metric==='asp') return;
+    if (mode==='acum'){
+      const s = metric==='rev' ? PJ.serieRev : PJ.serieVol; if (!s) return;
+      series.forEach((p, i) => { p.proj = s.puntos[i]; });
+    } else {
+      const m = metric==='rev' ? PJ.rev : PJ.vol; if (!m || m.reqDia==null || m.cumplido) return;
+      const rs = PJ.rows;
+      series.forEach((p, i) => { if (!p.closed && rs[i] && (metric==='rev' ? rs[i].rp : rs[i].vp) > 0) p.req = m.reqDia; });
+    }
+  }
+  function projHtml(PJ){
+    if (!PJ || !PJ.rev) return '';
+    const R = PJ.rev, V = PJ.vol;
+    const pct = v => v==null ? '—' : v.toFixed(1).replace('.', ',') + '%';
+    const panel = (titulo, m, money) => {
+      if (!m) return '';
+      const F = money ? fmtMoney : (v => fmt0(v)), S = money ? fmtSignedMoney : (v => (v>=0?'+':'−') + fmt0(Math.abs(v)));
+      const F1 = money ? fmtMoney : (v => v==null ? '—' : v.toFixed(1).replace('.', ','));
+      const kv = (k, v, cls) => `<div class="ct-stat"><span>${k}</span><b class="${cls||''}">${v}</b></div>`;
+      const bad = m.gapProy != null && m.gapProy < 0;
+      return `<div class="ct-proj-p"><h4>${titulo}</h4>
+        ${kv('Real a la fecha', `${F(m.real)} · ${pct(m.cumpl)} del plan`)}
+        ${kv('<b style="color:'+PJ_COLOR+'">●</b> Proyección de cierre', m.proy==null?'—':F(m.proy), 'pj')}
+        ${kv(bad?'Faltaría vs plan del mes':'Sobraría vs plan del mes', m.gapProy==null?'—':S(m.gapProy), bad?'neg':'pos')}
+        ${kv('Todavía falta para el plan del mes', m.cumplido ? 'Plan cumplido' : F(m.falta))}
+        ${kv('Días operativos que quedan', fmt0(m.diasOpRestan))}
+        ${kv('Necesario por día operativo', m.reqDia==null?'—':F1(m.reqDia))}
+        ${kv('· el plan pide por día', m.planDiaRest==null?'—':F1(m.planDiaRest))}
+        ${kv('· hoy se hace por día', m.ritmoDia==null?'—':F1(m.ritmoDia))}
+        ${kv('Subir por día vs hoy', m.extraVsRitmo==null||m.cumplido ? '—' : `${m.extraVsRitmo>=0?'+':'−'}${F1(Math.abs(m.extraVsRitmo))} (${m.extraVsRitmoPct>=0?'+':''}${pct(m.extraVsRitmoPct)})`, m.extraVsRitmo>0?'neg':'pos')}
+      </div>`;
+    };
+    // frases
+    const fr = [];
+    if (R.cumplido) fr.push('El revenue del mes ya alcanzó el plan.');
+    else if (R.proy!=null){
+      if (R.gapProy >= 0) fr.push(`Al ritmo actual el revenue cierra en <b>${fmtMoney(R.proy)}</b>, <b>${fmtMoney(R.gapProy)}</b> por encima del plan del mes.`);
+      else fr.push(`Al ritmo actual el revenue cierra en <b>${fmtMoney(R.proy)}</b>: faltarían <b>${fmtMoney(-R.gapProy)}</b> para el plan del mes. Para llegar hay que pasar de ${fmtMoney(R.ritmoDia)} a <b>${fmtMoney(R.reqDia)}</b> por día operativo (${R.extraVsRitmo>=0?'+':''}${fmtMoney(R.extraVsRitmo)} al día).`);
+    }
+    if (V && !V.cumplido && V.proy!=null){
+      if (V.gapProy < 0) fr.push(`En ventas, al ritmo actual cierran ${fmt0(V.proy)} frente a ${fmt0(V.planMes)} del plan (faltarían ${fmt0(-V.gapProy)}): hacen falta <b>${f1(V.reqDia)}</b> ventas por día operativo, hoy hacen ${f1(V.ritmoDia)}.`);
+      else fr.push(`En ventas, al ritmo actual cierran ${fmt0(V.proy)} frente a ${fmt0(V.planMes)} del plan (+${fmt0(V.gapProy)}).`);
+      if (!R.cumplido && R.gapProy < 0 && V.cumpl >= 100){
+        const aspAct = V.real ? R.real/V.real : null, aspReq = (V.proy - V.real) > 0 ? R.falta/(V.proy - V.real) : null;
+        fr.push(`El volumen va por encima del plan pero el revenue no: el faltante está en el <b>ASP</b>${aspAct&&aspReq?`. Con las ventas que ya se proyectan, el ASP de lo que queda del mes tendría que ser de <b>$${Math.round(aspReq)}</b> (hoy: $${Math.round(aspAct)})`:''}.`);
+      }
+    }
+    return `<div class="ct-proj"><div class="ct-proj-h"><b>🟡 Proyección al ritmo actual y lo que falta para llegar al plan</b>
+        <span>Ritmo = Real ÷ Plan de los días cerrados (${pct(R.cumpl)} en revenue${V?`, ${pct(V.cumpl)} en ventas`:''}) aplicado al plan que queda del mes: respeta los días que no operan y las semanas más fuertes. El run-rate lineal simple daría ${fmtMoney(R.runRate)}.</span></div>
+      <div class="ct-grid-2">${panel('Revenue', R, true)}${panel('Volumen de ventas', V, false)}</div>
+      <div class="ct-proj-t">${fr.join('<br>')}</div></div>`;
+  }
+
 
   async function bootCT(recarga){
     await actualizarCTDataEnVivo();
