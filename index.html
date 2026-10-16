@@ -462,6 +462,7 @@
       <span class="badge warn"><span class="dot"></span> Ene – Sep 2026 · Sep parcial</span>
       <span class="badge" id="freshnessBadge" title="Este dashboard NO se actualiza solo todavía: la fecha refleja la última vez que alguien volvió a leer el Google Sheet y republicó el archivo, no la fecha de hoy."><span class="dot"></span> …</span>
       <a class="badge" href="./dashboard-operativo-2026.html" title="Versión anterior del dashboard (activa hasta el 15-sep-2026)" style="text-decoration:none;">🗂️ Dashboard Operativo 2026 (versión anterior)</a>
+      <a class="badge" href="./calidad-llamadas.html" title="QA de llamadas Post-Sales (requiere contraseña)" style="text-decoration:none;">🎧 Calidad Post-Sales · QA</a>
     </div>
   </header>
 
@@ -600,7 +601,6 @@
     <button class="tab-btn" data-tab="simulador">🧪 Simulador <span class="mes-actual">Septiembre</span></button>
     <button class="tab-btn" data-tab="detalle">📋 Segmentos y detalle</button>
     <button class="tab-btn" data-tab="tracker">🗂️ 092026 - Tracker:MKTSales</button>
-    <button class="tab-btn" data-tab="calidad">🎧 Calidad Post-Sales · QA</button>
   </div>
 
   <div class="tab-panel" data-tab="resumen">
@@ -868,11 +868,6 @@
   <div id="trackerSummary"></div>
   <div id="trackerContent"></div>
   </div><!-- /tab-panel tracker -->
-
-  <div class="tab-panel" data-tab="calidad">
-    <iframe id="calidadFrame" src="./calidad-llamadas.html" title="Calidad Post-Sales · QA" style="width:100%;min-height:900px;border:0;display:block;background:transparent"></iframe>
-    <p style="font-size:12.5px;color:var(--text-muted);margin:8px 0 0">¿No carga? <a href="./calidad-llamadas.html" target="_blank" rel="noopener">Abrir en una pestaña nueva</a>.</p>
-  </div><!-- /tab-panel calidad -->
 
   <footer class="foot">
     Fuente: Google Sheet "Post-Sales-Operations Calls" (hojas Year Calls, Year Calls 2 min, Year Ventas Cerradas), leído el <span id="exportDate"></span>. Este dashboard todavía se actualiza a mano — no hay automatización corriendo — así que esa fecha es la de la última vez que alguien volvió a leer el Sheet y republicó este archivo, no la fecha de hoy. Herramienta de llamadas: Five9. "Grupo de agentes" = columna AGENT GROUP del archivo (el pool de agentes asignado a la campaña, no el nombre de la campaña en sí). Septiembre es un mes parcial. Panel autocontenido.
@@ -6748,9 +6743,5 @@ const HIST_DATA = {"months":["2026-09","2026-08","2026-07","2026-06","2026-05","
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', initHist); else initHist();
 })();
 
-</script>
-<script>
-(function(){var b=document.querySelector('.tab-btn[data-tab="calidad"]');if(!b)return;b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.toggle('active',x===b)});document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.toggle('active',p.dataset.tab==='calidad')})});document.querySelectorAll('.tab-btn').forEach(function(x){if(x!==b)x.addEventListener('click',function(){b.classList.remove('active');var p=document.querySelector('.tab-panel[data-tab="calidad"]');if(p)p.classList.remove('active')})})})();
-addEventListener('message',function(e){if(e.data&&e.data.calidadHeight){var f=document.getElementById('calidadFrame');if(f)f.style.height=Math.max(900,e.data.calidadHeight+20)+'px'}});
 </script>
 </body></html>
