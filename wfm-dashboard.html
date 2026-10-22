@@ -446,6 +446,56 @@
   .wk-dow.none b{color:var(--text-muted);font-weight:500;}
   .ct-det td.neg{color:var(--bad);font-weight:700;} .ct-det td.pos{color:var(--series-3);font-weight:700;}
   .ct-det tr.tot td{background:var(--series-1-soft);font-weight:800;border-top:1.5px solid var(--border-strong);}
+  /* ===== Panel de alertas (Todas · Sistema · Críticas · Atención · Info) ===== */
+  .al-panel{background:var(--surface-raised);border:1px solid var(--border);border-radius:16px;padding:16px 18px;margin:0 0 14px;}
+  .al-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;}
+  .al-head h3{margin:0;font-size:15px;letter-spacing:-.005em;}
+  .al-sub{font-size:11.5px;color:var(--text-muted);margin-top:3px;}
+  .al-toggle{font:inherit;font-size:12.5px;font-weight:800;border:0;border-radius:99px;padding:8px 14px;background:#F2B01E;color:#2d2200;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
+  .al-toggle b{background:#1f2a44;color:#fff;border-radius:99px;padding:1px 8px;font-size:11.5px;}
+  .al-pills{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 10px;}
+  .al-pill{font:inherit;font-size:12px;font-weight:700;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);border-radius:99px;padding:5px 13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .al-pill i{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .al-pill span{opacity:.7;font-weight:600;}
+  .al-pill.active{background:#1f2a44;border-color:#1f2a44;color:#fff;}
+  .al-item{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--border);border-left-width:4px;border-radius:12px;padding:10px 14px;margin-bottom:8px;}
+  .al-item.go{cursor:pointer;} .al-item.go:hover{filter:brightness(.98);box-shadow:0 1px 6px rgba(0,0,0,.08);}
+  .al-item.critico{background:rgba(216,67,67,.07);border-color:rgba(216,67,67,.28);border-left-color:var(--bad);}
+  .al-item.atencion{background:rgba(235,104,52,.08);border-color:rgba(235,104,52,.28);border-left-color:var(--series-2);}
+  .al-item.info{background:rgba(42,120,214,.07);border-color:rgba(42,120,214,.25);border-left-color:var(--series-1);}
+  .al-item.sistema{background:var(--surface);border-left-color:var(--text-muted);}
+  .al-dot{width:11px;height:11px;border-radius:50%;margin-top:4px;flex:none;background:var(--text-muted);}
+  .al-item.critico .al-dot{background:var(--bad);} .al-item.atencion .al-dot{background:var(--series-2);} .al-item.info .al-dot{background:var(--series-1);}
+  .al-m{min-width:0;flex:1;}
+  .al-t{font-weight:700;font-size:13px;line-height:1.35;}
+  .al-d{font-size:12px;color:var(--text-secondary);margin-top:2px;line-height:1.5;}
+  .al-b{flex:none;font-size:11px;font-weight:700;border:1px solid var(--border);background:var(--surface);color:var(--text-primary);padding:3px 10px;border-radius:8px;white-space:nowrap;}
+  .al-more{font:inherit;font-size:12px;font-weight:700;border:1px dashed var(--border-strong,var(--border));background:transparent;color:var(--text-secondary);border-radius:10px;padding:7px 14px;cursor:pointer;width:100%;}
+  @media (max-width:640px){.al-item{flex-wrap:wrap}.al-b{margin-left:23px}}
+
+  /* ===== limpieza de texto + piezas nuevas ===== */
+  p.ct-q{display:none;}
+  .filters-bar{display:grid;gap:12px;padding:14px 18px;}
+  .filters-bar .filter-row{margin:0 !important;display:flex;flex-direction:row;align-items:center;gap:12px;flex-wrap:wrap;}
+  .filters-bar .pill-row{justify-content:flex-start;}
+  .filters-bar .filter-label{min-width:78px;margin:0;}
+  .filters-bar .search{flex:1;min-width:220px;max-width:420px;}
+  .ld-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:14px;margin-bottom:14px;}
+  .ld-card{margin:0;padding:12px 14px 6px;}
+  .ld-card .ct-card-head{margin-bottom:2px;}
+  .rca-days-g{align-items:flex-end;gap:10px 12px;}
+  .rca-wk{display:inline-flex;gap:6px;align-items:flex-end;}
+  .rca-lj{display:inline-flex;gap:5px;align-items:flex-end;}
+  .rca-fd{display:inline-flex;flex-direction:column;gap:4px;padding:4px 6px 6px;border:1px dashed var(--series-2);border-radius:12px;background:rgba(235,104,52,.06);}
+  .rca-fd.sel{background:var(--series-1-soft);border-style:solid;}
+  .rca-fd-days{display:inline-flex;gap:5px;}
+  .rca-fd-b{font:inherit;font-size:10.5px;font-weight:800;border:0;background:transparent;color:var(--text-secondary);cursor:pointer;text-align:left;padding:0 2px;}
+  .rca-fd-b:hover,.rca-fd-b.sel{color:var(--series-1);text-decoration:underline;}
+  #ctAlerts .al-panel,#callsAlerts .al-panel{margin-bottom:14px;}
+  #callsAlerts{max-width:1520px;margin:0 auto;}
+
+  .badge-stack{flex-direction:row !important;flex-wrap:wrap;justify-content:flex-end;align-items:center;max-width:760px;}
+  .ld-h{margin:0 0 10px;font-size:15px;letter-spacing:-.005em;} .ld-h span{font-size:11.5px;font-weight:600;color:var(--text-muted);margin-left:8px;}
 </style>
 
 <div class="load-state" id="loadState">Cargando datos desde Google Sheets…</div>
@@ -456,12 +506,14 @@
     <div>
       <h1>Post-Sales-Operations LTV Daniel Torres</h1>
       <p class="subtitle">📆 Daily Week Planif Tracker</p>
-      <p>Volumen, contacto y cierre por <strong>grupo de agentes</strong> (el pool que trabaja cada campaña en Five9) — pensado para decisiones de dotación: dónde subir, dónde bajar y qué monitorear.</p>
     </div>
     <div class="badge-stack">
-      <span class="badge warn"><span class="dot"></span> Ene – Sep 2026 · Sep parcial</span>
+      <span class="badge warn" id="periodBadge"><span class="dot"></span> …</span>
       <span class="badge" id="freshnessBadge" title="Este dashboard NO se actualiza solo todavía: la fecha refleja la última vez que alguien volvió a leer el Google Sheet y republicó el archivo, no la fecha de hoy."><span class="dot"></span> …</span>
+      <a class="badge" href="./historico-operativo.html" title="KPIs mensuales abr-2024 en adelante" style="text-decoration:none;">📚 Histórico Operativo</a>
       <a class="badge" href="./dashboard-operativo-2026.html" title="Versión anterior del dashboard (activa hasta el 15-sep-2026)" style="text-decoration:none;">🗂️ Dashboard Operativo 2026 (versión anterior)</a>
+      <a class="badge" href="./calidad-llamadas.html" title="QA de llamadas Post-Sales (requiere contraseña)" style="text-decoration:none;">🎧 Calidad Post-Sales · QA</a>
+      <a class="badge" href="./speech/index.html" title="Speech de ventas por operación (clave del equipo)" style="text-decoration:none;">🎙️ Speech de ventas</a>
     </div>
   </header>
 
@@ -472,17 +524,16 @@
 
   <section class="ct-wrap panel" id="ctSection">
     <div class="ct-head">
-      <h2>🎯 Post-Venta · WFM Control Tower</h2>
+      <h2>🎯 Post-Venta · Control</h2>
       <span class="ct-asof" id="ctAsOf"></span>
     </div>
-    <p class="ct-sub">Plan vs. Real de las operaciones Post-Venta contra la meta de <strong>$500.000/mes</strong>, y su relación con Plan ACQ. Fuente: pestaña <strong>"Planif_2026"</strong> del Sheet "Post-Sales-Operations Calls" (Plan cargado por operación y día; Real = SUMIFS sobre la pestaña "Data") — no se modificó ni sobrescribió ningún dato original. Elige una operación a la izquierda para ver su detalle; 2.4.- y 1.4.- Resurrection se muestran como una sola operación y se pueden abrir por separado. Se actualiza sola cada vez que cargas esta página.</p>
     <div id="ctLiveStatus" class="load-state" hidden></div>
 
     <div class="ct-shell">
     <aside class="ct-side" id="ctSide" aria-label="Operaciones"></aside>
     <div class="ct-main">
-    <div id="ctHero"></div>
     <div id="ctAlerts"></div>
+    <div id="ctHero"></div>
     <div class="ct-nav" id="ctNav">
       <button data-view="exec" class="active">📌 Ejecutivo</button>
       <button data-view="detalle">🧮 Detalle diario / acumulado</button>
@@ -535,29 +586,6 @@
     </div><!-- /ct-shell -->
   </section>
 
-  <section class="ct-wrap panel" id="h2Section">
-    <div class="ct-head">
-      <h2>📚 Histórico Operativo · KPIs Mensuales</h2>
-      <span class="ct-asof">Abr 2024 – Sep 2026 · 30 meses</span>
-    </div>
-    <p class="ct-sub">Profundidad mes a mes, por año, de las operaciones de Post-Venta: llamadas, ventas, revenue, ASP, %CR y expansión. Fuente: pestañas <strong>"Mensual Consolidado"</strong> y <strong>"Upsell of Mensual Consolidado"</strong> del mismo Sheet "Post-Sales-Operations Calls" — no se modificó ni sobrescribió ningún dato original. Esta sección es independiente de las demás: no toca sus filtros ni sus datos.</p>
-    <div class="ct-note">Notas de auditoría: septiembre 2026 es un mes parcial (en curso). El bloque "Post" del Sheet se llama aquí "Recurrence+Bootcamp+Resurrection (subtotal)" porque se verificó aritméticamente que es la suma exacta de esas 3 operaciones — no se suma aparte del total, o se duplica. Sales Chat y 1.5.-Bootcamp (que sí existen en la pestaña de septiembre del Control Tower de arriba) no tienen historia mensual en este archivo: no aparecen como bloque propio ni dentro del subtotal "Post". La pestaña "Semanal" del Sheet no se usó aquí porque solo tiene datos de un mes (julio 2026) y de 2 operaciones — no es un histórico, es un análisis puntual.</div>
-
-    <div class="ct-nav" id="h2Nav">
-      <button data-view="resumen" class="active">📌 Resumen</button>
-      <button data-view="explorador">🔎 Explorador</button>
-      <button data-view="anual">📆 Comparativa anual</button>
-      <button data-view="expansion">📈 Expansión</button>
-      <button data-view="tabla">📋 Tabla</button>
-    </div>
-
-    <div class="h2-view active" data-view="resumen" id="h2ViewResumen"></div>
-    <div class="h2-view" data-view="explorador" id="h2ViewExplorador"></div>
-    <div class="h2-view" data-view="anual" id="h2ViewAnual"></div>
-    <div class="h2-view" data-view="expansion" id="h2ViewExpansion"></div>
-    <div class="h2-view" data-view="tabla" id="h2ViewTabla"></div>
-  </section>
-
   <div class="ct-drill-overlay" id="ctDrillOverlay">
     <div class="ct-drill-box">
       <button class="ct-drill-close" id="ctDrillClose">×</button>
@@ -565,20 +593,10 @@
     </div>
   </div>
 
-  <div class="panel filters">
-    <h2>Filtros <small>el grupo de agentes manda; el buscador filtra por campaña o segmento (ltv_type)</small></h2>
-    <div class="filter-row">
-      <div class="filter-label">Grupo de agentes</div>
-      <div class="pill-row" id="agPills"></div>
-    </div>
-    <div class="filter-row" style="margin-top:14px;">
-      <div class="filter-label">Meses</div>
-      <div class="pill-row" id="monthPills"></div>
-    </div>
-    <div class="filter-row" style="margin-top:14px;">
-      <div class="filter-label">Buscar</div>
-      <input class="search" id="searchBox" placeholder="Buscar campaña o segmento (ltv_type)…">
-    </div>
+  <div class="panel filters filters-bar">
+    <div class="filter-row"><div class="filter-label">Operación</div><div class="pill-row" id="agPills"></div></div>
+    <div class="filter-row"><div class="filter-label">Meses</div><div class="pill-row" id="monthPills"></div></div>
+    <div class="filter-row"><div class="filter-label">Buscar</div><input class="search" id="searchBox" placeholder="Campaña o segmento (ltv_type)…"></div>
   </div>
 
   <div class="kpi-grid">
@@ -589,6 +607,8 @@
     <div class="kpi"><div class="lbl">Tasa de cierre</div><div class="val" id="kpiRateCierre">–</div><div class="sub" id="kpiRateCierreSub">venta ÷ contacto</div></div>
     <div class="kpi"><div class="lbl">Conversión total</div><div class="val" id="kpiRateConv">–</div><div class="sub">venta ÷ llamadas</div></div>
   </div>
+
+  <div id="callsAlerts"></div>
 
   <div class="active-filter-banner" id="activeFilterBanner"></div>
 
@@ -604,7 +624,7 @@
 
   <div class="tab-panel" data-tab="resumen">
   <div class="panel">
-    <h2>Volumen mensual por grupo de agentes <small>llamadas totales — para planear dotación</small></h2>
+    <h2>Volumen mensual por grupo de agentes</h2>
     <div class="pill-row" id="volViewToggle" style="margin-bottom:10px;">
       <button class="pill active" data-view="total">Total mensual</button>
       <button class="pill" data-view="daily">Promedio por día</button>
@@ -619,52 +639,48 @@
   </div>
 
   <div class="panel">
-    <h2>Grupos de agentes <small>tendencia mensual, cambio mes a mes (<span class="mes-prev">Jul</span>→<span class="mes-ult">Ago</span>, últimos 2 meses completos) y embudo — respeta el filtro de operación de arriba</small></h2>
+    <h2>Grupos de agentes</h2>
     <div class="ag-grid" id="agGrid"></div>
   </div>
 
   <div class="panel">
-    <h2>Índice de tasa de contacto <small>Contactos (+2min) ÷ Llamadas totales, por grupo de agentes y mes — para ver dónde mejora o empeora el contacto</small></h2>
+    <h2>Índice de tasa de contacto</h2>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num"><span class="mes-prev">Jul</span>→<span class="mes-ult">Ago</span></th></tr></thead>
         <tbody id="idxContactoBody"></tbody>
       </table>
     </div>
-    <div class="idx-legend"><span>Peor</span><span class="bar"></span><span>Mejor</span><span style="margin-left:6px;">· la escala de color compara todos los grupos y meses juntos · "—" = menos de 10 llamadas ese mes (dato insuficiente)</span></div>
+    <div class="idx-legend"><span>Peor</span><span class="bar"></span><span>Mejor</span></div>
   </div>
 
   <div class="panel">
-    <h2>Índice de tasa de conversión (cierre) <small>Ventas cerradas ÷ Contactos (+2min), por grupo de agentes y mes — para comparar qué operación convierte mejor</small></h2>
+    <h2>Índice de tasa de conversión (cierre)</h2>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num"><span class="mes-prev">Jul</span>→<span class="mes-ult">Ago</span></th></tr></thead>
         <tbody id="idxCierreBody"></tbody>
       </table>
     </div>
-    <div class="idx-legend"><span>Peor</span><span class="bar"></span><span>Mejor</span><span style="margin-left:6px;">· la escala de color compara todos los grupos y meses juntos · "—" = menos de 5 contactos ese mes (dato insuficiente)</span></div>
+    <div class="idx-legend"><span>Peor</span><span class="bar"></span><span>Mejor</span></div>
   </div>
 
   <div class="panel">
-    <h2>Top campañas por tasa de cierre, mes a mes <small>las 5 campañas con mejor tasa de cierre cada mes (con volumen suficiente) — respeta el filtro de operación de arriba, con llamadas/contactos/ventas en número junto al %</small></h2>
+    <h2>Top campañas por tasa de cierre, mes a mes</h2>
     <div class="table-scroll">
       <table>
         <thead><tr><th class="num">#</th><th>Campaña</th><th>Grupo de agentes</th><th class="num">Llamadas</th><th class="num">Contactos</th><th class="num">Ventas</th><th class="num">Tasa de cierre</th></tr></thead>
         <tbody id="topCierreBody"></tbody>
       </table>
     </div>
-    <div class="idx-legend"><span style="margin-left:0;">· mínimo 10 contactos (+2min) ese mes para entrar al ranking (evita que una sola venta suerte infle el % de una campaña muy chica) · la fila "Resto de campañas" agrupa todo lo que no entró al Top y la fila "Total del mes" muestra qué % de las ventas pesa el Top frente al resto · Sep* es un mes parcial (<span class="dias-mes">…</span> días)</span></div>
+    
   </div>
   </div><!-- /tab-panel resumen -->
 
   <div class="tab-panel" data-tab="oportunidades">
-  <div class="banner">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
-    <div><strong>Cómo leer esta pestaña.</strong> Cada tarjeta de "caída" o "subida" fuerte <span class="mes-prev">Jul</span>→<span class="mes-ult">Ago</span> trae un diagnóstico automático que cruza el cambio de volumen con el cambio de tasa de contacto — así se puede distinguir un problema de <strong>dotación/prioridad</strong> (bajó el volumen, el contacto se sostuvo) de un problema de <strong>calidad/guion</strong> (el volumen se sostuvo pero bajó el contacto). Usa el filtro de operación de arriba para ver esto por operación.</div>
-  </div>
   <div class="panel">
     <div class="alerts-head">
-      <h2>⚠️ Alertas <small>calculadas sobre todo el dataset (excluyendo septiembre por ser parcial)</small></h2>
+      <h2>⚠️ Alertas por campaña</h2>
       <span class="alerts-count" id="alertsCount">–</span>
     </div>
     <div class="alert-grid" id="alertsGrid"></div>
@@ -672,10 +688,6 @@
   </div><!-- /tab-panel oportunidades -->
 
   <div class="tab-panel" data-tab="validar">
-  <div class="banner">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
-    <div><strong>Bitácora de validación.</strong> A diferencia de "Oportunidades" (que solo resume <span class="mes-prev">Jul</span>→<span class="mes-ult">Ago</span>), aquí está <strong>cada</strong> cambio mes a mes relevante (Ene→Feb hasta <span class="mes-prev">Jul</span>→<span class="mes-ult">Ago</span>, se excluye septiembre por ser parcial) de cada campaña × grupo de agentes, para que puedas revisarlo y confirmar si es real. Se marca cuando el volumen cambió 25% o más, la tasa de contacto 4 puntos o más, o la tasa de cierre 6 puntos o más (con un mínimo de 30 llamadas para evitar ruido de bajo volumen).</div>
-  </div>
   <div class="panel">
     <div class="changes-toolbar">
       <h2 style="margin:0;">Cambios detectados <small id="changesCount"></small></h2>
@@ -702,16 +714,12 @@
   </div><!-- /tab-panel validar -->
 
   <div class="tab-panel" data-tab="simulador">
-  <div class="banner">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
-    <div><strong>Análisis de palancas para <span class="mes-actual-min">septiembre</span>.</strong> Septiembre lleva <span class="dias-mes">…</span> de <span class="dias-total">…</span> días. Aquí comparamos el ritmo real de <span class="mes-actual-min">septiembre</span> contra agosto completo, proyectamos el cierre de mes al mismo ritmo, y desglosamos mezcla Manual vs. Inbound, composición del Inbound por subtipo, y mezcla de segmentos (ltv_type) — para decidir qué palanca mover. Selecciona una operación específica (no "Todos" ni "Recurrence (todos)") arriba para activar el simulador interactivo "¿qué pasaría si...?".</div>
-  </div>
   <div id="simContent"></div>
   </div><!-- /tab-panel simulador -->
 
   <div class="tab-panel" data-tab="manual-inbound">
   <div class="panel">
-    <h2>Manual Outbound por grupo de agentes <small>enero–septiembre, ya se puede atribuir por grupo de agentes (antes era una sola fila sin desagregar)</small></h2>
+    <h2>Manual Outbound por grupo de agentes</h2>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Grupo de agentes</th><th class="num">Llamadas</th><th class="num">Contactos</th><th class="num">Tasa contacto</th><th class="num">Ventas</th><th class="num">Tasa cierre</th></tr></thead>
@@ -730,7 +738,7 @@
     <h3 class="sub-h">Tasa de contacto mensual (Manual Outbound)</h3>
     <div class="table-scroll">
       <table>
-        <thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num month-total">Total Ene–Sep</th></tr></thead>
+        <thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num month-total">Total <span class="rango-meses"></span></th></tr></thead>
         <tbody id="manualContactoBody"></tbody>
       </table>
     </div>
@@ -738,19 +746,14 @@
     <h3 class="sub-h">Tasa de cierre mensual (Manual Outbound)</h3>
     <div class="table-scroll">
       <table>
-        <thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num month-total">Total Ene–Sep</th></tr></thead>
+        <thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num month-total">Total <span class="rango-meses"></span></th></tr></thead>
         <tbody id="manualCierreBody"></tbody>
       </table>
     </div>
-    <div class="alert-empty">*Septiembre es un mes parcial (<span class="dias-mes">…</span> días). Una tasa de cierre en 0% un mes no siempre es alarma — revisa el volumen de contactos de ese mes antes de sacar conclusiones (celdas "—" ya indican volumen insuficiente).</div>
   </div>
 
   <div class="panel">
-    <h2>Inbound por operación <small>campañas cuyo nombre contiene "Inbound", agrupadas por el AGENT GROUP real de cada una — ya no por inferencia de nombre</small></h2>
-    <div class="banner good" style="margin-bottom:14px;">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
-      <div><strong>Mejora frente al dashboard anterior.</strong> Antes el Inbound por operación se armaba adivinando la operación a partir del nombre de la campaña. Ahora usa el grupo de agentes real de Five9. <strong>Recurrence - Platinum</strong> y <strong>Recurrence - Black</strong> no tienen campañas Inbound en esta hoja, por eso no aparecen en las tablas de abajo.</div>
-    </div>
+    <h2>Inbound por operación</h2>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Grupo de agentes</th><th class="num">Llamadas</th><th class="num">Contactos</th><th class="num">Tasa contacto</th><th class="num">Ventas</th><th class="num">Tasa cierre</th></tr></thead>
@@ -769,7 +772,7 @@
     <h3 class="sub-h">Tasa de contacto mensual (Inbound)</h3>
     <div class="table-scroll">
       <table>
-        <thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num month-total">Total Ene–Sep</th></tr></thead>
+        <thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num month-total">Total <span class="rango-meses"></span></th></tr></thead>
         <tbody id="inboundContactoBody"></tbody>
       </table>
     </div>
@@ -777,22 +780,17 @@
     <h3 class="sub-h">Tasa de cierre mensual (Inbound)</h3>
     <div class="table-scroll">
       <table>
-        <thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num month-total">Total Ene–Sep</th></tr></thead>
+        <thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num month-total">Total <span class="rango-meses"></span></th></tr></thead>
         <tbody id="inboundCierreBody"></tbody>
       </table>
     </div>
-    <div class="alert-empty">*Septiembre es un mes parcial (<span class="dias-mes">…</span> días).</div>
   </div>
   </div><!-- /tab-panel manual-inbound -->
 
   <div class="tab-panel" data-tab="detalle">
   <div class="panel">
-    <h2>Segmentos (ltv_type) <small>qué segmento del ciclo de vida trae más volumen y mejor cierre, por grupo de agentes</small></h2>
-    <div class="banner" style="margin-bottom:14px;">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
-      <div><strong>Limpieza de datos aplicada.</strong> El archivo trae inconsistencias de mayúsculas/nombre en ltv_type — las uní bajo un solo valor: <span id="dqSummary"></span>. Dos valores no son un segmento real ("1" y "lo", posibles errores de captura) y quedan marcados como "Sin clasificar".</div>
-    </div>
-    <div class="table-scroll">
+    <h2>Segmentos (ltv_type)</h2>
+<span id="dqSummary" hidden></span>    <div class="table-scroll">
       <table>
         <thead><tr><th data-key="ltvType">Segmento (ltv_type)</th><th data-key="agentGroup">Grupo de agentes</th><th class="num" data-key="calls">Llamadas</th><th class="num" data-key="rateContacto">Tasa contacto</th><th class="num" data-key="ventas">Ventas</th><th class="num" data-key="rateCierre">Tasa cierre</th></tr></thead>
         <tbody id="ltvBody"></tbody>
@@ -802,25 +800,24 @@
 
   <div class="panel">
     <div class="panel-toolbar">
-      <h2>Volumen mensual por campaña <small>las campañas de mayor peso, mes a mes — para planear dotación a nivel de campaña, no solo de grupo de agentes</small></h2>
+      <h2>Volumen mensual por campaña</h2>
     </div>
     <div class="pill-row" id="campVolScopeToggle" style="margin-bottom:6px;">
       <button class="pill active" data-scope="filtered">Todas las operaciones</button>
       <button class="pill" data-scope="recurrence">Recurrence (todas las sub-operaciones)</button>
     </div>
-    <div class="alert-empty" id="campVolScopeNote" style="margin-bottom:10px;">La vista "Todas las operaciones" respeta el filtro de operación de arriba y el buscador. La vista "Recurrence" siempre suma VIP, VIP-Mas, Platinum y Black juntas, sin importar el filtro de arriba — para tener a mano el peso de campaña dentro de Recurrence en cualquier momento.</div>
     <div class="table-scroll">
       <table>
         <thead><tr><th class="num">#</th><th>Campaña</th><th>Grupo(s) de agentes</th><th class="num meses-ph"></th><th class="num">Total</th></tr></thead>
         <tbody id="campVolBody"></tbody>
       </table>
     </div>
-    <div class="idx-legend" style="margin-top:12px;"><span style="margin-left:0;">· ordenado por volumen total Ene–Sep · la fila "Resto de campañas" agrupa lo que no entró al Top · Sep* es un mes parcial (<span class="dias-mes">…</span> días) · "[Deleted]" agrupa campañas retiradas o renombradas cuyo nombre original ya no está en el Sheet fuente (ver nota de la tabla de Segmentos)</span></div>
+    
   </div>
 
   <div class="panel">
     <div class="panel-toolbar">
-      <h2>Detalle por campaña (mensual) <small id="campAccordionScope">haz clic en una campaña para ver su desglose mensual y a qué grupo(s) de agentes pertenece</small></h2>
+      <h2>Detalle por campaña (mensual) </h2>
     </div>
     <div class="table-scroll">
       <table>
@@ -858,19 +855,13 @@
   </div><!-- /tab-panel detalle -->
 
   <div class="tab-panel" data-tab="tracker">
-  <div class="banner" id="trackerBanner">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/></svg>
-    <div><strong>Pestaña 092026 - Tracker:MKTSales.</strong> Vista a nivel general por operación (Upsell, Recurrence, Bootcamp LTV, Resurrection) para analizar caídas y tendencias. El desglose por semana (1ra a 5ta semana del mes) aplica solo al mes que se está calculando (el más reciente cargado); los meses anteriores se muestran en acumulado mensual. PLAN, PROYECCIÓN y DIFERENCIA vienen calculados directamente de esa pestaña del Sheet. Se actualiza a mano igual que el resto del dashboard: cuando cargues la pestaña del siguiente mes, súbela como <code>data/tracker_YYYY-MM.json</code> y agrégala a <code>data/tracker_manifest.json</code> — el instructivo va en <code>data/README_TRACKER.md</code>.</div>
-  </div>
   <div id="trackerLoadState" class="load-state">Cargando 092026 - Tracker:MKTSales…</div>
   <div class="pill-row" id="trackerOpFilter" style="margin-bottom:14px;"></div>
   <div id="trackerSummary"></div>
   <div id="trackerContent"></div>
   </div><!-- /tab-panel tracker -->
 
-  <footer class="foot">
-    Fuente: Google Sheet "Post-Sales-Operations Calls" (hojas Year Calls, Year Calls 2 min, Year Ventas Cerradas), leído el <span id="exportDate"></span>. Este dashboard todavía se actualiza a mano — no hay automatización corriendo — así que esa fecha es la de la última vez que alguien volvió a leer el Sheet y republicó este archivo, no la fecha de hoy. Herramienta de llamadas: Five9. "Grupo de agentes" = columna AGENT GROUP del archivo (el pool de agentes asignado a la campaña, no el nombre de la campaña en sí). Septiembre es un mes parcial. Panel autocontenido.
-  </footer>
+  <footer class="foot">Fuente: Google Sheet "Post-Sales-Operations Calls" · Five9 · leído el <span id="exportDate"></span></footer>
 
 </div>
 
@@ -902,6 +893,9 @@ function boot() {
   const MONTHS = WFM_DATA.months;
   const MONTHS_ES = WFM_DATA.monthsEs;
   const N_MONTHS = MONTHS.length;
+  const RANGO_MESES = MONTHS_ES[0] + '–' + MONTHS_ES[N_MONTHS - 1];
+  const MES_LARGO = {Ene:'Enero',Feb:'Febrero',Mar:'Marzo',Abr:'Abril',May:'Mayo',Jun:'Junio',Jul:'Julio',Ago:'Agosto',Sep:'Septiembre',Oct:'Octubre',Nov:'Noviembre',Dic:'Diciembre'};
+  const MES_ACT = MES_LARGO[MONTHS_ES[N_MONTHS - 1]] || MONTHS_ES[N_MONTHS - 1], MES_ULT = MES_LARGO[MONTHS_ES[N_MONTHS - 2]] || MONTHS_ES[N_MONTHS - 2];
   // Se calculan según cuántos meses mande el Web App: el último siempre es el
   // mes en curso (parcial), el anterior es el último mes completo.
   const SEPT_IDX = N_MONTHS - 1;   // mes en curso (parcial)
@@ -1169,6 +1163,37 @@ function boot() {
     });
   });
 
+  // ---------- Alertas de llamadas: mes en curso (acumulado diario) vs meses completos previos ----------
+  function mesesYM(){
+    // 'YYYY-MM' por posición, partiendo del mes de la última lectura del Sheet (America/Bogota)
+    let ymLast = null;
+    try { ymLast = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Bogota'}).format(new Date(DATA_BUILD_TS)).slice(0, 7); } catch (e) {}
+    if (!/^\d{4}-\d{2}$/.test(ymLast || '') && /^\d{4}-\d{2}/.test(String(MONTHS[N_MONTHS - 1]))) ymLast = String(MONTHS[N_MONTHS - 1]).slice(0, 7);
+    if (!ymLast) return null;
+    let y = +ymLast.slice(0, 4), m = +ymLast.slice(5, 7);
+    const out = [];
+    for (let i = N_MONTHS - 1; i >= 0; i--){ out[i] = y + '-' + String(m).padStart(2, '0'); m--; if (m === 0){ m = 12; y--; } }
+    return {list:out, last:ymLast};
+  }
+  function renderCallsAlerts(){
+    const el = document.getElementById('callsAlerts'); if (!el) return;
+    if (typeof AlertEngine === 'undefined' || typeof AlertPanel === 'undefined'){ el.innerHTML = ''; return; }
+    let al = [];
+    try {
+      const ym = mesesYM();
+      if (ym){
+        let hoyDia = null;
+        try { const s = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Bogota'}).format(new Date(DATA_BUILD_TS)); if (s.slice(0, 7) === ym.list[N_MONTHS - 1]) hoyDia = +s.slice(8, 10); } catch (e) {}
+        al = AlertEngine.llamadas({months:ym.list, monthsEs:MONTHS_ES, campaigns:WFM_DATA.campaigns, daysElapsed:SEPT_DAYS_ELAPSED, daysInMonth:SEPT_DAYS_TOTAL, hoyDia});
+      }
+    } catch (err){ console.error('[Alertas] llamadas:', err); }
+    if (state.ag !== '__ALL__'){
+      const vis = visibleAgs();
+      al = al.filter(a => a.sev === 'sistema' || vis.indexOf(a.op) >= 0);
+    }
+    AlertPanel.render(el, al, {id:'callsAlertPanel', title:'Alertas de Llamadas', subtitle:MONTHS_ES[N_MONTHS - 1] + ' en curso vs meses completos previos', max:5});
+  }
+
   // Vuelve a pintar TODO el dashboard con el filtro de operación / meses / búsqueda activo.
   // Se llama cada vez que cambia cualquier filtro para que absolutamente todas las
   // secciones (no solo la tabla de detalle) respeten la operación seleccionada.
@@ -1180,6 +1205,7 @@ function boot() {
     renderIdxCierre();
     if (typeof renderTopCierreByMonth === 'function') renderTopCierreByMonth();
     renderAlerts();
+    renderCallsAlerts();
     renderManual();
     renderInboundByOp();
     renderLtv();
@@ -1197,9 +1223,9 @@ function boot() {
     const el = document.getElementById('activeFilterBanner');
     if (!el) return;
     const ags = visibleAgs();
-    const monthTxt = state.months.length===N_MONTHS ? 'Ene–Sep' : state.months.map(i=>MONTHS_ES[i]).join(', ');
-    const agTxt = ags.length===1 ? ags[0] : `${currentFilterLabel()} (${ags.join(', ')})`;
-    el.innerHTML = `<strong>Filtro activo:</strong> ${agTxt} · ${monthTxt}${state.search? ` · búsqueda "${state.search}"`:''} — esta selección aplica a todas las secciones del dashboard.`;
+    const monthTxt = state.months.length===N_MONTHS ? RANGO_MESES : state.months.map(i=>MONTHS_ES[i]).join(', ');
+    const agTxt = ags.length===1 ? ags[0] : currentFilterLabel();
+    el.innerHTML = `<strong>Filtro:</strong> ${agTxt} · ${monthTxt}${state.search? ` · "${state.search}"`:''}`;
   }
 
   // ---------- Volumen mensual por grupo de agentes (respeta el filtro de operación) ----------
@@ -1221,8 +1247,10 @@ function boot() {
   // (total ÷ días del mes), no un corte "día 1 a día N" — para eso haría falta que el Sheet
   // trajera volumen diario, y hoy solo lo trae para <span class="mes-actual-min">septiembre</span> hacia adelante (vía RAW_Import).
   function daysInMonth(i){
-    const DIM = [31,28,31,30,31,30,31,31];
-    return i===SEPT_IDX ? SEPT_DAYS_ELAPSED : DIM[i];
+    if (i===SEPT_IDX) return SEPT_DAYS_ELAPSED;
+    const ym = mesesYM();                                   // días reales de cada mes (no una tabla fija de 8 meses)
+    if (ym) return new Date(Date.UTC(+ym.list[i].slice(0,4), +ym.list[i].slice(5,7), 0)).getUTCDate();
+    return [31,28,31,30,31,30,31,31,30,31,30,31][i % 12];
   }
   function renderVolByAg(){
     const tbody = document.getElementById('volByAgBody');
@@ -1230,11 +1258,11 @@ function boot() {
     const note = document.getElementById('volViewNote');
     const isDaily = state.volView === 'daily';
 
-    if (totalHeader) totalHeader.textContent = isDaily ? 'Prom. Ene–Sep' : 'Total';
+    if (totalHeader) totalHeader.textContent = isDaily ? 'Prom. ' + RANGO_MESES : 'Total';
     if (note){
       note.textContent = isDaily
-        ? `*Cada mes dividido entre sus días reales. Sep* se divide entre ${SEPT_DAYS_ELAPSED}, no entre 30 — son los días de <span class="mes-actual-min">septiembre</span> que este dashboard tiene cargados hoy (no los días del calendario que ya pasaron); ver el aviso de arriba sobre el corte de datos.`
-        : `*Septiembre es un mes parcial — este dashboard tiene cargados ${SEPT_DAYS_ELAPSED} días de datos reales (ver aviso arriba) — no lo compares directo contra un mes completo.`;
+        ? `*Cada mes dividido entre sus días reales; ${MONTHS_ES[N_MONTHS-1]} entre ${SEPT_DAYS_ELAPSED} días cargados.`
+        : `*${MONTHS_ES[N_MONTHS-1]} es parcial (${SEPT_DAYS_ELAPSED} días cargados).`;
     }
 
     let grand = Array(N_MONTHS).fill(0);
@@ -1430,7 +1458,7 @@ function boot() {
   }
 
   function computeAlerts(){
-    const FULL_MONTHS = [0,1,2,3,4,5,6,7]; // excluye septiembre (parcial)
+    const FULL_MONTHS = MONTHS.slice(0, N_MONTHS - 1).map((_, i) => i); // excluye el mes en curso (parcial)
     const ags = visibleAgs();
     const camp = WFM_DATA.campaigns.filter(c => ags.includes(c.agentGroup)).map(c => {
       const calls = sumRange(c.calls, FULL_MONTHS), c2 = sumRange(c.calls2min, FULL_MONTHS), vt = sumRange(c.ventas, FULL_MONTHS);
@@ -1474,13 +1502,13 @@ function boot() {
     const total = a.highVolLowContacto.length + a.highVolLowCierre.length + a.momDrops.length + a.momGrowth.length;
     document.getElementById('alertsCount').textContent = total + ' alerta(s) activa(s) · filtro: ' + currentFilterLabel();
     document.getElementById('alertsGrid').innerHTML =
-      alertCard('high', '🔴 Alto volumen, tasa de contacto muy baja', `Volumen ≥ mediana (${fmt(a.medVol)}) y tasa de contacto &lt; 70% de la mediana (${fmtPct(a.medContacto)}). Ene–Ago, excluye septiembre.`, a.highVolLowContacto,
+      alertCard('high', '🔴 Alto volumen, tasa de contacto muy baja', `Volumen ≥ mediana (${fmt(a.medVol)}) y contacto &lt; 70% de la mediana (${fmtPct(a.medContacto)})`, a.highVolLowContacto,
         c => `<li><span class="nm" title="${c.name} · ${c.agentGroup}">${c.name} <span class="na">· ${c.agentGroup}</span></span><span class="mt">${fmt(c.calls)} · ${fmtPct(c.rateContacto)}</span></li>`) +
-      alertCard('high', '💸 Se contacta bien pero no cierra', `Contactos suficientes pero tasa de cierre (venta ÷ contacto) muy por debajo de la mediana (${fmtPct(a.medCierre)}) — no es problema de marcación, es de oferta/guión/producto.`, a.highVolLowCierre,
+      alertCard('high', '💸 Se contacta bien pero no cierra', `Cierre muy por debajo de la mediana (${fmtPct(a.medCierre)}) con contactos suficientes`, a.highVolLowCierre,
         c => `<li><span class="nm" title="${c.name} · ${c.agentGroup}">${c.name} <span class="na">· ${c.agentGroup}</span></span><span class="mt">${fmt(c.c2)} cont. · ${fmtPct(c.rateCierre)}</span></li>`) +
-      alertCard('med', '📉 Caída fuerte <span class="mes-prev">Jul</span>→<span class="mes-ult">Ago</span> (≥25%) — posible detonante', `Campañas con volumen suficiente en ambos meses cuya llamada cayó 25% o más. El diagnóstico cruza el cambio de volumen con el de tasa de contacto para apuntar a la causa más probable.`, a.momDrops,
+      alertCard('med', '📉 Caída fuerte <span class="mes-prev">Jul</span>→<span class="mes-ult">Ago</span> (≥25%) — posible detonante', `Llamadas −25% o más entre los dos últimos meses completos`, a.momDrops,
         c => { const volD = 100*(c.cAug-c.cJul)/c.cJul; return `<li><span class="nm" title="${c.name} · ${c.agentGroup}">${c.name} <span class="na">· ${c.agentGroup}</span></span><span class="mt">${fmt(c.cJul)} → ${fmt(c.cAug)}</span><div class="diag">${diagnoseChange(volD, c.rateDeltaPP)}</div></li>`; }) +
-      alertCard('info', '📈 Subida fuerte <span class="mes-prev">Jul</span>→<span class="mes-ult">Ago</span> (≥40%) — posible detonante', `Campañas que crecieron fuerte de un mes a otro — si sigue así, hay que planear dotación para sostenerlo.`, a.momGrowth,
+      alertCard('info', '📈 Subida fuerte <span class="mes-prev">Jul</span>→<span class="mes-ult">Ago</span> (≥40%) — posible detonante', `Llamadas +40% o más entre los dos últimos meses completos`, a.momGrowth,
         c => { const volD = 100*(c.cAug-c.cJul)/c.cJul; return `<li><span class="nm" title="${c.name} · ${c.agentGroup}">${c.name} <span class="na">· ${c.agentGroup}</span></span><span class="mt">${fmt(c.cJul)} → ${fmt(c.cAug)}</span><div class="diag">${diagnoseChange(volD, c.rateDeltaPP)}</div></li>`; });
   }
 
@@ -1601,7 +1629,7 @@ function boot() {
     const deltaVentas = ventas - base.ventas;
     const out = document.getElementById('sim'+kind+'Out');
     if (out){
-      out.innerHTML = `<div class="big">${fmt(ventas)} ventas/mes</div><div class="cmp">vs. ${fmt(base.ventas)} en agosto (${deltaVentas>=0?'+':''}${fmt(deltaVentas)}) · ${fmt(calls)} llamadas · ${fmt(contactos)} contactos</div>`;
+      out.innerHTML = `<div class="big">${fmt(ventas)} ventas/mes</div><div class="cmp">vs. ${fmt(base.ventas)} en ${MES_ULT.toLowerCase()} (${deltaVentas>=0?'+':''}${fmt(deltaVentas)}) · ${fmt(calls)} llamadas · ${fmt(contactos)} contactos</div>`;
     }
   }
 
@@ -1644,7 +1672,7 @@ function boot() {
       return `<tr><td>${label}</td><td class="num">${aug===null?'—':f(aug)}</td><td class="num">${sepReal===null?'—':f(sepReal)}</td><td class="num">${sepProj===null||sepProj===undefined?'—':f(sepProj)}</td></tr>`;
     }
     const cmpTable = `<div class="table-scroll"><table>
-      <thead><tr><th>Métrica</th><th class="num">Agosto (completo)</th><th class="num"><span class="mes-actual">Septiembre</span> (real, ${SEPT_DAYS_ELAPSED} días)</th><th class="num">Septiembre (proyectado a ritmo actual)</th></tr></thead>
+      <thead><tr><th>Métrica</th><th class="num">${MES_ULT} (completo)</th><th class="num"><span class="mes-actual">Septiembre</span> (real, ${SEPT_DAYS_ELAPSED} días)</th><th class="num">${MES_ACT} (proyectado a ritmo actual)</th></tr></thead>
       <tbody>
         ${cmpRow('Llamadas Manual', mCallsAug, mCallsSep, mCallsSepProj, false)}
         ${cmpRow('Llamadas Inbound', iCallsAug, iCallsSep, iCallsSepProj, false)}
@@ -1656,11 +1684,10 @@ function boot() {
         ${cmpRow('Ventas Manual', mVtAug, mVtSep, mVtSepProj, false)}
         ${cmpRow('Ventas Inbound', iVtAug, iVtSep, iVtSepProj, false)}
       </tbody>
-    </table></div>
-    <div class="alert-empty">Las tasas no se proyectan (ya son porcentajes) — se repite el valor real de <span class="mes-actual-min">septiembre</span>. Solo el volumen y las ventas que dependen de él se proyectan al ritmo de ~9/30 días.</div>`;
+    </table></div>`;
 
     const mixHtml = `<div style="margin-top:14px;">
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Mezcla Agosto: Manual ${mixManualAug.toFixed(0)}% / Inbound ${mixInboundAug.toFixed(0)}%</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Mezcla ${MES_ULT}: Manual ${mixManualAug.toFixed(0)}% / Inbound ${mixInboundAug.toFixed(0)}%</div>
       <div class="mixbar"><span style="width:${mixManualAug}%;background:var(--series-2);">${mixManualAug>=12?'Manual '+mixManualAug.toFixed(0)+'%':''}</span><span style="width:${mixInboundAug}%;background:var(--series-1);">${mixInboundAug>=12?'Inbound '+mixInboundAug.toFixed(0)+'%':''}</span></div>
       <div style="font-size:12px;color:var(--text-muted);margin:10px 0 4px;">Mezcla <span class="mes-actual">Septiembre</span> (real): Manual ${mixManualSep.toFixed(0)}% / Inbound ${mixInboundSep.toFixed(0)}%</div>
       <div class="mixbar"><span style="width:${mixManualSep}%;background:var(--series-2);">${mixManualSep>=12?'Manual '+mixManualSep.toFixed(0)+'%':''}</span><span style="width:${mixInboundSep}%;background:var(--series-1);">${mixInboundSep>=12?'Inbound '+mixInboundSep.toFixed(0)+'%':''}</span></div>
@@ -1676,7 +1703,7 @@ function boot() {
     const subtypeRows = Object.entries(subtypeAgg).map(([name,calls]) => ({ name, aug:calls[LAST_FULL], sep:calls[SEPT_IDX] }))
       .filter(r=>r.aug>0||r.sep>0).sort((a,b)=>b.aug-a.aug);
     const subtypeHtml = subtypeRows.length ? `<div class="table-scroll"><table>
-      <thead><tr><th>Subtipo de campaña Inbound</th><th class="num">Agosto</th><th class="num"><span class="mes-actual">Septiembre</span> (real)</th><th class="num">Δ ritmo diario</th></tr></thead>
+      <thead><tr><th>Subtipo de campaña Inbound</th><th class="num">${MES_ULT}</th><th class="num"><span class="mes-actual">Septiembre</span> (real)</th><th class="num">Δ ritmo diario</th></tr></thead>
       <tbody>${subtypeRows.map(r => {
         const dailyAug = r.aug/31, dailySep = r.sep/SEPT_DAYS_ELAPSED;
         const d = dailyAug>0 ? 100*(dailySep-dailyAug)/dailyAug : null;
@@ -1698,20 +1725,19 @@ function boot() {
       seg, aug:v.aug, sep:v.sep, shareAug: 100*v.aug/totalSegAug, shareSep: 100*v.sep/totalSegSep,
     })).sort((a,b)=> b.aug-a.aug).slice(0,8);
     const segHtml = `<div class="table-scroll"><table>
-      <thead><tr><th>Segmento (ltv_type)</th><th class="num">% de llamadas Agosto</th><th class="num">% de llamadas Septiembre</th><th class="num">Δ pp de participación</th></tr></thead>
+      <thead><tr><th>Segmento (ltv_type)</th><th class="num">% de llamadas ${MES_ULT}</th><th class="num">% de llamadas ${MES_ACT}</th><th class="num">Δ pp de participación</th></tr></thead>
       <tbody>${segRows.map(r => `<tr><td>${r.seg}</td><td class="num">${fmtPct(r.shareAug)}</td><td class="num">${fmtPct(r.shareSep)}</td><td class="num">${fmtDeltaPP(r.shareSep-r.shareAug)}</td></tr>`).join('')}</tbody>
-    </table></div>
-    <div class="alert-empty">"Segmento" aquí es el ltv_type (momento del ciclo de vida del estudiante) — es distinto del "grupo de agentes" (ej. Recurrence - VIP), que es el filtro de operación de arriba.</div>`;
+    </table></div>`;
 
     // Palancas (narrativa data-driven)
     const levers = [];
     if (mRateSep!==null && mRateAug!==null && Math.abs(mRateSep-mRateAug)>=1.5){
       const d = mRateSep-mRateAug;
-      levers.push(`<b>Manual — tasa de contacto:</b> ${d>0?'subió':'bajó'} de ${fmtPct(mRateAug)} (agosto) a ${fmtPct(mRateSep)} (septiembre, ${SEPT_DAYS_ELAPSED} días) — ${fmtDeltaPP(d)}. ${d>0? 'Si se sostiene, mejora el embudo sin necesidad de más volumen.':'Palanca a revisar antes de subir volumen: guion, horario de marcación o calidad de la base.'}`);
+      levers.push(`<b>Manual — tasa de contacto:</b> ${d>0?'subió':'bajó'} de ${fmtPct(mRateAug)} (${MES_ULT.toLowerCase()}) a ${fmtPct(mRateSep)} (${MES_ACT.toLowerCase()}, ${SEPT_DAYS_ELAPSED} días) — ${fmtDeltaPP(d)}. ${d>0? 'Si se sostiene, mejora el embudo sin necesidad de más volumen.':'Palanca a revisar antes de subir volumen: guion, horario de marcación o calidad de la base.'}`);
     }
     if (iRateSep!==null && iRateAug!==null && Math.abs(iRateSep-iRateAug)>=1.5){
       const d = iRateSep-iRateAug;
-      levers.push(`<b>Inbound — tasa de contacto:</b> ${d>0?'subió':'bajó'} de ${fmtPct(iRateAug)} (agosto) a ${fmtPct(iRateSep)} (septiembre, ${SEPT_DAYS_ELAPSED} días) — ${fmtDeltaPP(d)}.`);
+      levers.push(`<b>Inbound — tasa de contacto:</b> ${d>0?'subió':'bajó'} de ${fmtPct(iRateAug)} (${MES_ULT.toLowerCase()}) a ${fmtPct(iRateSep)} (${MES_ACT.toLowerCase()}, ${SEPT_DAYS_ELAPSED} días) — ${fmtDeltaPP(d)}.`);
     }
     if (mCierreSep!==null && mCierreAug!==null && Math.abs(mCierreSep-mCierreAug)>=2){
       const d = mCierreSep-mCierreAug;
@@ -1722,12 +1748,12 @@ function boot() {
       levers.push(`<b>Inbound — tasa de cierre:</b> pasó de ${fmtPct(iCierreAug)} a ${fmtPct(iCierreSep)} (${fmtDeltaPP(d)}).`);
     }
     if (totalAug>0 && totalSep>0 && Math.abs(mixManualSep-mixManualAug)>=5){
-      levers.push(`<b>Mezcla Manual/Inbound:</b> agosto ${mixManualAug.toFixed(0)}%/${mixInboundAug.toFixed(0)}% → septiembre ${mixManualSep.toFixed(0)}%/${mixInboundSep.toFixed(0)}% — se está inclinando hacia ${mixManualSep>mixManualAug?'Manual':'Inbound'}. ${iRateAug!==null && mRateAug!==null && iRateAug>mRateAug ? 'Como el Inbound suele contactar mejor, empujar más volumen ahí (más horario/visibilidad para que llamen) es una palanca de contacto.' : ''}`);
+      levers.push(`<b>Mezcla Manual/Inbound:</b> ${MES_ULT.toLowerCase()} ${mixManualAug.toFixed(0)}%/${mixInboundAug.toFixed(0)}% → ${MES_ACT.toLowerCase()} ${mixManualSep.toFixed(0)}%/${mixInboundSep.toFixed(0)}% — se está inclinando hacia ${mixManualSep>mixManualAug?'Manual':'Inbound'}. ${iRateAug!==null && mRateAug!==null && iRateAug>mRateAug ? 'Como el Inbound suele contactar mejor, empujar más volumen ahí (más horario/visibilidad para que llamen) es una palanca de contacto.' : ''}`);
     }
     const dailyAugTotal = totalAug/31, dailySepTotal = totalSep/SEPT_DAYS_ELAPSED;
     if (dailyAugTotal>0 && Math.abs(100*(dailySepTotal-dailyAugTotal)/dailyAugTotal)>=10){
       const d = 100*(dailySepTotal-dailyAugTotal)/dailyAugTotal;
-      levers.push(`<b>Ritmo diario de llamadas:</b> ${fmt(dailyAugTotal)} llamadas/día en agosto vs. ${fmt(dailySepTotal)} llamadas/día en lo que va de <span class="mes-actual-min">septiembre</span> (${fmtDeltaPct(d)}). ${d<0? 'Si se mantiene este ritmo, septiembre cierra por debajo de agosto en volumen — palanca de dotación/discado.':'El ritmo de marcación va por encima de agosto.'}`);
+      levers.push(`<b>Ritmo diario de llamadas:</b> ${fmt(dailyAugTotal)} llamadas/día en ${MES_ULT.toLowerCase()} vs. ${fmt(dailySepTotal)} llamadas/día en lo que va de <span class="mes-actual-min">septiembre</span> (${fmtDeltaPct(d)}). ${d<0? `Si se mantiene este ritmo, ${MES_ACT.toLowerCase()} cierra por debajo de ${MES_ULT.toLowerCase()} en volumen — palanca de dotación/discado.`:`El ritmo de marcación va por encima de ${MES_ULT.toLowerCase()}.`}`);
     }
     if (!levers.length) levers.push(`Con los ${SEPT_DAYS_ELAPSED} días de <span class="mes-actual-min">septiembre</span> disponibles no hay cambios de mezcla o de tasas por encima del umbral — todavía es pronto para concluir; vuelve a revisar en unos días.`);
 
@@ -1744,8 +1770,8 @@ function boot() {
       function calcCard(kind, label, base){
         if (!base) return `<div class="sim-card"><h4>${label}</h4><div class="alert-empty">${ag} no tiene campañas de este tipo.</div></div>`;
         return `<div class="sim-card">
-          <h4>${label} — línea base: agosto</h4>
-          <div class="sim-row"><span>Δ% volumen vs. agosto</span><input type="number" id="sim${kind}Vol" value="0" step="5" oninput="calcSim('${kind}')"></div>
+          <h4>${label} — línea base: ${MES_ULT.toLowerCase()}</h4>
+          <div class="sim-row"><span>Δ% volumen vs. ${MES_ULT.toLowerCase()}</span><input type="number" id="sim${kind}Vol" value="0" step="5" oninput="calcSim('${kind}')"></div>
           <div class="sim-row"><span>Tasa de contacto objetivo (%)</span><input type="number" id="sim${kind}Contacto" value="${base.rate===null?0:base.rate.toFixed(1)}" step="0.5" oninput="calcSim('${kind}')"></div>
           <div class="sim-row"><span>Tasa de cierre objetivo (%)</span><input type="number" id="sim${kind}Cierre" value="${base.cierre===null?0:base.cierre.toFixed(1)}" step="0.5" oninput="calcSim('${kind}')"></div>
           <div class="sim-out" id="sim${kind}Out"></div>
@@ -1754,7 +1780,7 @@ function boot() {
       calcHtml = `<div class="sim-grid">${calcCard('Manual','📞 Manual Outbound', SIM_BASE.manual)}${calcCard('Inbound','☎️ Inbound', SIM_BASE.inbound)}</div>`;
     } else {
       SIM_BASE = null;
-      calcHtml = `<div class="sim-note">Selecciona una operación específica (ej. "Recurrence - VIP") en el filtro de arriba — no "Todos" ni "Recurrence (todos)" — para activar la calculadora "¿qué pasaría si...?" de esa operación.</div>`;
+      calcHtml = `<div class="sim-note">Elige una operación puntual en el filtro para activar el simulador.</div>`;
     }
 
     el.innerHTML = `
@@ -1852,13 +1878,12 @@ function boot() {
     return `<div class="camp-detail">
       <div class="camp-detail-note"><strong>Pertenece a ${entry.agentGroups.length} grupo(s) de agentes:</strong></div>
       <div class="camp-ag-badges" style="margin-bottom:10px;">${badges}</div>
-      <div class="month-scope-note">Las 3 tablas de abajo van de <strong>enero a septiembre 2026</strong>, mes por columna, de izquierda a derecha (Sep* = parcial). En "Tasa de contacto" y "Tasa de cierre", el número entre paréntesis debajo del % es el volumen real de ese mes.</div>
       <h5>Volumen mensual</h5>
-      <div class="table-scroll"><table><thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num month-total">Total Ene–Sep</th></tr></thead><tbody id="${volId}"></tbody></table></div>
-      <h5>Tasa de contacto mensual <small>% de contacto (+2min) sobre llamadas · debajo, volumen de contactos</small></h5>
-      <div class="table-scroll"><table><thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num month-total">Total Ene–Sep</th></tr></thead><tbody id="${contId}"></tbody></table></div>
-      <h5>Tasa de cierre mensual <small>% de ventas sobre contactos · debajo, volumen de ventas</small></h5>
-      <div class="table-scroll"><table><thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num month-total">Total Ene–Sep</th></tr></thead><tbody id="${cierId}"></tbody></table></div>
+      <div class="table-scroll"><table><thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num month-total">Total ${RANGO_MESES}</th></tr></thead><tbody id="${volId}"></tbody></table></div>
+      <h5>Tasa de contacto mensual</h5>
+      <div class="table-scroll"><table><thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num month-total">Total ${RANGO_MESES}</th></tr></thead><tbody id="${contId}"></tbody></table></div>
+      <h5>Tasa de cierre mensual</h5>
+      <div class="table-scroll"><table><thead><tr><th>Grupo de agentes</th><th class="num meses-ph"></th><th class="num month-total">Total ${RANGO_MESES}</th></tr></thead><tbody id="${cierId}"></tbody></table></div>
       ${!multi? '<div class="alert-empty">Esta campaña solo tiene datos en un grupo de agentes en el filtro actual.</div>':''}
     </div>`;
   }
@@ -2158,6 +2183,9 @@ function boot() {
     set('.mes-actual-min', actual.toLowerCase());
     set('.dias-mes', SEPT_DAYS_ELAPSED);
     set('.dias-total', SEPT_DAYS_TOTAL);
+    set('.rango-meses', RANGO_MESES);
+    const pb = document.getElementById('periodBadge'), ymx = mesesYM();
+    if (pb) pb.innerHTML = '<span class="dot"></span> ' + MONTHS_ES[0] + ' – ' + MONTHS_ES[N_MONTHS-1] + (ymx ? ' ' + ymx.last.slice(0,4) : '') + ' · ' + MONTHS_ES[N_MONTHS-1] + ' parcial (' + SEPT_DAYS_ELAPSED + '/' + SEPT_DAYS_TOTAL + ' días)';
   }
   pintarEtiquetasDinamicas();
 
@@ -3875,6 +3903,231 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
 });
 
 </script>
+<script id="alertEngineScript">
+/*
+ * alert_engine.js · Alertas de Resultados (Planif_2026, diario) y de Llamadas (mensual) — sin DOM, probado con Node.
+ * Aprende del propio histórico: cada alerta compara el mes en curso contra el mes anterior al mismo corte,
+ * contra el mismo día de la semana de las últimas semanas y contra los últimos meses completos.
+ * Severidades: sistema (datos) · critico · atencion · info.
+ */
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory();
+  else root.AlertEngine = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+  var OPK = [['postventa_total', 'Post-Venta'], ['upsell', '2.1 Upsell'], ['rec22', '2.2 Recurrence'], ['resurrection', 'Resurrection'], ['bootcamp', '2.5 Bootcamp']];
+  var DOWC = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  var MES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  var RANK = { sistema: 0, critico: 1, atencion: 2, info: 3 };
+
+  function M(n) { return (n < 0 ? '-' : '') + '$' + Math.abs(Math.round(n)).toLocaleString('es-CO'); }
+  function SM(n) { return (n < 0 ? '-' : '+') + '$' + Math.abs(Math.round(n)).toLocaleString('es-CO'); }
+  function P(n) { return Math.round(n) + '%'; }
+  function F1(n) { return (Math.round(n * 10) / 10).toLocaleString('es-CO'); }
+  function dow(f) { return new Date(f + 'T00:00:00Z').getUTCDay(); }
+  function addDays(f, n) { var d = new Date(f + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+  function fc(f) { return DOWC[dow(f)] + ' ' + f.slice(8) + '-' + MES[+f.slice(5, 7) - 1].toLowerCase(); }
+  function mesLbl(f) { return MES[+f.slice(5, 7) - 1] + ' ' + f.slice(0, 4); }
+  function median(a) { var s = a.slice().sort(function (x, y) { return x - y; }), n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; }
+  function sum(a, f) { var s = 0; for (var i = 0; i < a.length; i++) s += f(a[i]) || 0; return s; }
+
+  function rowsOf(det) {
+    return (det && det.dias || []).map(function (d) {
+      return { f: d.fecha, closed: d.status === 'elapsed', rp: d.rev_plan || 0, rr: d.rev_real, vp: d.ventas_plan, vr: d.ventas_real };
+    });
+  }
+
+  /* ==================== RESULTADOS ==================== */
+  function resultados(ctx) {
+    var cur = ctx.cur || {}, prev = ctx.prev || null, out = [], mesTxt = ctx.mes ? MES[+ctx.mes.slice(5, 7) - 1] + ' ' + ctx.mes.slice(0, 4) : '';
+    var seq = 0;
+    function push(a) { a.id = 'r' + (seq++); a.cat = a.cat || 'resultados'; out.push(a); }
+
+    if (ctx.incompleto) {
+      var ic = ctx.incompleto;
+      push({ sev: 'sistema', cat: 'sistema', titulo: 'Datos incompletos del ' + fc(ic.fecha), texto: 'El Sheet trae solo ' + M(ic.real) + ' de ' + M(ic.plan) + ' del plan (' + P(100 * ic.real / ic.plan) + '). Se excluyó ese día de cumplimiento, proyección y alertas hasta que termine de cargar.', badge: fc(ic.fecha) });
+    }
+    if (ctx.apHasta && ctx.corte && ctx.apHasta < addDays(ctx.corte, -1)) {
+      push({ sev: 'sistema', cat: 'sistema', titulo: 'Agent Performance desactualizado', texto: 'Las pestañas de agentes llegan hasta ' + fc(ctx.apHasta) + ' y el corte de resultados es ' + fc(ctx.corte) + ': la causa raíz por agente puede no incluir los últimos días.', badge: fc(ctx.apHasta) });
+    }
+
+    OPK.forEach(function (ok) {
+      var key = ok[0], label = ok[1], det = cur[key]; if (!det) return;
+      var rows = rowsOf(det), closed = rows.filter(function (r) { return r.closed; });
+      if (closed.length < 2) return;
+      var prows = prev && prev[key] ? rowsOf(prev[key]) : null;
+      var planMes = sum(rows, function (r) { return r.rp; });
+      var planMtd = sum(closed, function (r) { return r.rp; }), realMtd = sum(closed, function (r) { return r.rr; });
+      if (!(planMtd > 0)) return;
+      var cumpl = 100 * realMtd / planMtd, gap = realMtd - planMtd;
+      var planRest = planMes - planMtd, proy = realMtd + (cumpl / 100) * planRest, gapProy = proy - planMes;
+      var last = closed[closed.length - 1].f;
+
+      // R1 · cumplimiento acumulado del mes
+      var sev1 = cumpl < 85 ? 'critico' : cumpl < 95 ? 'atencion' : cumpl >= 105 ? 'info' : null;
+      if (sev1) push({ sev: sev1, op: key, label: label, titulo: label + ': ' + P(cumpl) + ' del plan a la fecha',
+        texto: 'Real ' + M(realMtd) + ' vs plan ' + M(planMtd) + ' (gap ' + SM(gap) + '). Al ritmo actual cierra en ' + M(proy) + ', ' + SM(gapProy) + ' (' + (gapProy >= 0 ? '+' : '') + F1(100 * gapProy / planMes) + '%) frente al plan del mes.',
+        badge: mesTxt, fecha: last });
+
+      // R3 · racha bajo el plan
+      var st = 0, stGap = 0, stPlan = 0;
+      for (var i = closed.length - 1; i >= 0; i--) { var r = closed[i]; if (!(r.rp > 0)) continue; if (r.rr / r.rp < 0.95) { st++; stGap += r.rr - r.rp; stPlan += r.rp; } else break; }
+      if (st >= 3) push({ sev: st >= 5 ? 'critico' : 'atencion', op: key, label: label, titulo: label + ': ' + st + ' días seguidos bajo el plan',
+        texto: 'Desde ' + fc(closed.filter(function (r) { return r.rp > 0; }).slice(-st)[0].f) + ' viene en ' + P(100 * (stPlan + stGap) / stPlan) + ' del plan, ' + SM(stGap) + ' acumulados en la racha.', badge: fc(last), fecha: last });
+
+      // R4 · últimos días vs el mismo día de la semana en semanas previas (mes en curso + mes anterior)
+      var hist = (prows || []).filter(function (r) { return r.closed !== false && r.rp > 0 && r.rr != null; }).concat(closed.filter(function (r) { return r.rp > 0; }));
+      closed.slice(-3).forEach(function (r) {
+        if (!(r.rp > 0) || r.f === ctx.excluirFecha) return;
+        var d = dow(r.f);
+        var same = hist.filter(function (h) { return dow(h.f) === d && h.f < r.f; }).slice(-4);
+        if (same.length < 2) return;
+        var base = median(same.map(function (h) { return 100 * h.rr / h.rp; })), now = 100 * r.rr / r.rp, diff = now - base;
+        if (diff <= -25) push({ sev: now >= 95 ? 'info' : (diff <= -40 && now < 85 ? 'critico' : 'atencion'), op: key, label: label, titulo: label + ' · ' + fc(r.f) + ': ' + P(now) + ' del plan',
+          texto: 'Lo habitual de ' + ['domingos', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábados'][d] + ' (últimos ' + same.length + ') es ' + P(base) + ': ' + Math.round(Math.abs(diff)) + ' pp por debajo. Real ' + M(r.rr) + ' vs plan ' + M(r.rp) + '.', badge: fc(r.f), fecha: r.f });
+        else if (diff >= 30) push({ sev: 'info', op: key, label: label, titulo: label + ' · ' + fc(r.f) + ': ' + P(now) + ' del plan',
+          texto: 'Muy por encima de lo habitual de ese día (' + P(base) + '). Real ' + M(r.rr) + ' vs plan ' + M(r.rp) + '.', badge: fc(r.f), fecha: r.f });
+      });
+
+      // R5 · volumen vs ticket (ASP)
+      var vclosed = closed.filter(function (r) { return r.vp != null && r.vr != null; });
+      if (cumpl < 95 && vclosed.length >= 3) {
+        var vp = sum(vclosed, function (r) { return r.vp; }), vr = sum(vclosed, function (r) { return r.vr; }), rr = sum(vclosed, function (r) { return r.rr; }), rp = sum(vclosed, function (r) { return r.rp; });
+        if (vp > 0 && vr > 0) {
+          var vc = 100 * vr / vp, aspR = rr / vr, aspP = rp / vp, ac = 100 * aspR / aspP;
+          if (vc >= 97 && ac < 95) push({ sev: cumpl < 85 ? 'critico' : 'atencion', op: key, label: label, titulo: label + ': el faltante es de ticket, no de volumen',
+            texto: 'Las ventas van en ' + P(vc) + ' del plan (' + F1(vr) + ' vs ' + F1(vp) + ') pero el ASP real es $' + Math.round(aspR) + ' vs $' + Math.round(aspP) + ' del plan (' + P(ac) + ').', badge: mesTxt, fecha: last });
+          else if (vc < 90 && ac >= 98) push({ sev: cumpl < 85 ? 'critico' : 'atencion', op: key, label: label, titulo: label + ': el faltante es de volumen',
+            texto: 'Ventas en ' + P(vc) + ' del plan (' + F1(vr) + ' vs ' + F1(vp) + ') con ASP en línea ($' + Math.round(aspR) + ' vs $' + Math.round(aspP) + '): faltan ' + F1(vp - vr) + ' ventas a la fecha.', badge: mesTxt, fecha: last });
+        }
+      }
+
+      // R6 · ritmo vs el mes anterior al mismo corte
+      if (prows && prows.length >= closed.length) {
+        var k = closed.length, pk = prows.slice(0, k), ppl = sum(pk, function (r) { return r.rp; }), prl = sum(pk, function (r) { return r.rr; });
+        if (ppl > 0) {
+          var pc = 100 * prl / ppl, dd = cumpl - pc;
+          if (dd <= -10 && cumpl < 100) push({ sev: 'atencion', op: key, label: label, titulo: label + ': va ' + Math.round(-dd) + ' pp peor que el mes pasado',
+            texto: 'Al día ' + k + ' del mes anterior estaba en ' + P(pc) + ' del plan; hoy va en ' + P(cumpl) + '.', badge: mesTxt, fecha: last });
+          else if (dd >= 10 && cumpl >= 100) push({ sev: 'info', op: key, label: label, titulo: label + ': va ' + Math.round(dd) + ' pp mejor que el mes pasado',
+            texto: 'Al día ' + k + ' del mes anterior estaba en ' + P(pc) + ' del plan; hoy va en ' + P(cumpl) + '.', badge: mesTxt, fecha: last });
+        }
+      }
+
+      // R7 · último fin de semana (viernes a domingo) vs fines de semana previos
+      var fri = null;
+      for (var j = closed.length - 1; j >= 0; j--) { if (dow(closed[j].f) === 5) { fri = closed[j].f; break; } }
+      if (fri) {
+        var blk = function (rs, fr) { var ds = rs.filter(function (r) { return r.f >= fr && r.f <= addDays(fr, 2) && r.closed !== false && r.rr != null; }); var p = sum(ds, function (r) { return r.rp; }); return p > 0 ? { n: ds.length, p: p, r: sum(ds, function (r) { return r.rr; }), c: 100 * sum(ds, function (r) { return r.rr; }) / p } : null; };
+        var b = blk(closed, fri);
+        if (b && b.c < 90) {
+          var prevB = [], all = (prows || []).concat(closed);
+          all.forEach(function (r) { if (dow(r.f) === 5 && r.f < fri) { var x = blk(all, r.f); if (x && x.n === 3) prevB.push(x.c); } });
+          var pb = prevB.slice(-3);
+          push({ sev: b.c < 75 ? 'critico' : 'atencion', op: key, label: label, titulo: label + ' · Vie–Dom ' + fri.slice(8) + '–' + addDays(fri, 2).slice(8) + '/' + fri.slice(5, 7) + ': ' + P(b.c) + ' del plan',
+            texto: 'Real ' + M(b.r) + ' vs plan ' + M(b.p) + ' (' + SM(b.r - b.p) + ').' + (pb.length ? ' Los fines de semana previos: ' + pb.map(P).join(', ') + '.' : ''), badge: 'Vie–Dom ' + fri.slice(8) + '/' + fri.slice(5, 7), fecha: addDays(fri, 2), fin: true });
+        }
+      }
+    });
+    return finish(out);
+  }
+
+  /* ==================== LLAMADAS (mensual, mes en curso parcial) ==================== */
+  function llamadas(ctx) {
+    var out = [], seq = 0, N = ctx.months.length, cur = N - 1, de = ctx.daysElapsed || 0, dim = ctx.daysInMonth || 30;
+    var mesTxt = ctx.monthsEs[cur] + ' ' + ctx.months[cur].slice(0, 4);
+    function push(a) { a.id = 'c' + (seq++); a.cat = 'llamadas'; a.badge = a.badge || mesTxt; out.push(a); }
+    if (de < 3) return out;
+    var DIM = ctx.months.map(function (m) { return new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)).getUTCDate(); });
+    // meses previos con volumen/día muy por debajo de lo normal = carga incompleta del Sheet: no sirven de base
+    var perDay = ctx.months.map(function (m, i) { return i < cur ? sum(ctx.campaigns, function (c) { return c.calls[i]; }) / DIM[i] : null; });
+    var med = median(perDay.filter(function (x) { return x != null && x > 0; })), bad = {};
+    perDay.forEach(function (x, i) { if (x != null && med && x < 0.5 * med) bad[i] = true; });
+    var baseIdx = []; for (var i = cur - 1; i >= 0 && baseIdx.length < 3; i--) if (!bad[i]) baseIdx.push(i);
+    if (baseIdx.length < 2) return out;
+    Object.keys(bad).forEach(function (i) { i = +i; if (i < cur && i >= cur - 3) push({ sev: 'sistema', titulo: ctx.monthsEs[i] + ' ' + ctx.months[i].slice(0, 4) + ' parece incompleto en Llamadas', texto: Math.round(perDay[i]).toLocaleString('es-CO') + ' llamadas/día vs ' + Math.round(med).toLocaleString('es-CO') + ' en un mes típico: el Sheet probablemente dejó de cargar ese mes. Se excluyó de la base de comparación.', badge: ctx.monthsEs[i] }); });
+    if (ctx.hoyDia && ctx.hoyDia - de >= 3) push({ sev: 'sistema', titulo: 'Llamadas cargadas hasta el día ' + de, texto: 'Hoy es día ' + ctx.hoyDia + ' y el Sheet de llamadas trae ' + de + ' días: las comparaciones usan promedios diarios, pero no incluyen los últimos días.', badge: de + '/' + dim + ' días' });
+    var groups = {}; ctx.campaigns.forEach(function (c) { (groups[c.agentGroup] = groups[c.agentGroup] || []).push(c); });
+    var list = Object.keys(groups).sort().map(function (g) { return [g, groups[g]]; }); list.push(['Todas las operaciones', ctx.campaigns]);
+    function agg(cs, idx) { return { calls: sum(cs, function (c) { return c.calls[idx]; }), c2: sum(cs, function (c) { return c.calls2min[idx]; }), v: sum(cs, function (c) { return c.ventas[idx]; }) }; }
+    function rel(a, b) { return b > 0 ? 100 * (a / b - 1) : null; }
+    list.forEach(function (gc) {
+      var g = gc[0], cs = gc[1], c = agg(cs, cur), tot = g === 'Todas las operaciones';
+      if (tot && list.length === 2) return;                    // un solo grupo: el total es idéntico
+      var base = baseIdx.map(function (i) { return agg(cs, i); });
+      var bCallsDay = sum(baseIdx, function (i, k) { return 0; });
+      var bc = 0, bd = 0, bC2 = 0, bV = 0, bCalls = 0; baseIdx.forEach(function (i, k) { bc += base[k].calls / DIM[i]; bd++; bC2 += base[k].c2; bV += base[k].v; bCalls += base[k].calls; });
+      var baseCallsDay = bc / bd, baseVDay = sum(baseIdx, function (i) { var a = agg(cs, i); return a.v / DIM[i]; }) / bd;
+      if (baseCallsDay * 30 < 3000) return;                   // sin volumen suficiente para comparar
+      var callsDay = c.calls / de, vDay = c.v / de, rc = c.calls ? 100 * c.c2 / c.calls : null, bRc = bCalls ? 100 * bC2 / bCalls : null;
+      var rv = c.c2 ? 100 * c.v / c.c2 : null, bRv = bC2 ? 100 * bV / bC2 : null;
+      var vol = rel(callsDay, baseCallsDay), vd = baseVDay > 0 ? rel(vDay, baseVDay) : null, rcRel = rel(rc, bRc), rvRel = rel(rv, bRv);
+      var tag = tot ? 'Todas las operaciones' : g;
+      var ctxTxt = ' (' + de + ' de ' + dim + ' días del mes vs promedio de los últimos ' + bd + ' meses completos)';
+      if (vol != null && (vol <= -15 || vol >= 25)) push({ sev: vol <= -30 ? 'critico' : vol <= -15 ? 'atencion' : 'info', op: g, label: tag, tipo: 'volumen', valor: vol, titulo: tag + ': llamadas por día ' + (vol < 0 ? 'bajaron ' : 'subieron ') + Math.abs(Math.round(vol)) + '%',
+        texto: Math.round(callsDay).toLocaleString('es-CO') + ' llamadas/día vs ' + Math.round(baseCallsDay).toLocaleString('es-CO') + ' habituales' + ctxTxt + '. Proyección del mes: ' + Math.round(callsDay * dim).toLocaleString('es-CO') + '.', badge: de + '/' + dim + ' días' });
+      if (rcRel != null && (rcRel <= -10 || rcRel >= 10)) push({ sev: rcRel <= -20 ? 'critico' : rcRel <= -10 ? 'atencion' : 'info', op: g, label: tag, tipo: 'contacto', valor: rcRel, titulo: tag + ': tasa de contacto ' + (rcRel < 0 ? 'cayó a ' : 'subió a ') + F1(rc) + '%',
+        texto: 'Contactos (+2 min) ÷ llamadas: ' + F1(rc) + '% vs ' + F1(bRc) + '% habitual (' + (rc - bRc >= 0 ? '+' : '') + F1(rc - bRc) + ' pp)' + ctxTxt + '.', badge: de + '/' + dim + ' días' });
+      if (rvRel != null && bV >= 20 && c.v >= 5 && (rvRel <= -10 || rvRel >= 10)) push({ sev: rvRel <= -20 ? 'critico' : rvRel <= -10 ? 'atencion' : 'info', op: g, label: tag, tipo: 'cierre', valor: rvRel, titulo: tag + ': tasa de cierre ' + (rvRel < 0 ? 'cayó a ' : 'subió a ') + F1(rv) + '%',
+        texto: 'Ventas ÷ contactos: ' + F1(rv) + '% vs ' + F1(bRv) + '% habitual (' + (rv - bRv >= 0 ? '+' : '') + F1(rv - bRv) + ' pp)' + ctxTxt + '.', badge: de + '/' + dim + ' días' });
+      if (vd != null && bV >= 20 && (vd <= -20 || vd >= 20)) push({ sev: vd <= -35 ? 'critico' : vd <= -20 ? 'atencion' : 'info', op: g, label: tag, tipo: 'ventas', valor: vd, titulo: tag + ': ventas por día ' + (vd < 0 ? 'bajaron ' : 'subieron ') + Math.abs(Math.round(vd)) + '%',
+        texto: F1(vDay) + ' ventas/día vs ' + F1(baseVDay) + ' habituales' + ctxTxt + '. Proyección del mes: ' + Math.round(vDay * dim).toLocaleString('es-CO') + ' ventas.', badge: de + '/' + dim + ' días' });
+    });
+    // campañas que más pesan en la caída de ventas
+    var camp = ctx.campaigns.map(function (c) {
+      var bv = sum(baseIdx, function (i) { return c.ventas[i] / DIM[i]; }) / baseIdx.length, cv = c.ventas[cur] / de;
+      return { n: c.name, g: c.agentGroup, bv: bv, cv: cv, d: (bv - cv) };
+    }).filter(function (x) { return x.bv * 30 >= 15; }).sort(function (a, b) { return b.d - a.d; });
+    var drop = camp.filter(function (x) { return x.d > 0 && x.cv < x.bv * 0.7; }).slice(0, 3);
+    if (drop.length) push({ sev: 'atencion', op: 'campanas', label: 'Campañas', tipo: 'campanas', titulo: 'Campañas que más restan ventas por día',
+      texto: drop.map(function (x) { return x.n + ' (' + x.g + '): ' + F1(x.cv) + ' vs ' + F1(x.bv) + '/día'; }).join(' · ') + '.', badge: de + '/' + dim + ' días' });
+    return finish(out);
+  }
+
+  function finish(a) {
+    a.sort(function (x, y) { return (RANK[x.sev] - RANK[y.sev]) || ((y.fecha || '') > (x.fecha || '') ? 1 : -1); });
+    return a;
+  }
+  return { resultados: resultados, llamadas: llamadas, OPK: OPK };
+});
+
+</script>
+<script id="alertPanelScript">
+/* alert_panel.js · panel de alertas reutilizable (Todas · Sistema · Críticas · Atención · Info) */
+(function (root) {
+  'use strict';
+  var STATE = {};
+  var SEV = [['sistema', 'Sistema', 'var(--text-muted)'], ['critico', 'Críticas', 'var(--bad)'], ['atencion', 'Atención', 'var(--series-2)'], ['info', 'Info', 'var(--series-1)']];
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+  function render(el, alerts, opts) {
+    if (!el) return;
+    opts = opts || {};
+    var id = opts.id || el.id || 'al', st = STATE[id] || (STATE[id] = { f: 'todas', open: true, more: false });
+    alerts = alerts || [];
+    if (!alerts.length) { el.innerHTML = ''; return; }
+    var cnt = { sistema: 0, critico: 0, atencion: 0, info: 0 };
+    alerts.forEach(function (a) { cnt[a.sev]++; });
+    var sub = SEV.filter(function (s) { return cnt[s[0]]; }).map(function (s) { return cnt[s[0]] + ' ' + ({ sistema: 'de sistema', critico: 'críticas', atencion: 'de atención', info: 'informativas' })[s[0]]; }).join(' · ');
+    var list = st.f === 'todas' ? alerts : alerts.filter(function (a) { return a.sev === st.f; });
+    var max = opts.max || 8, shown = st.more ? list : list.slice(0, max);
+    var pills = '<button class="al-pill ' + (st.f === 'todas' ? 'active' : '') + '" data-f="todas">Todas</button>' + SEV.map(function (s) {
+      return cnt[s[0]] ? '<button class="al-pill ' + (st.f === s[0] ? 'active' : '') + '" data-f="' + s[0] + '"><i style="background:' + s[2] + '"></i>' + s[1] + ' <span>' + cnt[s[0]] + '</span></button>' : '';
+    }).join('');
+    el.innerHTML = '<div class="al-panel"><div class="al-head"><div><h3>🔔 ' + esc(opts.title || 'Alertas') + '</h3><div class="al-sub">' + esc(sub) + (opts.subtitle ? ' · ' + esc(opts.subtitle) : '') + '</div></div>' +
+      '<button class="al-toggle" data-t="1">' + (st.open ? 'Ocultar alertas' : 'Ver alertas') + ' <b>' + alerts.length + '</b></button></div>' +
+      (st.open ? '<div class="al-pills">' + pills + '</div><div class="al-list">' + shown.map(function (a, i) {
+        return '<div class="al-item ' + a.sev + (a.go ? ' go' : '') + '" data-i="' + alerts.indexOf(a) + '"><span class="al-dot"></span><div class="al-m"><div class="al-t">' + esc(a.titulo) + '</div><div class="al-d">' + esc(a.texto) + '</div></div>' +
+          (a.badge ? '<span class="al-b">' + esc(a.badge) + '</span>' : '') + '</div>';
+      }).join('') + (list.length > max ? '<button class="al-more" data-more="1">' + (st.more ? 'Ver menos' : 'Ver las ' + list.length + ' alertas') + '</button>' : '') + '</div>' : '') + '</div>';
+    el.querySelector('[data-t]').addEventListener('click', function () { st.open = !st.open; render(el, alerts, opts); });
+    Array.prototype.forEach.call(el.querySelectorAll('.al-pill'), function (b) { b.addEventListener('click', function () { st.f = b.dataset.f; st.more = false; render(el, alerts, opts); }); });
+    var mb = el.querySelector('[data-more]'); if (mb) mb.addEventListener('click', function () { st.more = !st.more; render(el, alerts, opts); });
+    Array.prototype.forEach.call(el.querySelectorAll('.al-item.go'), function (n) { n.addEventListener('click', function () { if (opts.onOpen) opts.onOpen(alerts[+n.dataset.i]); }); });
+  }
+  root.AlertPanel = { render: render };
+})(typeof self !== 'undefined' ? self : this);
+
+</script>
 <script id="ctAppScript">
 /* ===================================================================
    Post-Venta · WFM Control Tower
@@ -3902,6 +4155,27 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     el.textContent = msg;
   }
 
+  // Si el último día "cerrado" trae una fracción mínima de su plan mientras los días previos venían normales,
+  // casi seguro el Sheet todavía lo está cargando: se trata como "en curso" (no cuenta en cumplimiento,
+  // proyección ni alertas) y se avisa en el panel de alertas.
+  function computeConGuarda(payload){
+    const D = PostventaLive.computeControlTowerData(payload);
+    try {
+      const dias = D.detalle && D.detalle.postventa_total ? D.detalle.postventa_total.dias.filter(d => d.status === 'elapsed') : [];
+      const last = dias[dias.length - 1];
+      if (last && dias.length >= 6 && last.rev_plan > 0 && payload.hoy > last.fecha){
+        const rs = dias.slice(0, -1).slice(-7).filter(d => d.rev_plan > 0).map(d => d.rev_real / d.rev_plan).sort((a, b) => a - b);
+        const med = rs.length ? rs[Math.floor(rs.length / 2)] : null, r = (last.rev_real || 0) / last.rev_plan;
+        if (med && med >= 0.5 && r < 0.45 && r < 0.6 * med && r < 0.8 * rs[0]){
+          const D2 = PostventaLive.computeControlTowerData(Object.assign({}, payload, {hoy:last.fecha}));
+          D2.meta.dia_incompleto = {fecha:last.fecha, real:last.rev_real || 0, plan:last.rev_plan};
+          return D2;
+        }
+      }
+    } catch (e){ console.warn('[Control] guarda de día incompleto:', e); }
+    return D;
+  }
+
   let CT_PAYLOAD = null;             // última respuesta del Web App (mes en pantalla)
   async function actualizarCTDataEnVivo(){
     if (typeof WFM_ENDPOINT === 'undefined' || typeof WFM_TOKEN === 'undefined') {
@@ -3912,7 +4186,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       pvSetStatus('⚠️ No se pudo cargar el módulo de cálculo en vivo — mostrando copia local del ' + CT_DATA.meta.hoy + '.', true);
       return;
     }
-    pvSetStatus('Actualizando Control Tower desde Planif_2026…', false);
+    pvSetStatus('Actualizando desde Planif_2026…', false);
     try {
       const url = WFM_ENDPOINT + '?token=' + encodeURIComponent(WFM_TOKEN) + '&action=postventa' + (CT_MES ? '&mes=' + encodeURIComponent(CT_MES) : '');
       const resp = await fetch(url, { method: 'GET', redirect: 'follow' });
@@ -3921,7 +4195,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       if (!payload.ok) throw new Error(payload.error || 'Respuesta inválida del Web App');
       if (!payload.rows || !payload.rows.length) throw new Error('El Web App respondió sin filas — revisa que la pestaña de planificación tenga datos.');
       CT_PAYLOAD = payload;
-      CT_DATA = PostventaLive.computeControlTowerData(payload);
+      CT_DATA = computeConGuarda(payload);
+      if (CT_DATA.meta.dia_incompleto) CT_PAYLOAD = Object.assign({}, payload, {hoy: CT_DATA.meta.dia_incompleto.fecha});
       pvSetStatus(null);
     } catch (err) {
       console.error('[Control Tower] No se pudo actualizar en vivo:', err);
@@ -4411,14 +4686,14 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       </div>
 
       <div class="ct-grid-2">
-        <div class="ct-card"><h3>Gap mensual — Revenue a la fecha</h3><p class="ct-q">Lo que deberías tener a la fecha (Plan) vs. lo que realmente llevas (Real) — Post-Venta total.</p><div id="ctExecGapMoneyChart"></div></div>
-        <div class="ct-card"><h3>Gap mensual — % a la fecha</h3><p class="ct-q">Meta = 100% del plan a la fecha. La barra "Real" muestra en qué % estás parado.</p><div id="ctExecGapPctChart"></div></div>
+        <div class="ct-card"><h3>Gap mensual — Revenue a la fecha</h3><div id="ctExecGapMoneyChart"></div></div>
+        <div class="ct-card"><h3>Gap mensual — % a la fecha</h3><div id="ctExecGapPctChart"></div></div>
       </div>
 
       <div class="ct-grid-3">
         <div class="ct-card">
           <h3>Operaciones</h3>
-          <p class="ct-q">¿Cuál está más por debajo del plan, cuál compensa, cuál pesa más?</p>
+          
           <div style="font-size:12.5px;line-height:1.9">
             <div>🔻 <strong>Más por debajo:</strong> ${OP_META[peorOp.k].label} (${fmtPct1(peorOp.cumpl_pct_mtd)})</div>
             <div>🟢 <strong>Compensando:</strong> ${OP_META[mejorOp.k].label} (${fmtPct1(mejorOp.cumpl_pct_mtd)})</div>
@@ -4427,11 +4702,11 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         </div>
         <div class="ct-card">
           <h3>ACQ</h3>
-          <p class="ct-q">Plan ACQ, Resultado y desviación de Upsell vs. ACQ.</p>
+          
           <div style="font-size:12.5px;line-height:1.9">
             <div><strong>Plan ACQ (MTD):</strong> ${fmtMoney(Object.values(CT_DATA.weekly).reduce((s,w)=>s+(w.acq.plan_acq_a_la_fecha||0),0))}</div>
             <div><strong>Var Ups vs ACQ (prom.):</strong> ${fmtSignedPct1(acq.promedio_Z_var_ups_vs_acq_pct)}</div>
-            <div><strong>Correlación Var%Upsell↔Z:</strong> ${acq.correlacion_var_upsell_vs_Z_var_ups_vs_acq.toFixed(2)} (moderada)</div>
+            <div><strong>Correlación Var%Upsell↔Z:</strong> ${(acq.correlacion_var_upsell_vs_Z_var_ups_vs_acq==null?'—':acq.correlacion_var_upsell_vs_Z_var_ups_vs_acq.toFixed(2))} (moderada)</div>
           </div>
         </div>
         <div class="ct-card">
@@ -4443,7 +4718,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
           </div>
         </div>
       </div>
-      <div class="ct-note">Vista ejecutiva: todas las cifras son MTD (${CT_DATA.meta.dias_transcurridos_completos} días cerrados de ${CT_DATA.meta.mes||CT_DATA.meta.periodo}) salvo donde se indique "proyección". El ${CT_DATA.meta.hoy} está en curso y no se cuenta como día cerrado.</div>
+      
     `;
 
     // alertas automáticas
@@ -4504,15 +4779,15 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         <label style="font-size:12px;color:var(--text-secondary);margin-left:10px">Ver día</label>
         <select class="ct-select" id="ctDailyDateSel"></select>
       </div>
-      <div class="ct-card"><div class="ct-card-head"><h3>Revenue diario: Plan vs Real (${OP_META['postventa_total'].label}, sin acumular)</h3><button class="ct-expand-btn" data-expand="rawsel">⤢ Expandir</button></div><p class="ct-q">Lo planeado ese día puntual vs. lo realmente logrado ese mismo día — para la operación elegida arriba (no acumulado).</p><div class="ct-chart-wrap" id="ctDailyRawChart"></div></div>
-      <div class="ct-card"><div class="ct-card-head"><h3>Plan vs Real acumulado</h3><button class="ct-expand-btn" data-expand="cum">⤢ Expandir</button></div><p class="ct-q">¿Cuánto deberíamos llevar vs. cuánto llevamos, día a día?</p><div class="ct-chart-wrap" id="ctDailyCumChart"></div></div>
+      <div class="ct-card"><div class="ct-card-head"><h3>Revenue diario: Plan vs Real (${OP_META['postventa_total'].label}, sin acumular)</h3><button class="ct-expand-btn" data-expand="rawsel">⤢ Expandir</button></div><div class="ct-chart-wrap" id="ctDailyRawChart"></div></div>
+      <div class="ct-card"><div class="ct-card-head"><h3>Plan vs Real acumulado</h3><button class="ct-expand-btn" data-expand="cum">⤢ Expandir</button></div><div class="ct-chart-wrap" id="ctDailyCumChart"></div></div>
       <div class="ct-grid-2">
-        <div class="ct-card"><div class="ct-card-head"><h3>Gap $ diario</h3><button class="ct-expand-btn" data-expand="gap">⤢ Expandir</button></div><p class="ct-q">¿Qué días generaron el mayor deterioro (o la mayor sobreejecución)?</p><div class="ct-chart-wrap" id="ctDailyGapChart"></div></div>
-        <div class="ct-card"><div class="ct-card-head"><h3>Cumplimiento % diario</h3><button class="ct-expand-btn" data-expand="cumpl">⤢ Expandir</button></div><p class="ct-q">Línea de 100% = cumpliendo el plan exacto ese día.</p><div class="ct-chart-wrap" id="ctDailyCumplChart"></div></div>
+        <div class="ct-card"><div class="ct-card-head"><h3>Gap $ diario</h3><button class="ct-expand-btn" data-expand="gap">⤢ Expandir</button></div><div class="ct-chart-wrap" id="ctDailyGapChart"></div></div>
+        <div class="ct-card"><div class="ct-card-head"><h3>Cumplimiento % diario</h3><button class="ct-expand-btn" data-expand="cumpl">⤢ Expandir</button></div><div class="ct-chart-wrap" id="ctDailyCumplChart"></div></div>
       </div>
       <div id="ctUpsellExtra"></div>
       <h3 style="margin:20px 0 4px">Revenue diario por operación (Plan vs Real, sin acumular)</h3>
-      <p class="ct-q" style="margin-top:0">Cada tarjeta muestra, día a día, lo planeado (línea punteada) vs. lo realmente logrado (línea sólida) en esa operación — igual al comparativo que ya usas fuera del tablero.</p>
+      
       <div class="ct-grid-2" id="ctDailyByOpGrid"></div>
       <div class="ct-card" id="ctDayDetailCard"></div>
     `;
@@ -4592,24 +4867,24 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         <div class="ct-grid-2">
           <div class="ct-card">
             <div class="ct-card-head"><h3>Expansión Activación → Upsell</h3><button class="ct-expand-btn" data-expand="expansion">⤢ Expandir</button></div>
-            <p class="ct-q">De cada $100 que trae Activación (ACQ), cuánto trae Upsell. Meta fija de la hoja: 26%.</p>
+            
             <div class="ct-chart-wrap" id="ctUpsellExpansionChart"></div>
           </div>
           <div class="ct-card">
             <h3>Ventas · ASP · CR de Upsell (MTD)</h3>
-            <p class="ct-q">Descompone el ingreso de Upsell en volumen (Ventas) × precio (ASP) — Ventas×ASP = Upsell Real $.</p>
+            
             <div id="ctUpsellRevTable"></div>
           </div>
         </div>
         <div class="ct-grid-2">
           <div class="ct-card">
             <h3>ASP diario: Plan vs Real</h3>
-            <p class="ct-q">Si el mes se está quedando corto, esto dice si es un tema de precio (ASP) — no solo el promedio del mes, sino desde cuándo empezó a desviarse.</p>
+            
             <div class="ct-chart-wrap" id="ctUpsellAspChart"></div>
           </div>
           <div class="ct-card">
             <h3>CR diario: Plan vs Real</h3>
-            <p class="ct-q">Y esto dice si en cambio es un tema de volumen/conversión (CR) — para distinguir un problema de dotación de uno de pricing/producto.</p>
+            
             <div class="ct-chart-wrap" id="ctUpsellCrChart"></div>
           </div>
         </div>
@@ -4642,7 +4917,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       ];
       $('#ctUpsellRevTable').innerHTML = `<table class="ct-table"><thead><tr><th>Indicador</th><th class="num">Plan (MTD)</th><th class="num">Real (MTD)</th><th class="num">Var%</th></tr></thead><tbody>
         ${rows.map(([label,p,r,f])=>`<tr><td>${label}</td><td class="num">${f(p)}</td><td class="num">${f(r)}</td><td class="num">${p? fmtSignedPct1(100*(r-p)/p) : '—'}</td></tr>`).join('')}
-      </tbody></table><div class="ct-note">Ventas × ASP = Revenue de Upsell ($) — la misma cifra que ya se ve como "Upsell Real" en el resto del tablero, descompuesta en volumen y precio para saber si un gap es de volumen o de precio.</div>`;
+      </tbody></table>`;
     }
 
     // botones "Expandir": reabren el mismo gráfico, más grande, en el modal de drill-down
@@ -4717,6 +4992,47 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     draw();
   }
 
+  /* ================= LUNES A DOMINGO POR OPERACIÓN (Vie–Dom agrupado) ================= */
+  function renderLunDom(){
+    const box = $('#ctLunDom'); if (!box) return;
+    const days = (CT_DATA.daily || []).filter(d => d.status === 'elapsed');
+    if (!days.length){ box.innerHTML = '<div class="ct-note" style="margin:0">Sin días cerrados todavía.</div>'; return; }
+    const W = [['Lun',1],['Mar',2],['Mié',3],['Jue',4],['Vie',5],['Sáb',6],['Dom',0]];
+    const keys = ['postventa_total'].concat(OP_ORDER_7);
+    const cards = keys.map(k => {
+      const acc = W.map(() => ({plan:0, real:0, n:0}));
+      days.forEach(d => {
+        const o = d.ops[k]; if (!o) return;
+        const i = W.findIndex(w => w[1] === new Date(d.fecha + 'T00:00:00Z').getUTCDay());
+        acc[i].plan += o.plan || 0; acc[i].real += o.real || 0; acc[i].n++;
+      });
+      if (!acc.some(a => a.plan > 0)) return '';
+      const grp = (ix) => { const p = ix.reduce((s, i) => s + acc[i].plan, 0), r = ix.reduce((s, i) => s + acc[i].real, 0); return {plan:p, real:r, c:p > 0 ? 100 * r / p : null}; };
+      const lj = grp([0,1,2,3]), fd = grp([4,5,6]);
+      const Wd = 380, H = 206, padL = 8, padT = 42, padB = 56, bw = 34, step = (Wd - padL * 2) / 7;
+      const mx = Math.max(120, Math.min(140, Math.max(...acc.map(a => a.plan > 0 ? 100 * a.real / a.plan : 0)) + 6));
+      const y = v => padT + (mx - v) / mx * (H - padT - padB);
+      let g = `<rect x="${padL + step * 4 + 2}" y="${padT - 32}" width="${step * 3 - 4}" height="${H - padT - padB + 32 + 40}" rx="8" fill="var(--series-2)" opacity=".10"/>`;
+      g += `<text x="${padL + step * 5.5}" y="${padT - 18}" text-anchor="middle" font-size="11" font-weight="800" fill="var(--text-secondary)">Vie–Dom ${fd.c == null ? '—' : fd.c.toFixed(0) + '%'}</text>`;
+      g += `<text x="${padL + step * 2}" y="${padT - 18}" text-anchor="middle" font-size="11" font-weight="800" fill="var(--text-secondary)">Lun–Jue ${lj.c == null ? '—' : lj.c.toFixed(0) + '%'}</text>`;
+      g += `<line x1="${padL}" x2="${Wd - padL}" y1="${y(100)}" y2="${y(100)}" stroke="var(--text-primary)" stroke-width="1" stroke-dasharray="4,3" opacity=".55"/>`;
+      acc.forEach((a, i) => {
+        const cx = padL + step * i + step / 2, c = a.plan > 0 ? 100 * a.real / a.plan : null, gap = a.real - a.plan;
+        if (c == null){
+          g += `<text x="${cx}" y="${y(0) - 4}" text-anchor="middle" font-size="10" fill="var(--text-muted)">no opera</text>`;
+        } else {
+          const col = SEV_COLOR[ctSeverity(c)], top = y(Math.min(c, mx));
+          g += `<rect x="${cx - bw / 2}" y="${top}" width="${bw}" height="${Math.max(2, y(0) - top)}" rx="4" fill="${col}"><title>${W[i][0]} · ${a.n} día${a.n === 1 ? '' : 's'} · Plan ${fmtMoney(a.plan)} · Real ${fmtMoney(a.real)} · Gap ${fmtSignedMoney(gap)}</title></rect>`;
+          g += `<text x="${cx}" y="${top - 4}" text-anchor="middle" font-size="11.5" font-weight="800" fill="var(--text-primary)">${c.toFixed(0)}%</text>`;
+          g += `<text x="${cx}" y="${H - padB + 28}" text-anchor="middle" font-size="10.5" font-weight="700" fill="${gap < 0 ? 'var(--bad)' : 'var(--series-3)'}">${(gap < 0 ? '-' : '+') + '$' + (Math.abs(gap) >= 10000 ? Math.round(Math.abs(gap) / 1000) + 'K' : (Math.abs(gap) >= 1000 ? (Math.abs(gap) / 1000).toFixed(1) + 'K' : Math.round(Math.abs(gap))))}</text>`;
+        }
+        g += `<text x="${cx}" y="${H - padB + 14}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text-secondary)">${W[i][0]}</text>`;
+      });
+      return `<div class="ct-card ld-card"><div class="ct-card-head"><h3>${OP_META[k].label}</h3></div><svg class="ct-chart" viewBox="0 0 ${Wd} ${H}" role="img" aria-label="Cumplimiento de lunes a domingo: ${OP_META[k].label}">${g}</svg></div>`;
+    }).join('');
+    box.innerHTML = `<h3 class="ld-h">Lunes a domingo por operación <span>cumplimiento y gap · Vie–Dom agrupado</span></h3><div class="ld-grid">${cards}</div>`;
+  }
+
   /* ================= VISTA DÍA DE SEMANA ================= */
   let CT_DOW_SEL_KEEP = 'postventa_total';
   function renderDow(){
@@ -4732,14 +5048,15 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         <label style="font-size:12px;color:var(--text-secondary)">Operación</label>
         <select class="ct-select" id="ctDowOpSel"></select>
       </div>
+      <div id="ctLunDom"></div>
       <div class="ct-card">
         <h3 id="ctCalendarHeatTitle">Calendario del mes: cumplimiento %, día por día</h3>
-        <p class="ct-q">Un vistazo a la secuencia real del mes (no un promedio) — para ver rachas de días buenos o malos que el heatmap por día de semana no muestra.</p>
+        
         <div id="ctCalendarHeat"></div>
       </div>
       <div class="ct-card" id="ctWwCard">
         <h3 id="ctWeekdayWeekendTitle">Lunes a viernes vs. sábado y domingo — cumplimiento semana a semana</h3>
-        <p class="ct-q" id="ctWwQ">Cada semana (lunes a domingo) agrupada en entre semana y fin de semana. 100% = plan. Cumplimiento = Real sumado ÷ Plan sumado (solo días cerrados).</p>
+        
         <div id="ctWwVerdict"></div>
         <div class="ct-legend-row" style="display:flex;gap:16px;align-items:center;font-size:11px;color:var(--text-secondary);margin:2px 0 8px;flex-wrap:wrap">
           <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:var(--text-muted);border-radius:3px;display:inline-block"></span> Barra sólida = Lunes–Viernes</span>
@@ -4752,7 +5069,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       </div>
       <div class="ct-card">
         <h3 id="ctDowMoneyTitle">Últimos 4 lunes, martes, … — Plan vs Real y tendencia</h3>
-        <p class="ct-q" id="ctDowMoneyQ">Las últimas 4 fechas cerradas de cada día de la semana, aunque crucen de mes. La flecha compara la fecha más reciente contra el promedio de las 3 anteriores (umbral ±3 puntos): ↗ mejorando, ↘ deteriorando, → estable. El % del encabezado es el cumplimiento de esas fechas sumadas.</p><div id="ctDowCrossNote"></div>
+        <div id="ctDowCrossNote"></div>
         <div class="ct-legend-row" style="display:flex;gap:16px;align-items:center;font-size:11px;color:var(--text-secondary);margin:2px 0 12px;flex-wrap:wrap">
           <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:3px;background:var(--text-primary);border-radius:2px;display:inline-block"></span> Línea = Meta (Plan)</span>
           <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:var(--series-3);border-radius:3px;display:inline-block"></span> Barra = Real, en línea o sobre el plan</span>
@@ -4763,9 +5080,9 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       </div>
       <div class="ct-card">
         <h3>Heatmap: cumplimiento % promedio por día de semana × operación</h3>
-        <p class="ct-q">¿Qué día de semana funciona mejor / presenta mayor riesgo? Calculado solo con días ya cerrados (excluye hoy y días futuros).</p>
+        
         <div id="ctDowHeat"></div>
-        <div class="ct-note">2.1.-Upsell opera los 7 días; Resurrection/Bootcamp prácticamente no tienen actividad real los domingos (Plan&gt;0, Real≈0 casi siempre) — su celda de domingo va a estar casi siempre en rojo por diseño de la operación, no por una falla puntual.</div>
+        
       </div>
       <div class="ct-card">
         <h3>Detalle por día de semana</h3>
@@ -4773,6 +5090,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       </div>
     `;
 
+    renderLunDom();
     const opSel = $('#ctDowOpSel');
     Object.keys(OP_META).forEach(k => { const o=document.createElement('option'); o.value=k; o.textContent=OP_META[k].label; opSel.appendChild(o); });
     if (CT_DATA.detalle && CT_DATA.detalle.x11){
@@ -4917,8 +5235,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       return {value:o.cumpl_pct_a_la_fecha, label:`Semana ${w}`, xLabel:'S'+w};
     }).filter(b => b.value != null);
     el.innerHTML = `
-      <div class="ct-card"><h3>Revenue por semana: Plan vs Real a la fecha</h3><p class="ct-q">Lo mismo que el % de abajo, pero en dólares — cuántos $ representa cada punto de desviación.</p><div id="ctWeeklyMoneyChart"></div></div>
-      <div class="ct-card"><h3>Cumplimiento % por semana (Post-Venta)</h3><p class="ct-q">¿Qué semanas estuvieron por encima o debajo del plan?</p><div id="ctWeeklyChart"></div></div>
+      <div class="ct-card"><h3>Revenue por semana: Plan vs Real a la fecha</h3><div id="ctWeeklyMoneyChart"></div></div>
+      <div class="ct-card"><h3>Cumplimiento % por semana (Post-Venta)</h3><div id="ctWeeklyChart"></div></div>
       <div class="ct-card"><h3>Detalle semanal</h3><table class="ct-table" id="ctWeeklyTable"></table></div>
     `;
     const weeksWithData = weeks.filter(w => CT_DATA.weekly[w].op.postventa_total.real_a_la_fecha != null);
@@ -4962,7 +5280,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     // 2.5-Bootcamp (no por impacto). 2.3-Sales Chat y 1.5-Bootcamp: excluidos de todo el tablero.
     const ops = OP_ORDER_7.map(k=>({k,...CT_DATA.monthly[k]}));
     el.innerHTML = `
-      <div class="ct-card"><h3>Plan vs Real por operación (MTD)</h3><p class="ct-q">Gap $ de cada una de las operaciones, en el orden solicitado.</p><div id="ctByOpChart"></div><div class="ct-note">"Recurrence" es el subtotal de las 3 líneas de abajo (2.2.-Recurrence + 2.4.-Resurrection + 2.5.-Bootcamp) — no la sumes aparte de sus componentes, o se duplica. 2.3.-Sales Chat y 1.5.-Bootcamp se excluyeron de todo el tablero (pedido explícito).</div></div>
+      <div class="ct-card"><h3>Plan vs Real por operación (MTD)</h3><div id="ctByOpChart"></div></div>
       <div class="ct-card"><h3>Vista general por operación</h3><table class="ct-table" id="ctByOpTable"></table></div>
     `;
     const bars = ops.map(o => ({label:OP_META[o.k].label, value:o.gap_mtd, color: o.gap_mtd>=0?'var(--series-3)':'var(--bad)'}));
@@ -4983,17 +5301,17 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     const days = CT_DATA.acq.dias;
     el.innerHTML = `
       <div class="ct-grid-2">
-        <div class="ct-card"><h3>Var Ups vs ACQ (columna Z)</h3><p class="ct-q">¿Días donde Upsell está por encima / debajo de ACQ, y cuánto?</p><div id="ctAcqZChart"></div></div>
-        <div class="ct-card"><h3>Plan ACQ vs Resultado</h3><p class="ct-q">Evolución diaria del bloque de Adquisición (Plan ACQ, columna AC vs. Resultado, columna AD).</p><div id="ctAcqPlanChart"></div></div>
+        <div class="ct-card"><h3>Var Ups vs ACQ (columna Z)</h3><div id="ctAcqZChart"></div></div>
+        <div class="ct-card"><h3>Plan ACQ vs Resultado</h3><div id="ctAcqPlanChart"></div></div>
       </div>
       <div class="ct-card">
         <h3>Dependencia Upsell → ACQ</h3>
-        <p class="ct-q">¿Qué tanto depende el resultado de Upsell de Plan ACQ?</p>
+        
         <div style="font-size:12.5px;line-height:1.9">
-          <div>Correlación (Pearson) entre Var% propio de Upsell y Var Ups vs ACQ (Z): <strong>${CT_DATA.acq.correlacion_var_upsell_vs_Z_var_ups_vs_acq.toFixed(2)}</strong></div>
-          <div>Correlación entre Var% propio de Upsell y Var ACQ general (AB): <strong>${CT_DATA.acq.correlacion_var_upsell_vs_AB_var_acq_general.toFixed(2)}</strong></div>
+          <div>Correlación (Pearson) entre Var% propio de Upsell y Var Ups vs ACQ (Z): <strong>${(CT_DATA.acq.correlacion_var_upsell_vs_Z_var_ups_vs_acq==null?'—':CT_DATA.acq.correlacion_var_upsell_vs_Z_var_ups_vs_acq.toFixed(2))}</strong></div>
+          <div>Correlación entre Var% propio de Upsell y Var ACQ general (AB): <strong>${(CT_DATA.acq.correlacion_var_upsell_vs_AB_var_acq_general==null?'—':CT_DATA.acq.correlacion_var_upsell_vs_AB_var_acq_general.toFixed(2))}</strong></div>
         </div>
-        <div class="ct-note">${CT_DATA.acq.nota_interpretativa}</div>
+        
       </div>
       <div class="ct-card">
         <h3>Top 5 días con mayor desviación Upsell vs ACQ</h3>
@@ -5019,7 +5337,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       </div>
       <div class="ct-card">
         <h3>Tendencia de Cumplimiento % (23 días cerrados)</h3>
-        <p class="ct-q">Cada caída por debajo de la línea de 100% es un día que no llegó al plan; las caídas más profundas son los "Top 5 peores días" de abajo. Sirve para ver el patrón completo, no solo los 5 puntos extremos.</p>
+        
         <div id="ctCritTrendChart"></div>
       </div>
       <div class="ct-grid-2">
@@ -5049,7 +5367,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       $('#ctCritWorstTable').innerHTML = `<thead><tr><th>Fecha</th><th>Día</th><th class="num">Plan</th><th class="num">Real</th><th class="num">Gap</th><th class="num">Cumpl.%</th></tr></thead><tbody>${c.top5_peores.map(rowify).join('')}</tbody>`;
       $('#ctCritBestTable').innerHTML = `<thead><tr><th>Fecha</th><th>Día</th><th class="num">Plan</th><th class="num">Real</th><th class="num">Gap</th><th class="num">Cumpl.%</th></tr></thead><tbody>${c.top5_mejores.map(rowify).join('')}</tbody>`;
       const countDow = arr => { const m={}; arr.forEach(d=>m[d.dow]=(m[d.dow]||0)+1); return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([d,n])=>`${d} (${n})`).join(', '); };
-      $('#ctCritPatternCard').innerHTML = `<h3>Patrón detectado para ${OP_META[key].label}</h3><p style="font-size:12.5px;line-height:1.7">Los peores días se concentran en: <strong>${countDow(c.top5_peores)}</strong>. Los mejores días se concentran en: <strong>${countDow(c.top5_mejores)}</strong>. Esto es una concentración observada en 23 días de datos, no una regla estadísticamente robusta.</p>`;
+      $('#ctCritPatternCard').innerHTML = `<h3>Patrón detectado para ${OP_META[key].label}</h3><p style="font-size:12.5px;line-height:1.7">Los peores días se concentran en: <strong>${countDow(c.top5_peores)}</strong>. Los mejores días se concentran en: <strong>${countDow(c.top5_mejores)}</strong>.</p>`;
     }
     sel.value='postventa_total'; sel.addEventListener('change', draw); draw();
   }
@@ -5090,8 +5408,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         <div class="ct-card">
           <h3>Dependencia de ACQ y estabilidad</h3>
           <ul style="font-size:12.5px;line-height:1.8;padding-left:18px;margin:0">
-            <li>La correlación entre el Var% propio de Upsell y su desviación vs. ACQ (Z) es <strong>${CT_DATA.acq.correlacion_var_upsell_vs_Z_var_ups_vs_acq.toFixed(2)}</strong> (moderada) — hay relación, pero no mecánica ni perfecta.</li>
-            <li>La correlación con el Var ACQ general (AB) es más débil (<strong>${CT_DATA.acq.correlacion_var_upsell_vs_AB_var_acq_general.toFixed(2)}</strong>): el desempeño diario de Upsell no está fuertemente explicado por el comportamiento general de ACQ en este periodo — es una observación sobre ${CT_DATA.meta.dias_transcurridos_completos} días, no una relación causal comprobada.</li>
+            <li>La correlación entre el Var% propio de Upsell y su desviación vs. ACQ (Z) es <strong>${(CT_DATA.acq.correlacion_var_upsell_vs_Z_var_ups_vs_acq==null?'—':CT_DATA.acq.correlacion_var_upsell_vs_Z_var_ups_vs_acq.toFixed(2))}</strong> (moderada) — hay relación, pero no mecánica ni perfecta.</li>
+            <li>La correlación con el Var ACQ general (AB) es más débil (<strong>${(CT_DATA.acq.correlacion_var_upsell_vs_AB_var_acq_general==null?'—':CT_DATA.acq.correlacion_var_upsell_vs_AB_var_acq_general.toFixed(2))}</strong>): el desempeño diario de Upsell no está fuertemente explicado por el comportamiento general de ACQ en este periodo.</li>
           </ul>
         </div>
         <div class="ct-card">
@@ -5112,7 +5430,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         }).join('')}
         </tbody></table>
       </div>
-      <div class="ct-note">Regla aplicada en toda esta vista: cuando dos series se mueven juntas en el tiempo sin que exista un mecanismo comprobado que las conecte, se describe como correlación/coincidencia temporal, nunca como causalidad.</div>
+      
     `;
   }
 
@@ -5137,17 +5455,17 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       </div>
       <div class="ct-card">
         <h3>Proyección de cierre — banda mejor / promedio / peor caso</h3>
-        <p class="ct-q">Desde hoy hasta fin de mes, 3 ritmos posibles según la variabilidad diaria ya observada este mes: promedio (run-rate), promedio + 1 desviación típica (mejor caso) y promedio − 1 desviación típica (peor caso) — para ver el rango realista de cierre, no solo un número.</p>
+        
         <div id="ctGoalBandChart"></div>
         <div class="ct-note" id="ctGoalBandNote"></div>
       </div>
       <div class="ct-card">
         <h3>Descomposición por operación</h3>
-        <p class="ct-q">Peso derivado de los datos (Real MTD de cada operación ÷ Real MTD total de las 4 sub-operaciones de Post-Venta).</p>
+        
         <table class="ct-table"><thead><tr><th>Operación</th><th class="num">Plan mes</th><th class="num">Real MTD</th><th class="num">Gap</th><th class="num">% del total</th></tr></thead><tbody>
         ${contribSorted.map(([k,v])=>`<tr><td>${v.label}</td><td class="num">${fmtMoney(v.plan_mes_completo)}</td><td class="num">${fmtMoney(v.real_mtd)}</td><td class="num">${fmtSignedMoney(v.gap_mtd)}</td><td class="num">${v.pct_del_total.toFixed(1)}%</td></tr>`).join('')}
         </tbody></table>
-        <div class="ct-note">2.3.-Sales Chat y 1.5.-Bootcamp no están incluidos en Post-Venta ni en esta descomposición — se excluyeron de todo el tablero por pedido explícito del usuario.</div>
+        
       </div>
     `;
     const bars = [
@@ -5202,7 +5520,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     ], {legend:true, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels: days.map(d=>d.fecha.slice(8,10))});
     const bestClose = lastRealCum + rateBest*(days.length-1-lastElapsedIdx);
     const worstClose = lastRealCum + rateWorst*(days.length-1-lastElapsedIdx);
-    $('#ctGoalBandNote').textContent = `Rango de cierre estimado: entre ${fmtMoney(worstClose)} (peor caso) y ${fmtMoney(bestClose)} (mejor caso) — el run-rate actual (promedio) proyecta ${fmtMoney(g.proyeccion_cierre)}. Es una extrapolación simple de ritmos ya observados este mes, no una predicción garantizada.`;
+    $('#ctGoalBandNote').textContent = `Rango de cierre estimado: entre ${fmtMoney(worstClose)} (peor caso) y ${fmtMoney(bestClose)} (mejor caso) — el run-rate actual (promedio) proyecta ${fmtMoney(g.proyeccion_cierre)}.`;
   }
 
   /* ================= MASTER-DETALLE (oct/2026) =================
@@ -5323,7 +5641,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       html += `<div class="ct-side-sec">Referencia · no suma a Post-Venta</div>`;
       REF_ROWS.filter(visible).forEach(r => { html += sideRowHtml(r); });
     }
-    if (CT_DATA.meta.resurrection_combinada) html += `<div class="ct-note" style="margin:10px 6px 2px">2.4.- y 1.4.- Resurrection son la misma operación: se muestran sumadas y puedes abrirlas por separado con la flecha ▸. En Referencia: 1.1- BAU (ACQ · Patricia Camargo), las 4 de Katheryn Ospina (ábrelas con ▸) y 2.6- Membership.</div>`;
+    if (CT_DATA.meta.resurrection_combinada) html += ``;
     el.innerHTML = html;
     $$('.ct-row', el).forEach(row => {
       const go = () => selectOp(row.dataset.op);
@@ -5450,7 +5768,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     try { if (prs && prs.some(r=>r.closed)){ PJ = ProjCalc.proyectar(prs); PJ.rows = prs; projAttach(series, PJ, metric, mode); } } catch(e){ console.warn('[Proyección]', e); PJ = null; }
     el.innerHTML = `${warnHtml}<div class="ct-hero">
       <div class="ct-hero-top">
-        <div><h3>${label}</h3><div class="sub">${CT_DATA.meta.mes?mesLabel(CT_DATA.meta.mes):''} · datos al ${CT_DATA.meta.hoy} · ${CT_DATA.meta.dias_transcurridos_completos} días cerrados</div></div>
+        <div><h3>${label}</h3><div class="sub">${CT_DATA.meta.mes?mesLabel(CT_DATA.meta.mes):''} · ${CT_DATA.meta.dias_transcurridos_completos} días cerrados</div></div>
         ${resSel}
       </div>
       <div class="ct-hero-val"><span class="big">${fmtMoney(rev.real)}</span><span class="dl ${cls}">${fmtSignedMoney(rev.gap)} · ${rev.cumpl==null?'—':fmtSignedPct1(rev.cumpl-100)} vs plan a la fecha</span><span class="ct-pill ${sev}">${SEV_LABEL[sev]}</span></div>
@@ -5498,7 +5816,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         <div class="ct-seg" id="ctDetMode"><button data-v="dia" class="${CT_DET_MODE==='dia'?'active':''}">Diario</button><button data-v="acum" class="${CT_DET_MODE==='acum'?'active':''}">Acumulado</button></div>
       </div>
       <div class="ct-det-wrap"><table class="ct-det" id="ctDetTable"></table></div>
-      <div class="ct-note">Diario = cada día contra su plan. Acumulado = suma del mes hasta ese día (solo días cerrados). Gap absoluto = Revenue real − Revenue plan; % de desviación = Revenue real ÷ plan − 1. ASP = Revenue ÷ Ventas. Los días futuros muestran solo el plan; el día en curso no se compara.</div>`;
+      `;
     const draw = () => {
       const k = $('#ctDetOpSel').value, g = D[k], acum = CT_DET_MODE==='acum';
       const td = (inner, cls) => `<td${cls?` class="${cls}"`:''}>${inner}</td>`;
@@ -5537,7 +5855,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     }
   }
   function initAll(){
-    $('#ctAsOf').textContent = `Datos al ${CT_DATA.meta.hoy} · ${CT_DATA.meta.dias_transcurridos_completos} días cerrados del mes`;
+    { const dd = CT_DATA.detalle && CT_DATA.detalle.postventa_total ? CT_DATA.detalle.postventa_total.dias.filter(d => d.status === 'elapsed') : [], ic = CT_DATA.meta.dia_incompleto;
+      $('#ctAsOf').textContent = 'Cierre ' + (dd.length ? fechaDM(dd[dd.length-1].fecha) : CT_DATA.meta.hoy) + ' · ' + CT_DATA.meta.dias_transcurridos_completos + ' días' + (ic ? ' · ' + fechaDM(ic.fecha) + ' aún cargando' : ''); }
     safe(renderExec,'Ejecutivo'); safe(renderDaily,'Plan vs Real'); safe(renderDow,'Día de semana'); safe(renderWeekly,'Semanal');
     safe(renderByOp,'Por operación'); safe(renderAcq,'ACQ'); safe(renderCritical,'Días críticos'); safe(renderPatterns,'Patrones'); safe(renderGoal,'Meta $500K');
     safe(renderDetalle,'Detalle'); safe(renderWeekend,'Vie–Dom'); safe(renderSide,'Sidebar'); safe(renderHero,'Hero');
@@ -5548,6 +5867,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
   let CT_PREV_TOKEN = 0;
   async function cargarMesPrevio(){
     const tk = ++CT_PREV_TOKEN;
+    CT_PREV_DET = null;
     try {
       if (!CT_PAYLOAD || typeof WFM_ENDPOINT === 'undefined' || typeof PostventaLive === 'undefined') return;
       const ym = CT_PAYLOAD.mes; if (!ym) return;
@@ -5561,6 +5881,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       if (!prevPayload.ok || !prevPayload.rows || !prevPayload.rows.length) throw new Error(prevPayload.error || 'sin filas');
       if (tk !== CT_PREV_TOKEN) return;                       // el usuario cambió de mes mientras cargaba
       CT_DATA.cross = PostventaLive.computeCross(CT_PAYLOAD, prevPayload);
+      try { CT_PREV_DET = PostventaLive.computeControlTowerData(prevPayload).detalle; } catch (e) { CT_PREV_DET = null; }
+      safe(renderAlertStrip,'Alertas');
       CT_DATA.cross_nota = '';
       safe(renderDow,'Día de semana');
     } catch (err) {
@@ -5632,31 +5954,93 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     safe(renderRca,'Causa raíz'); safe(renderAlertStrip,'Alertas'); safe(renderWeekend,'Vie–Dom');
   }
 
-  /* ---------- alertas (visibles en todas las vistas) ---------- */
+  /* ---------- alertas (resultados + causa raíz) · visibles en todas las vistas ---------- */
+  let CT_PREV_DET = null;           // detalle diario del mes anterior (aprendizaje: mismo corte y mismo día de la semana)
+  const addDiasISO = (f, n) => { const d = new Date(f + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  function apOpAlerta(a){
+    return {sev:a.sev, cat:'causa raíz', op:a.op, label:a.label, fecha:a.fecha,
+      titulo: `${a.label} · ${a.dow} ${fechaDM(a.fecha)}: ${a.cumpl.toFixed(0)}% del plan`,
+      texto: `${sg1(a.gap)} ventas vs plan` + (a.causa ? ` · causa principal: ${a.causa.nombre}` : '') + (a.confianza && a.confianza !== 'alta' ? ` · confianza ${a.confianza}` : '') + '. Clic para ver quién.',
+      badge: fechaCorta(a.fecha), go:{op:a.op, per:'dia:' + a.fecha}};
+  }
+  function apAlertasPanel(){
+    const out = [], bloques = {};
+    AP_ALERTS.forEach(a => {
+      if (a.tipo === 'sup'){
+        out.push({sev:a.sev, cat:'causa raíz', op:a.op, label:a.label, fecha:a.fecha,
+          titulo: `${a.sup} · ${a.label} viene en caída`,
+          texto: `${a.dow} ${fechaDM(a.fecha)}: ${a.cumpl.toFixed(0)}% de su capacidad esperada` + (a.tendencia != null ? ` (${a.tendencia > 0 ? '+' : ''}${a.tendencia.toFixed(0)} pp vs días previos)` : '') + '. Clic para ver quién.',
+          badge: fechaCorta(a.fecha), go:{op:a.op, per:'dia:' + a.fecha, sup:a.sup}});
+        return;
+      }
+      const wd = new Date(a.fecha + 'T00:00:00Z').getUTCDay();        // 5 vie · 6 sáb · 0 dom
+      if (wd === 5 || wd === 6 || wd === 0){
+        const fri = addDiasISO(a.fecha, wd === 5 ? 0 : (wd === 6 ? -1 : -2)), k = a.op + '|' + fri;
+        (bloques[k] = bloques[k] || {fri, items:[]}).items.push(a);
+      } else out.push(apOpAlerta(a));
+    });
+    Object.keys(bloques).forEach(k => {
+      const b = bloques[k], g = b.items.slice().sort((x, y) => x.fecha < y.fecha ? -1 : 1);
+      if (g.length === 1){ out.push(apOpAlerta(g[0])); return; }
+      const gap = g.reduce((s, x) => s + x.gap, 0), cum = g.reduce((s, x) => s + x.cumpl, 0) / g.length;
+      const cc = {}; g.forEach(x => { if (x.causa) cc[x.causa.nombre] = (cc[x.causa.nombre] || 0) + 1; });
+      const causa = Object.keys(cc).sort((x, y) => cc[y] - cc[x])[0];
+      out.push({sev: g.some(x => x.sev === 'critico') ? 'critico' : 'atencion', cat:'causa raíz', op:g[0].op, label:g[0].label, fecha:g[g.length-1].fecha,
+        titulo: `${g[0].label} · Vie–Dom ${fechaDM(g[0].fecha)} – ${fechaDM(g[g.length-1].fecha)}: ${cum.toFixed(0)}% del plan`,
+        texto: `${g.length} días fuera de plan · ${sg1(gap)} ventas vs plan` + (causa ? ` · causa más repetida: ${causa}` : '') + '. Clic para ver el bloque.',
+        badge: 'Vie–Dom', go:{op:g[0].op, per:'fds:' + b.fri}});
+    });
+    return out;
+  }
+  function abrirCausaRaiz(go){
+    if (!go) return;
+    RCA.op = go.op; RCA.per = go.per; RCA.sup = go.sup || null; RCA.q = '';
+    const nb = $('#ctNav button[data-view="rca"]'); if (nb) nb.click();
+    renderRca();
+    const v = $('#ctViewRca'); if (v) v.scrollIntoView({behavior:'smooth', block:'start'});
+  }
   function renderAlertStrip(){
     const el = $('#ctAlerts'); if (!el) return;
-    if (!AP_ALERTS.length){ el.innerHTML = ''; return; }
-    const top = AP_ALERTS.slice(0, 5);
-    el.innerHTML = `<div class="ct-card rca-alerts"><div class="ct-card-head"><h3>🚨 Alertas de caída con causa raíz</h3><span class="ct-q" style="margin:0">${AP_ALERTS.length} activa${AP_ALERTS.length>1?'s':''} · clic para ver quién y por qué</span></div>
-      <div class="ct-alert-row" style="margin:8px 0 0">${top.map((a,i)=>`<button class="ct-alert ${a.sev}" data-ai="${i}" title="${esc(a.texto)}">${a.tipo==='sup'?'👤':'📉'} ${esc(a.texto.length>118 ? a.texto.slice(0,115)+'…' : a.texto)}</button>`).join('')}</div></div>`;
-    $$('[data-ai]', el).forEach(b => b.addEventListener('click', () => {
-      const a = top[+b.dataset.ai]; RCA.op = a.op; RCA.per = 'dia:' + a.fecha; RCA.sup = a.tipo==='sup' ? a.sup : null; RCA.q = '';
-      const nb = $('#ctNav button[data-view="rca"]'); if (nb) nb.click();
-      renderRca();
-      const v = $('#ctViewRca'); if (v) v.scrollIntoView({behavior:'smooth', block:'start'});
-    }));
+    if (typeof AlertEngine === 'undefined' || typeof AlertPanel === 'undefined'){ el.innerHTML = ''; return; }
+    let all = [];
+    try {
+      const det = CT_DATA.detalle || null;
+      const dias = det && det.postventa_total ? det.postventa_total.dias.filter(d => d.status === 'elapsed') : [];
+      const ic = CT_DATA.meta.dia_incompleto || null;
+      all = AlertEngine.resultados({cur:det, prev:CT_PREV_DET, mes:CT_DATA.meta.mes || (CT_PAYLOAD && CT_PAYLOAD.mes) || '', incompleto:ic,
+        apHasta:AP_PAYLOAD && AP_PAYLOAD.hasta, corte:dias.length ? dias[dias.length - 1].fecha : null, excluirFecha:ic ? ic.fecha : null});
+    } catch (err){ console.error('[Alertas] resultados:', err); }
+    try { all = all.concat(apAlertasPanel()); } catch (err){ console.error('[Alertas] causa raíz:', err); }
+    const rank = {sistema:0, critico:1, atencion:2, info:3};
+    all.sort((a, b) => (rank[a.sev] - rank[b.sev]) || ((b.fecha || '') > (a.fecha || '') ? 1 : ((b.fecha || '') < (a.fecha || '') ? -1 : 0)));
+    AlertPanel.render(el, all, {id:'ctAlertPanel', title:'Alertas de Post-Venta', subtitle:CT_DATA.meta.mes ? mesLabel(CT_DATA.meta.mes) : '', max:6, onOpen:a => abrirCausaRaiz(a.go)});
   }
 
   /* ---------- períodos ---------- */
+  const wdOf = f => new Date(f + 'T00:00:00Z').getUTCDay();                 // 0 dom … 6 sáb
+  const esFinde = f => { const w = wdOf(f); return w === 5 || w === 6 || w === 0; };
+  const viernesDe = f => { const w = wdOf(f); return addDiasISO(f, w === 5 ? 0 : (w === 6 ? -1 : -2)); };
+  function rcaBloques(o){                                                   // bloques Vie–Dom con días analizables
+    const b = {};
+    o.analizables.forEach(f => { if (esFinde(f)) (b[viernesDe(f)] = b[viernesDe(f)] || []).push(f); });
+    return Object.keys(b).sort().map(fri => ({fri, fechas:b[fri].sort()}));
+  }
   function rcaPeriodos(o){
     const M = AP_MODEL, ops = [];
     if (o.analizables.length > 1) ops.push({v:'mes', t:'Mes a la fecha (' + o.analizables.length + ' días)'});
+    const lj = o.analizables.filter(f => !esFinde(f)), fd = o.analizables.filter(esFinde);
+    if (lj.length > 1) ops.push({v:'lj', t:'Lun–Jue del mes (' + lj.length + ' días)'});
+    if (fd.length > 1) ops.push({v:'fdsmes', t:'Vie–Dom del mes (' + fd.length + ' días)'});
+    rcaBloques(o).reverse().forEach(b => { if (b.fechas.length > 1) ops.push({v:'fds:' + b.fri, t:'Vie–Dom ' + fechaDM(b.fechas[0]) + ' – ' + fechaDM(b.fechas[b.fechas.length-1]) + ' (' + b.fechas.length + ' días)'}); });
     AgentPerfRCA.semanas(M, o.op).forEach(w => { if (w.fechas.length > 1) ops.push({v:'sem:'+w.ini, t:'Semana ' + fechaDM(w.fechas[0]) + ' – ' + fechaDM(w.fechas[w.fechas.length-1]) + ' (' + w.fechas.length + ' días)'}); });
     o.analizables.slice().reverse().forEach(f => ops.push({v:'dia:'+f, t:'Día · ' + fechaCorta(f)}));
     return ops;
   }
   function rcaFechas(o, per){
     if (per === 'mes') return o.analizables.slice();
+    if (per === 'lj') return o.analizables.filter(f => !esFinde(f));
+    if (per === 'fdsmes') return o.analizables.filter(esFinde);
+    if (per && per.indexOf('fds:') === 0){ const b = rcaBloques(o).find(x => x.fri === per.slice(4)); return b ? b.fechas : []; }
     if (per && per.indexOf('sem:') === 0){ const w = AgentPerfRCA.semanas(AP_MODEL, o.op).find(x => x.ini === per.slice(4)); return w ? w.fechas : []; }
     if (per && per.indexOf('dia:') === 0) return [per.slice(4)];
     return [];
@@ -5712,7 +6096,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
   function supHtml(R, o){
     const dias = R.porDia.map(d => d.fecha);
     const serieDias = o.analizables;
-    let h = `<div class="ct-card"><h3>👥 Supervisores · quién viene en caída</h3><p class="ct-q">Cada supervisor contra la capacidad esperada de su equipo (promedio histórico de cada agente que normalmente trabaja ese tipo de día). Haz clic en un supervisor para ver solo su equipo. Las celdas por día muestran % de capacidad; el impacto suma Staff (②) + Productividad (③).</p>
+    let h = `<div class="ct-card"><h3>👥 Supervisores · quién viene en caída</h3>
       <div class="ct-det-wrap" style="overflow:auto"><table class="ct-table"><thead><tr><th>Grupo</th><th class="num">Agentes</th><th class="num">Capacidad</th><th class="num">Real</th><th class="num">% cap.</th><th class="num">② Staff</th><th class="num">③ Prod.</th><th class="num">Impacto</th><th class="num">% de la caída</th>${serieDias.map(f=>`<th class="num" title="% de capacidad ${f}">${fechaDM(f)}</th>`).join('')}<th>Estado</th></tr></thead><tbody>`;
     R.sups.forEach(s => {
       const byDay = {}; (s.serie||[]).forEach(x => { byDay[x.fecha] = x; });
@@ -5728,7 +6112,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     const list = R.agentes.filter(a => Math.abs(a.imp) >= 0.05 || a.estado==='NO_TRABAJO' || a.estado==='SIN_VENTA' || RCA.q);
     const show = RCA.todos || RCA.q ? list : list.slice(0, 12);
     let h = `<div class="ct-card-head"><h3>🧑‍💼 Agentes con mayor impacto${R.scope?` · ${esc(R.scope.sup)}`:''}</h3><span class="ct-q" style="margin:0">${list.length} agente(s) con impacto · ordenado de mayor caída a mayor aporte</span></div>
-      <p class="ct-q">Impacto = ventas reales − lo esperado para ese agente (su promedio por día trabajado, ponderado por horas). Un agente que normalmente vende 3/día y vendió 0 pesa más que uno que vende 0–1. "No trabajó" = STAFF 0 o "-".</p>
+      
       <div style="overflow:auto"><table class="ct-table"><thead><tr><th>#</th><th>Agente</th><th>Grupo</th><th>Estado</th><th class="num" title="Ventas esperadas por día trabajado (promedio histórico suavizado)">Prom. esperado/día</th><th class="num">Real</th><th class="num">Horas</th><th class="num">Impacto</th><th class="num" title="Acumulado del total de caída">Acum.</th><th>Días</th></tr></thead><tbody>`;
     show.forEach((a, i) => {
       h += `<tr><td>${i+1}</td><td><b>${esc(a.n)}</b>${a.formador?' <span class="rca-note-s">formador</span>':''}</td><td>${esc(a.grupo)}</td><td>${chip(a.estado)}</td><td class="num">${f1(a.E)}</td><td class="num">${a.real}</td><td class="num">${f1(a.hrs)}</td>
@@ -5828,7 +6212,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         ${rows.map((r, i) => `<tr><td>${i+1}</td><td><b>${esc(r.n)}</b>${r.formador?' <span class="rca-note-s">formador</span>':''}</td><td>${esc(r.grupo)}</td>
           ${PERF_COLS.map(c => `<td class="num ${c.k==='ventas' && r.ventas===0 ? 'zero':''}">${c.f(r[c.k])}</td>`).join('')}<td>${estadoChip(r.estado)}</td></tr>`).join('') || `<tr><td colspan="14" class="rca-note-s">Ningún agente cumple el filtro.</td></tr>`}
       </tbody></table></div>
-      <div class="ct-q" style="margin:8px 0 0">${T.fechas.length===1 ? 'Día ' + esc(fechaCorta(T.fechas[0])) : T.fechas.length + ' días (' + esc(fechaDM(T.fechas[0])) + ' – ' + esc(fechaDM(T.fechas[T.fechas.length-1])) + ')'} · "Normal" = promedio de ventas por día trabajado en los otros ${T.baseDias} día(s) cargados · clic en una columna para ordenar de menor a mayor (y otra vez de mayor a menor).</div>`;
+      <div class="ct-q" style="margin:8px 0 0">${T.fechas.length===1 ? 'Día ' + esc(fechaCorta(T.fechas[0])) : T.fechas.length + ' días (' + esc(fechaDM(T.fechas[0])) + ' – ' + esc(fechaDM(T.fechas[T.fechas.length-1])) + ')'} · normal = promedio de los otros ${T.baseDias} día(s)</div>`;
     $$('th.sortable', el).forEach(th => th.addEventListener('click', () => {
       const k = th.dataset.sk, cur = RCA.sort || {k:'ventas', dir:1};
       RCA.sort = cur.k === k ? {k, dir:-cur.dir} : {k, dir: (k==='n'||k==='grupo') ? 1 : 1};
@@ -5872,11 +6256,22 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     }));
   }
   function diaStripHtml(o){
-    const ds = AgentPerfRCA.resumenDias(AP_MODEL, o.op);
+    const ds = AgentPerfRCA.resumenDias(AP_MODEL, o.op).slice().sort((a, b) => a.fecha < b.fecha ? -1 : 1);
     if (!ds.length) return '';
-    const cur = RCA.per && RCA.per.indexOf('dia:')===0 ? RCA.per.slice(4) : null;
-    const rango = fechasSel => fechasSel;
-    return `<div class="rca-days"><span class="rca-days-l">Días del mes · cumplimiento vs plan</span>${ds.map(d => `<button class="rca-day sev-${d.sev} ${d.bajo?'bajo':''} ${cur===d.fecha?'sel':''}" data-f="${d.fecha}" title="${d.dow} ${fechaDM(d.fecha)} · plan ${d.plan} · real ${d.real}${d.bajo?' · FUERA DE PLAN':''}"><b>${d.dow} ${+d.fecha.slice(8)}</b><span>${d.cumpl==null?'—':d.cumpl.toFixed(0)+'%'}</span></button>`).join('')}</div>`;
+    const cur = RCA.per && RCA.per.indexOf('dia:') === 0 ? RCA.per.slice(4) : null;
+    const btn = d => `<button class="rca-day sev-${d.sev} ${d.bajo?'bajo':''} ${cur===d.fecha?'sel':''}" data-f="${d.fecha}" title="${d.dow} ${fechaDM(d.fecha)} · plan ${d.plan} · real ${d.real}${d.bajo?' · FUERA DE PLAN':''}"><b>${d.dow} ${+d.fecha.slice(8)}</b><span>${d.cumpl==null?'—':d.cumpl.toFixed(0)+'%'}</span></button>`;
+    const semanas = {};
+    ds.forEach(d => { const k = (wdOf(d.fecha) + 6) % 7, ini = addDiasISO(d.fecha, -k), w = (semanas[ini] = semanas[ini] || {ini, lj:[], fd:[]}); (k >= 4 ? w.fd : w.lj).push(d); });
+    const html = Object.keys(semanas).sort().map(ini => {
+      const w = semanas[ini], fri = addDiasISO(ini, 4);
+      let fdHead = '';
+      if (w.fd.length > 1){
+        const p = w.fd.reduce((s, d) => s + (d.plan || 0), 0), r = w.fd.reduce((s, d) => s + (d.real || 0), 0), c = p > 0 ? 100 * r / p : null;
+        fdHead = `<button class="rca-fd-b ${RCA.per === 'fds:' + fri ? 'sel' : ''}" data-fds="${fri}" title="Analizar el bloque Vie–Dom completo">Vie–Dom ${c == null ? '' : c.toFixed(0) + '%'}</button>`;
+      }
+      return `<div class="rca-wk"><div class="rca-lj">${w.lj.map(btn).join('')}</div>${w.fd.length ? `<div class="rca-fd ${RCA.per === 'fds:' + fri ? 'sel' : ''}">${fdHead}<div class="rca-fd-days">${w.fd.map(btn).join('')}</div></div>` : ''}</div>`;
+    }).join('');
+    return `<div class="rca-days rca-days-g"><span class="rca-days-l">Días · cumplimiento vs plan</span>${html}</div>`;
   }
 
   /* ---------- vista ---------- */
@@ -5931,7 +6326,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       ${ef.noAtr && Math.abs(ef.noAtr) >= 2 && !sc ? `<div class="det">④ es la diferencia entre lo que suma Planif_2026 y lo que suman las pestañas de agentes: Planif puede tener más ventas que la pestaña de la operación (p. ej. clasificación 2.7 → 2.2). No se atribuye a ningún agente.</div>` : ''}</div>`;
 
     const kShow = R.kpis.filter(k => k.explica), kRest = R.kpis.filter(k => !k.explica);
-    const kpiHtml = !R.kpis.length ? '' : `<div class="ct-card"><h3>📊 KPIs que explican la caída</h3><p class="ct-q">Solo se destacan los que pesan ≥15% del gap (o un ASP que se movió ≥8%). Referencia = promedio de los demás días cargados.</p>
+    const kpiHtml = !R.kpis.length ? '' : `<div class="ct-card"><h3>📊 KPIs que explican la caída</h3>
       ${kShow.length ? `<div class="ct-kpi-grid">${kShow.map(kpiCard).join('')}</div>` : `<div class="ct-note" style="margin-top:0">Ningún KPI de productividad explica una caída relevante en este período.</div>`}
       <details class="detail-toggle"><summary>Ver todos los KPIs (${kRest.length})</summary><div class="ct-kpi-grid" style="margin-top:8px">${kRest.map(kpiCard).join('')}</div></details></div>`;
 
@@ -5943,7 +6338,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       <div class="ct-kpi-grid">${cards}</div>
       <div class="ct-card" id="rcaPerf">
         <div class="ct-card-head"><h3>🧑‍💼 Desempeño por agente</h3><span class="ct-q" style="margin:0">${esc(R.label)} · ${esc(titulo)}${RCA.vista==='dow'?' · por día de la semana':''}</span></div>
-        <p class="ct-q">Los mismos indicadores de las pestañas de agentes. Si un día quedó bajo el plan, toca el día arriba y la tabla se reordena de menor a mayor venta para ver dónde pesó cada agente (y cuánto vende normalmente).</p>
+        
         <div class="ct-filter-row rca-ctrl">
           <div class="ct-seg" id="rcaVista"><button data-v="total" class="${RCA.vista==='total'?'active':''}">Total del período</button><button data-v="dow" class="${RCA.vista==='dow'?'active':''}">Por día de la semana</button></div>
           <span id="rcaMetricWrap" style="display:${RCA.vista==='dow'?'':'none'}"><select class="ct-select" id="rcaMetric" title="Indicador por día de la semana">${DOW_METRICS.map(m=>`<option value="${m[0]}" ${m[0]===RCA.metric?'selected':''}>${m[1]}</option>`).join('')}</select></span>
@@ -5981,6 +6376,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       }, 180);
     });
     $$('.rca-day', el).forEach(b => b.addEventListener('click', () => { RCA.per = 'dia:' + b.dataset.f; RCA.vista = 'total'; RCA.sort = null; renderRca(); }));
+    $$('.rca-fd-b', el).forEach(b => b.addEventListener('click', () => { RCA.per = 'fds:' + b.dataset.fds; RCA.vista = 'total'; RCA.sort = null; renderRca(); }));
     $$('#rcaVista button', el).forEach(b => b.addEventListener('click', () => { RCA.vista = b.dataset.v; drawTabla(); }));
     $('#rcaMetric').addEventListener('change', e => { RCA.metric = e.target.value; drawTabla(); });
     $('#rcaFiltro').value = RCA.filtro;
@@ -6079,7 +6475,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         ${WK.vista==='asesor' ? `<select class="ct-select" id="wkOp"><option value="all" ${WK.op==='all'?'selected':''}>Todas las operaciones</option>${WeekendCalc.OPS.map(o => `<option value="${o.ap}" ${WK.op===o.ap?'selected':''}>${o.label}</option>`).join('')}</select>` : ''}
       </div>
       <div id="wkBody"></div>
-      <div class="ct-note">Corte: ${last ? fechaCorta(last) : '—'}${R.pendientes.length ? ' · todavía no cierran: ' + R.pendientes.map(fechaCorta).join(', ') : ''}. Plan y Real de revenue y ventas vienen de Planif_2026. Solo Upsell trabaja domingos; en las demás operaciones el plan del domingo es $0 y cualquier venta registrada ese día se suma al real.</div>`;
+      <div class="ct-note">Corte: ${last ? fechaCorta(last) : '—'}${R.pendientes.length ? ' · todavía no cierran: ' + R.pendientes.map(fechaCorta).join(', ') : ''}.</div>`;
     $('#wkFri').addEventListener('change', e => { WK.fri = e.target.value; renderWeekend(); });
     $$('#wkVista button', el).forEach(b => b.addEventListener('click', () => { WK.vista = b.dataset.v; renderWeekend(); }));
     const so = $('#wkOp'); if (so) so.addEventListener('change', e => { WK.op = e.target.value; renderWeekend(); });
@@ -6131,12 +6527,12 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         ${kpi('ASP plan / real', `${T.aspPlan?'$'+Math.round(T.aspPlan):'—'} / ${T.aspReal?'$'+Math.round(T.aspReal):'—'}`, T.aspPlan&&T.aspReal? fmtSignedPct1(100*(T.aspReal/T.aspPlan-1)) + ' vs plan' : '')}
       </div>
       <div class="ct-grid-2">
-        <div class="ct-card"><div class="ct-card-head"><h3>Gap Vie–Dom por operación</h3></div><p class="ct-q">Real − plan del fin de semana. Rojo = se quedó por debajo.</p><div id="wkGapBars"></div></div>
-        <div class="ct-card"><div class="ct-card-head"><h3>Gap acumulado del mes, lunes a domingo</h3></div><p class="ct-q">¿El fin de semana empujó el acumulado o lo frenó? (0 = en plan)</p><div id="wkSerie"></div></div>
+        <div class="ct-card"><div class="ct-card-head"><h3>Gap Vie–Dom por operación</h3></div><div id="wkGapBars"></div></div>
+        <div class="ct-card"><div class="ct-card-head"><h3>Gap acumulado del mes, lunes a domingo</h3></div><div id="wkSerie"></div></div>
       </div>
-      <div class="ct-card"><div class="ct-card-head"><h3>Cumplimiento por día · Vie / Sáb / Dom</h3></div><p class="ct-q">Real ÷ plan de cada día (revenue). Debajo, $ real / $ plan.</p>
+      <div class="ct-card"><div class="ct-card-head"><h3>Cumplimiento por día · Vie / Sáb / Dom</h3></div>
         <div class="ct-det-wrap"><table class="ct-det"><thead><tr><th class="l">Operación</th>${R.dias.map(f => `<th style="text-align:center">${fechaCorta(f)}</th>`).join('')}</tr></thead><tbody>${R.ops.map(heatRow).join('')}${heatRow(T)}</tbody></table></div></div>
-      <div class="ct-card"><div class="ct-card-head"><h3>Detalle Vie–Dom por operación</h3></div><p class="ct-q">Gap MTD = real − plan acumulado del mes, al jueves (antes del fin de semana) y al último día cerrado.</p>
+      <div class="ct-card"><div class="ct-card-head"><h3>Detalle Vie–Dom por operación</h3></div>
         <div class="ct-det-wrap"><table class="ct-det"><thead><tr><th class="l">Operación</th><th>Plan</th><th>Real</th><th>Gap</th><th>Cumpl.</th><th class="grp">Ventas plan / real</th><th>ASP plan / real</th><th class="grp">Gap MTD jue</th><th>Gap MTD ${fechaCorta(last).split(' ')[0]}</th><th>Cumpl. MTD</th><th class="l">Efecto</th></tr></thead><tbody>${R.ops.map(rowT).join('')}<tr class="tot">${rowT(T).replace('<tr>','').replace('</tr>','')}</tr></tbody></table></div></div>`;
     // gráficas
     const bars = R.ops.concat([T]).map(o => ({label:o.label.replace('2.4.- + 1.4.- ','2.4+1.4 '), value:o.gap, color:o.gap>=0?'var(--series-3)':'var(--bad)'}));
@@ -6193,7 +6589,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         <div class="ct-kpi" style="cursor:default"><div class="lbl">Ventas Vie–Dom (agentes)</div><div class="val">${fmt0(S.ventas)}</div><div class="sub">${fmtMoney(S.revenue)}</div></div>
       </div>
       <div class="ct-card"><div class="ct-card-head"><h3>¿Cuántos conectaron y cuántos vendieron, día por día?</h3></div>
-        <p class="ct-q">La hoja no trae el turno programado: aquí "tenían que trabajar" = quienes conectaron ese día (horas > 0).</p>
+        
         <div class="ct-det-wrap"><table class="ct-det"><thead><tr><th class="l">Día</th><th>Conectaron</th><th>Vendieron</th><th>% que vendió</th><th>Ventas</th><th>Ventas plan</th></tr></thead><tbody>${porDia.map(d => d.opera
           ? `<tr><td class="l"><b>${fechaCorta(d.fecha)}</b></td><td>${d.trab}</td><td>${d.vend}</td><td>${d.trab?Math.round(100*d.vend/d.trab)+'%':'—'}</td><td>${fmt0(d.ventas)}</td><td>${d.vplan?f1(d.vplan):'—'}</td></tr>`
           : `<tr class="fut"><td class="l"><b>${fechaCorta(d.fecha)}</b></td><td colspan="5" style="text-align:left">Sin asesores conectados (la operación no abre)</td></tr>`).join('')}</tbody></table></div></div>
@@ -6340,7 +6736,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       }
     }
     return `<div class="ct-proj"><div class="ct-proj-h"><b>🟡 Proyección al ritmo actual y lo que falta para llegar al plan</b>
-        <span>Ritmo = Real ÷ Plan de los días cerrados (${pct(R.cumpl)} en revenue${V?`, ${pct(V.cumpl)} en ventas`:''}) aplicado al plan que queda del mes: respeta los días que no operan y las semanas más fuertes. El run-rate lineal simple daría ${fmtMoney(R.runRate)}.</span></div>
+        <span>${pct(R.cumpl)} del plan en revenue${V?` · ${pct(V.cumpl)} en ventas`:''} · run-rate lineal ${fmtMoney(R.runRate)}</span></div>
       <div class="ct-grid-2">${panel('Revenue', R, true)}${panel('Volumen de ventas', V, false)}</div>
       <div class="ct-proj-t">${fr.join('<br>')}</div></div>`;
   }
@@ -6354,392 +6750,6 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     if (AP_PAYLOAD) rebuildAP(); else cargarAgentPerf();
   }
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', bootCT); else bootCT();
-})();
-
-</script>
-<script id="h2DataScript">
-const HIST_DATA = {"months":["2026-09","2026-08","2026-07","2026-06","2026-05","2026-04","2026-03","2026-02","2026-01","2025-12","2025-11","2025-10","2025-09","2025-08","2025-07","2025-06","2025-05","2025-04","2025-03","2025-02","2025-01","2024-12","2024-11","2024-10","2024-09","2024-08","2024-07","2024-06","2024-05","2024-04"],"meta":{"source_sheet":"Post-Sales-Operations Calls","tabs_used":["Mensual Consolidado","Upsell of Mensual Consolidado"],"note":"Septiembre 2026 es parcial (mes en curso). \"post_subtotal\" = Recurrence + Bootcamp + Resurrection (verificado aritm\u00e9ticamente, NO es una operaci\u00f3n aparte). Sales Chat y 1.5-Bootcamp no aparecen en este hist\u00f3rico mensual -- no est\u00e1n ni como bloque propio ni dentro de post_subtotal."},"global":{"users_active":[33434,33434,33434,33434,33434,33434,33434,33434,33434,33434,33434,33434,34618,36514,35909,36603,35930,36035,36652,36583,36850,38700,38904,39492,41775,41004,41562,44234,43896,44322],"users_engaged":[14655,14655,14655,14655,14655,14655,14655,14655,14655,14655,14655,14655,15688,17431,15849,18116,20138,20138,20138,19538,19983,19855,19786,20534,23018,21122,20656,23616,22533,23590],"sf_id_unicos_agent":[25154,25154,25154,25154,25154,25154,25154,25154,25154,25154,25154,25154,23659,23369,22689,22023,23699,24759,21284,19949,22437,24054,27479,27021,28839,27139,26836,26205,26371,null],"2min_sf_id_unic":[11900,11900,11900,11900,11900,11900,11900,11900,11900,11900,11900,11900,11273,10483,10533,10449,12143,12502,10813,10492,12394,13000,13520,14044,15419,14618,13171,12983,12531,12623.35],"calls_x_users_active":[0.7523479093,0.7523479093,0.7523479093,0.7523479093,0.7523479093,0.7523479093,0.7523479093,0.7523479093,0.7523479093,0.7523479093,0.7523479093,0.7523479093,0.6834305852,0.6400010955,0.6318471692,0.6016719941,0.6595880879,0.6870820036,0.5807050093,0.5453079299,0.6088738128,0.6215503876,0.7063283981,0.6842145245,0.6903411131,0.6618622573,0.6456859631,0.5924175973,0.6007608894,null],"revenue_boot_rec_resu":[15478.80077,220727.0465,218685.2673,211995.8488,240236.8608,247451.3238,242943.09,239555.8546,251946.07,231214.79,247816.759,294233.89,281604.496,256848.03,286681.38,292828.89,364316.56,428377.94,383402,349169.59,429359.05,342708.41,376226.52,389477.94,425152.68,451461.91,359343.78,331264.87,386244.79,413354.84],"rev_x_mau":[0.4629658662,6.601873737,6.540804789,6.340726471,7.185405897,7.401188127,7.266348328,7.165037227,7.535624514,6.915558713,7.412118173,8.800439373,8.134626379,7.034234266,7.983552313,8.000133596,10.13962037,11.88782961,10.46060242,9.54458601,11.6515346,8.85551447,9.670638495,9.86219842,10.17720359,11.01019193,8.645969395,7.488919609,8.799088527,9.326177519]},"ops":{"recurrence":{"calls_to_agent":[52616,58797,56927,56372,50351,77945,104408,108596,142705,131602,111372,136578,77804,67509,75047,69095,79123,81721,100493,115005,114160,116525,151338,172992,153592,145597,105256,88656,125672,117568],"sf_u_calls_to_agent":[22790,24881,24061,24221,22284,35966,21838,21372,27128,24505,24511,28541,22387,20673,20900,19812,21593,22930,20153,18793,19856,20673,22007,23700,27040,25456,24644,23391,24860,24839],"calls_2min":[8287,10029,9516,9751,9652,12037,14139,13628,15293,13722,13478,15479,13457,11685,12029,11119,13840,14365,12884,12509,14915,14885,14188,15222,19313,16946,14057,12942,13174,14317],"sf_u_calls_2min":[7122,8265,7752,7983,7833,10509,10117,10145,11363,10091,10307,11868,10318,8918,9289,8786,10577,11138,9766,9363,10716,10832,10914,11753,13819,13100,11230,10750,10881,11794],"ventas":[62,875,979,1013,1105,1148,1369,1287,1441,1334,1242,1483,1463,1318,1480,1362,1676,1907,1839,1686,2040,1713,1841,1933,2278,2256,2030,1818,2178,2173],"revenue":[9803.93,134668.26,144503.78,150006.52,162752.51,168507.71,194997.83,179228.33,197676.12,183532.82,176608.66,214818.08,199345.66,179189.57,205864.53,212313.98,259277.93,319198.42,286683.58,264382.28,323834.28,253973.05,280104.26,290645.91,342869.99,340297.19,264422.27,246781.18,308470.25,323439.33],"asp":[158.1279032,153.9065829,147.6034525,148.081461,147.2873394,146.7837195,142.4381519,139.2605517,137.1798196,137.5808246,142.1969887,144.8537289,136.2581408,135.9556677,139.0976554,155.8839794,154.7004356,167.3824961,155.8910169,156.8103677,158.7422941,148.2621424,152.147887,150.3600155,150.513604,150.840953,130.2572759,135.7432233,141.6300505,148.8446065],"cr_2min":[0.007481597683,0.08724698375,0.1028793611,0.1038867808,0.1144840448,0.09537260115,0.09682438645,0.09443792193,0.09422611652,0.09721614925,0.09215017065,0.09580722269,0.108716653,0.1127941806,0.1230359963,0.1224930299,0.1210982659,0.1327532196,0.1427351754,0.1347829563,0.1367750587,0.1150822976,0.1297575416,0.1269872553,0.1179516388,0.1331287619,0.1444120367,0.140472879,0.1653256414,0.151777607],"cr_2min_sfu":[0.008705419826,0.1058681186,0.1262899897,0.1268946511,0.1410698328,0.1092396993,0.1353167935,0.1268605224,0.1268151016,0.1321970072,0.1205006306,0.1249578699,0.1417910448,0.1477909845,0.1593282377,0.155019349,0.1584570294,0.1712156581,0.188306369,0.1800704902,0.1903695409,0.1581425406,0.1686824262,0.1644686463,0.1648455026,0.1722137405,0.1807658059,0.1691162791,0.200165426,0.1842462269],"rev_per_2min":[1.183049354,13.42788513,15.18534889,15.38370629,16.86205035,13.99914514,13.79148667,13.15147711,12.92592166,13.37507798,13.10347678,13.87803346,14.81352902,15.33500813,17.11401862,19.09470096,18.73395448,22.22056526,22.25113164,21.13536494,21.71198659,17.062348,19.74233578,19.09380568,17.75332626,20.08126933,18.8107185,19.06824138,23.41507894,22.5912782],"staff_hours":[298.5883,3472.9668,3531.3865,3385.0642,3187.821,4019.5906,5295.065,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"rev_per_2min_sfu":[1.376569784,16.29380036,18.64083849,18.79074533,20.77780033,16.03460938,19.27427399,17.66666634,17.39647276,18.18777326,17.13482682,18.10061341,19.32018414,20.09302198,22.1621843,24.16503301,24.51337147,28.65850422,29.35527135,28.23691979,30.21969765,23.44655188,25.66467473,24.72950821,24.8114907,25.97688473,23.54606144,22.95638884,28.34943939,27.42405715],"rev_per_call":[0.4301856077,5.412493871,6.005726279,6.193242228,7.303559056,4.685194628,8.92928977,8.386128112,7.286792981,7.489607019,7.20528171,7.526648681,8.904527628,8.667806801,9.849977512,10.71643347,12.00749919,13.92055909,14.22535503,14.06812537,16.30913981,12.28525371,12.72796201,12.26354051,12.68010318,13.36805429,10.72968146,10.55026207,12.40829646,13.02143122],"rev_per_staff":[32.83427381,38.77614379,40.91984267,44.31423191,51.05446949,41.92161013,36.82633358,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]},"bootcamp":{"calls_to_agent":[29585,16682,10567,13577,14734,18612,14285,11944,19900,19013,14487,16853,9864,13842,15165,20461,20601,14410,24676,31330,35193,31996,34580,43181,29155,33513,27767,40258,32404,30741],"sf_u_calls_to_agent":[9820,7779,5938,6946,7292,8661,6713,5285,7795,7802,7288,8153,5006,7298,5187,6153,5551,5685,6302,6866,9205,9129,13517,12235,9626,9738,9946,11661,10354,10139],"calls_2min":[4304,3021,2315,2480,3264,3862,3170,2187,2902,2505,2558,3171,2107,2824,2556,3266,3433,2785,3116,3414,4615,4567,4945,4982,4124,3802,3798,4752,3457,3585],"sf_u_calls_2min":[3569,2657,2037,2151,2738,3227,2699,1831,2414,2158,2242,2679,1783,2462,2052,2592,2549,2285,2372,2532,3558,3487,4127,4061,3491,3202,3274,4002,2961,3057],"ventas":[5,80,55,37,52,44,57,39,56,61,98,115,92,115,117,109,144,163,150,132,151,129,172,145,121,163,113,111,113,84],"revenue":[2160.87,32585.5,21414.95,15607.94,25236.82,22878.19,29952.32,21339.8,32952.73,29801.77,45356.83,57208.7,46812.98,57159.74,58100.08,53783.12,73038.94,77179.83,67274.47,69675.1,82720.03,59910.32,71536.24,70639.61,58815.3,86479.56,69890.56,60830.39,57715.15,67813.78],"asp":[432.174,407.31875,389.3627273,421.8362162,485.3234615,519.9588636,525.4792982,547.174359,588.4416071,488.5536066,462.8247959,497.4669565,508.8367391,497.0412174,496.5818803,493.4231193,507.2148611,473.4958896,448.4964667,527.8416667,547.8147682,464.4210853,415.9083721,487.1697241,486.0768595,530.5494479,618.500531,548.0215315,510.7535398,807.3069048],"cr_2min":[0.001161710037,0.02648129758,0.02375809935,0.01491935484,0.01593137255,0.01139306059,0.01798107256,0.01783264746,0.01929703653,0.02435129741,0.03831118061,0.03626616209,0.04366397722,0.0407223796,0.04577464789,0.03337415799,0.04194581998,0.05852782765,0.04813863928,0.03866432337,0.03271939328,0.02824611342,0.0347826087,0.0291047772,0.02934044617,0.04287217254,0.02975250132,0.02335858586,0.03268730113,0.02343096234],"cr_2min_sfu":[0.001400952648,0.03010914565,0.02700049092,0.01720130172,0.01899196494,0.01363495507,0.02111893294,0.02129983616,0.0231980116,0.02826691381,0.04371097235,0.0429264651,0.05159842961,0.04670999188,0.05701754386,0.04205246914,0.05649274225,0.07133479212,0.06323777403,0.05213270142,0.04243957279,0.03699455119,0.04167676278,0.03570549126,0.03466055571,0.05090568395,0.03451435553,0.02773613193,0.03816278284,0.02747791953],"rev_per_2min":[0.5020608736,10.78632903,9.250518359,6.293524194,7.731868873,5.923922838,9.448681388,9.757567444,11.35517919,11.89691417,17.73136435,18.04121728,22.21783579,20.24070113,22.73086072,16.46758114,21.27554326,27.71268582,21.59000963,20.40864089,17.92416685,13.11809065,14.46637816,14.17896628,14.26171193,22.74580747,18.40193786,12.801008,16.69515476,18.91597768],"rev_per_2min_sfu":[0.6054553096,12.26401957,10.51298478,7.256132032,9.217246165,7.089615742,11.09756206,11.65472419,13.65067523,13.80990269,20.23052186,21.35449795,26.25517667,23.21679123,28.31387914,20.74966049,28.65395842,33.77673085,28.36191821,27.51781201,23.24902473,17.18104961,17.33371456,17.39463433,16.84769407,27.00798251,21.34714722,15.1999975,19.49177643,22.18311416],"rev_per_call":[0.2200478615,4.188906029,3.606424722,2.247040023,3.460891388,2.6415183,4.461838224,4.037805109,4.227418858,3.819760318,6.223494786,7.016889489,9.351374351,7.832247191,11.20109505,8.740958882,13.15779859,13.57604749,10.67509838,10.14784445,8.986423683,6.562637748,5.292316342,5.773568451,6.11004571,8.880628466,7.02700181,5.21656719,5.574188719,6.688409113]},"resurrection":{"calls_to_agent":[32626,25161,35892,34610,40496,30068,29560,27304,42093,35195,29106,30302,30580,25823,25941,24126,25406,24748,17027,18356,19394,19761,30289,24762,20886,20932,15415,12045,25676,21452],"sf_u_calls_to_agent":[8204,8323,8970,9163,9891,9474,9831,8641,9763,9558,8472,6663,7248,6650,6833,6820,7627,6991,5001,5056,6363,7143,9301,10072,10010,10810,7882,6939,7834,6474],"calls_2min":[1796,1649,1614,1366,1640,1781,2100,1800,1861,1611,1856,1597,1928,1733,1968,2155,2519,2377,1184,1518,1967,1952,2442,2194,2246,2439,1979,1607,1627,1896],"sf_u_calls_2min":[1640,1502,1471,1247,1466,1601,1865,1637,1620,1439,1654,1399,1679,1474,1657,1818,2126,2069,1059,1345,1739,1808,2181,1994,2052,2231,1792,1494,1463,1715],"ventas":[11,157,158,110,111,127,138,141,201,171,162,232,286,252,265,300,343,316,194,292,362,325,315,301,301,315,299,234,266,269],"revenue":[1017.42,17872.15,17494.72,12188.51,13499.65,16153.92,17992.94,15804.9,21317.22,17880.2,17857.18,22207.11,26361.84,20498.72,22716.77,26731.79,31999.69,29443.95,15112.21,22804.74,28825.04,24586.02,28192.42,23467.39,24685.16,25030.95,23653.3,20059.39,22101.73,21549.75],"asp":[92.49272727,113.8353503,110.7260759,110.8046364,121.6184685,127.1962205,130.3836232,112.0914894,106.0558209,104.5625731,110.2295062,95.72030172,92.17426573,81.34412698,85.72366038,89.10596667,93.29355685,93.17705696,77.89798969,78.09842466,79.62718232,75.64929231,89.49974603,77.96475083,82.01049834,79.46333333,79.10802676,85.72388889,83.08921053,80.1105948],"cr_2min":[0.006124721604,0.09520921771,0.09789343247,0.08052708638,0.06768292683,0.07130825379,0.06571428571,0.07833333333,0.1080064481,0.1061452514,0.08728448276,0.1452723857,0.148340249,0.1454125793,0.1346544715,0.1392111369,0.1361651449,0.1329406815,0.1638513514,0.1923583663,0.184036604,0.1664959016,0.128992629,0.1371923428,0.1340160285,0.1291512915,0.1510864073,0.1456129434,0.1634910879,0.1418776371],"cr_2min_sfu":[0.006707317073,0.1045272969,0.1074099252,0.0882117081,0.07571623465,0.07932542161,0.07399463807,0.08613317043,0.1240740741,0.1188325226,0.09794437727,0.1658327377,0.1703394878,0.170963365,0.15992758,0.1650165017,0.161335842,0.1527307878,0.1831916903,0.2171003717,0.2081656124,0.1797566372,0.1444291609,0.1509528586,0.1466861598,0.1411922905,0.1668526786,0.156626506,0.1818181818,0.156851312],"rev_per_2min":[0.5664922049,10.83817465,10.83935564,8.922774524,8.231493902,9.070140371,8.568066667,8.7805,11.45471252,11.09882061,9.621325431,13.90551659,13.67315353,11.82845932,11.54307419,12.40454292,12.70333069,12.38702146,12.76369088,15.02288538,14.65431622,12.59529713,11.54480753,10.69616682,10.99072128,10.26279213,11.95214755,12.48250778,13.58434542,11.3659019],"rev_per_2min_sfu":[0.6203780488,11.89890146,11.89307954,9.774266239,9.208492497,10.08989382,9.647689008,9.654795357,13.15877778,12.42543433,10.79636034,15.87355969,15.70091721,13.90686567,13.70957755,14.7039549,15.05159454,14.23100532,14.2702644,16.95519703,16.57564117,13.59846239,12.92637322,11.76900201,12.02980507,11.21961004,13.19938616,13.4266332,15.10712919,12.5654519],"rev_per_call":[0.1240151146,2.147320678,1.950358974,1.330187711,1.364841775,1.705079164,1.830224799,1.829059137,2.183470245,1.870705168,2.107788008,3.332899595,3.637119205,3.082514286,3.32456754,3.919617302,4.195580176,4.211693606,3.021837632,4.510431171,4.530102153,3.441973961,3.031117084,2.329963264,2.46604995,2.31553654,3.000926161,2.890818562,2.82125734,3.328660797]},"post_subtotal":{"calls_to_agent":[114827,100640,103386,104559,105581,126625,148253,147844,204698,185810,154965,183733,118248,107174,116153,113682,125130,120879,142196,164691,168747,168282,216207,240935,203633,200042,148438,140959,183752,169761],"sf_u_calls_to_agent":[40814,40983,38969,40330,39467,54101,38382,35298,44686,41865,40271,43357,34641,34621,32920,32785,34771,35606,31456,30715,35424,36945,44825,46007,46676,46004,42472,41991,43048,41452],"calls_2min":[14387,14699,13445,13597,14556,17680,19409,17615,20056,17838,17892,20247,17492,16242,16553,16540,19792,19527,17184,17441,21497,21404,21575,22398,25683,23187,19834,19301,18258,19798],"sf_u_calls_2min":[12331,12424,11260,11381,12037,15337,14681,13613,15397,13688,14203,15946,13780,12854,12998,13196,15252,15492,13197,13240,16013,16127,17222,17808,19362,18533,16296,16246,15305,16566],"ventas":[78,1112,1192,1160,1268,1319,1564,1467,1698,1566,1502,1830,1841,1685,1862,1771,2163,2386,2183,2110,2553,2167,2328,2379,2700,2734,2442,2163,2557,2526],"revenue":[12982.22,185125.91,183413.45,177802.97,201488.98,207539.82,242943.09,216373.03,251946.07,231214.79,239822.67,294233.89,272520.48,256848.03,286681.38,292828.89,364316.56,425822.2,369070.26,356862.12,435379.35,338469.39,379832.92,384752.91,426370.45,451807.7,357966.13,327670.96,388287.13,412802.86],"asp":[166.4387179,166.4801349,153.870344,153.2784224,158.9029811,157.3463381,155.3344565,147.4935446,148.3781331,147.6467369,159.6688881,160.7835464,148.0285062,152.4320653,153.9642213,165.3466347,168.4311419,178.466974,169.0656253,169.1289668,170.536369,156.1926119,163.1584708,161.7288398,157.9149815,165.2551939,146.5872768,151.489117,151.8526124,163.4215598],"cr_2min":[0.005421561132,0.07565140486,0.08865749349,0.08531293668,0.08711184391,0.0746040724,0.08058117368,0.08328129435,0.08466294376,0.087790111,0.08394813324,0.09038376056,0.1052481134,0.1037433814,0.1124871624,0.1070737606,0.1092865804,0.1221897885,0.1270367784,0.1209793016,0.1187607573,0.1012427584,0.1079026651,0.1062148406,0.1051279056,0.1179108983,0.1231219119,0.1120667323,0.1400481981,0.1275886453],"cr_2min_sfu":[0.006325521045,0.08950418545,0.1058614565,0.1019242597,0.1053418626,0.08600117363,0.1065322526,0.1077646367,0.1102812236,0.1144067797,0.1057523059,0.1147623228,0.1335994194,0.1310875992,0.1432528081,0.1342073356,0.1418174666,0.1540149755,0.1654163825,0.1593655589,0.1594329607,0.1343709307,0.1351759378,0.1335916442,0.1394484041,0.1475206389,0.1498527246,0.1331404653,0.1670695851,0.1524809852],"rev_per_2min":[0.902357684,12.59445609,13.64175902,13.07663235,13.84233168,11.7386776,12.51703282,12.28345331,12.56212954,12.96192342,13.4039051,14.53222156,15.57972102,15.81381788,17.31899837,17.70428597,18.40726354,21.80684181,21.47755237,20.46110429,20.25302833,15.81337087,17.60523384,17.17800295,16.60127127,19.48538836,18.04810578,16.97689032,21.26668474,20.85073543],"rev_per_2min_sfu":[1.052811613,14.90066887,16.28893872,15.62278974,16.739136,13.53196975,16.54812956,15.89458826,16.36332208,16.8917877,16.88535309,18.45189326,19.7765225,19.98195348,22.05580705,22.19073128,23.88647784,27.48658663,27.96622414,26.95333233,27.18911822,20.98774664,22.05509929,21.60562163,22.02099215,24.37855177,21.96650282,20.16933153,25.36995296,24.91868043],"rev_per_call":[0.3180825207,4.517139058,4.706650158,4.408702455,5.105251983,3.836154969,6.329609973,6.129894895,5.638143266,5.522866117,5.955220134,6.786306479,7.866992292,7.418850698,8.708425881,8.931794723,10.477598,11.95928214,11.73290501,11.6184965,12.29051914,9.161439708,8.473684774,8.362921077,9.134682706,9.821052517,8.428285223,7.803361673,9.01986457,9.95857522]},"upsell":{"calls_to_agent":[15180,20656,16463,10662,11310,10100,11017,16756,14158,24287,11165,7433,8138,6307,5306,5373,9040,9852,6520,5489,6689,6750,7973,8273,8057,7701,6864,6183,7798,6875],"sf_u_calls_to_agent":[4248,5838,5774,4502,4474,4509,5086,6945,6012,6381,5694,4262,4887,3892,3190,3261,4754,5102,4250,3767,4721,4420,4942,4818,5078,5194,4993,4585,5370,5178],"calls_2min":[4026,5448,4713,3714,3612,3905,4493,5479,5344,4607,3817,3859,4411,3715,2901,2995,4361,4580,3597,3306,4205,3722,4110,3840,4182,4263,4187,3842,4521,4445],"sf_u_calls_2min":[3144,4245,3912,3165,3166,3409,3882,4641,4614,3811,3412,3452,3965,3384,2686,2746,3912,4107,3387,3083,3913,3380,3774,3552,3874,3958,3882,3552,4175,4153],"ventas":[110,1399,1282,1099,1174,1309,1480,1680,1980,1162,1270,1594,1699,1777,1555,1487,1891,2001,2024,1807,2205,1809,2108,2121,2291,2378,2273,2158,2546,2679],"revenue":[21784.69,269164.65,235537.42,203896.03,230563.45,237418.84,251458.42,283480.18,345642.38,193942.52,212468.12,266859.01,288430.38,296197.47,249414.73,240530.44,305634.83,316419.19,323915.99,280060.05,350344.03,255877.78,289330.35,288560.77,311270.22,332817.08,306598.48,291442.1,353769.72,351519.64],"asp":[198.0426364,192.3978914,183.7265367,185.5286897,196.3913543,181.3742093,169.9043378,168.7382024,174.5668586,166.904062,167.2977323,167.4146863,169.7647911,166.6840011,160.3953248,161.7555077,161.6260338,158.1305297,160.0375445,154.9861926,158.8861814,141.4470868,137.2534867,136.0493965,135.8665299,139.9567199,134.8871447,135.0519462,138.9511862,131.2130049],"cr_2min":[0.02732240437,0.2567914831,0.2720135795,0.2959073775,0.3250276855,0.3352112676,0.3294012909,0.3066252966,0.370508982,0.2522248752,0.332722033,0.4130603783,0.3851734301,0.4783310902,0.5360220614,0.4964941569,0.4336161431,0.4368995633,0.5626911315,0.5465819722,0.5243757432,0.4860290167,0.5128953771,0.55234375,0.5478240077,0.5578231293,0.5428707905,0.5616866216,0.5631497456,0.6026996625],"cr_2min_sfu":[0.03498727735,0.3295641932,0.3277096115,0.347235387,0.3708149084,0.3839835729,0.38124678,0.3619909502,0.4291287386,0.3049068486,0.3722157093,0.4617612978,0.4284993695,0.5251182033,0.5789277736,0.5415149308,0.4833844581,0.4872169467,0.5975789784,0.5861174181,0.5635062612,0.5352071006,0.5585585586,0.5971283784,0.5913784202,0.6008084891,0.5855229263,0.607545045,0.6098203593,0.6450758488],"rev_per_2min":[5.411000994,49.40613987,49.97611288,54.89930802,63.83262735,60.79867862,55.96670821,51.73940135,64.67858907,42.0973562,55.6636416,69.15237367,65.38888687,79.73013997,85.97543261,80.31066444,70.08365742,69.08715939,90.05170698,84.7126588,83.31605945,68.7473885,70.39667883,75.14603385,74.43094692,78.07109547,73.2262909,75.85687142,78.25032515,79.08203375],"rev_per_2min_sfu":[6.928972646,63.40745583,60.20895194,64.42212638,72.82484207,69.64471693,64.77548171,61.08170222,74.91165583,50.89019155,62.27084408,77.30562283,72.74410593,87.52880319,92.85730827,87.59302258,78.12751278,77.04387387,95.63507234,90.84010704,89.53335804,75.70348521,76.6641097,81.23895552,80.34853382,84.08718545,78.97951571,82.05014077,84.73526228,84.64234048],"ventas_bau":[223,2927,2869,2626,2696,2890,3184,3664,4054,2571,2766,3385,3712,3829,3518,3298,4103,4201,4408,4052,5062,3903,4449,4543,4931,4933,4689,4331,5128,5283],"revenue_bau":[77443.16,1046797,967663.99,859176.15,899422.71,952698.64,1076929.1,1198425.92,1366750.62,808975.05,926667.76,1157772.9,1273725.88,1282852.92,1124783.45,1047288.42,1291674.05,1325123.48,1439680.19,1331217.77,1685642.27,1282818.94,1416845.32,1535571.87,1630746.4,1673921.83,1574300.22,1521628.51,1796730.77,1836208.19],"cr_general":[0.4932735426,0.4779637854,0.4468455908,0.4185072353,0.4354599407,0.4529411765,0.4648241206,0.4585152838,0.4884065121,0.4519642163,0.4591467824,0.470901034,0.4577047414,0.4640898407,0.4420125071,0.4508793208,0.4608822813,0.4763151631,0.4591651543,0.445952616,0.4355985776,0.4634896234,0.4738143403,0.4668721109,0.4646116406,0.4820595986,0.4847515462,0.4982682983,0.4964898596,0.5070982396],"rev_per_eleg":[97.68919283,91.95922446,82.09739282,77.64509901,85.52056751,82.15184775,78.97563442,77.36904476,85.25959053,75.43466356,76.81421547,78.83574889,77.70214978,77.35635153,70.89673962,72.93221346,74.49057519,75.31996905,73.48366379,69.11649803,69.21059463,65.55925698,65.03267026,63.51766894,63.12517136,67.46748024,65.38675197,67.29210344,68.98785491,66.53788378],"expansion":[0.2812990844,0.2571316597,0.2434082723,0.2373157472,0.25634604,0.2492066536,0.2334957984,0.2365437657,0.2528935235,0.239738568,0.2292818734,0.2304933981,0.2264461958,0.2308896565,0.2217446656,0.2296697217,0.236619161,0.2387846829,0.2249916282,0.2103788398,0.2078400834,0.199465234,0.204207436,0.187917463,0.1908759204,0.1988247444,0.1947522309,0.1915330175,0.1968963441,0.1914377912]}}};
-</script>
-<script id="h2AppScript">
-(function(){
-  'use strict';
-  const $ = (sel, root) => (root||document).querySelector(sel);
-  const $$ = (sel, root) => Array.from((root||document).querySelectorAll(sel));
-
-  const fmt0 = v => v==null ? '—' : Math.round(v).toLocaleString('es-CO');
-  const fmtMoney = v => v==null ? '—' : '$'+Math.round(v).toLocaleString('es-CO');
-  const fmtMoneyK = v => v==null ? '—' : (Math.abs(v)>=1000 ? '$'+(v/1000).toFixed(0)+'K' : '$'+Math.round(v));
-  const fmtPct1 = v => v==null ? '—' : (v*100).toFixed(1)+'%'; // los % de HD_DATA vienen como fracción (0.49 = 49%)
-  const fmtSignedPct1 = v => v==null ? '—' : (v>=0?'+':'')+v.toFixed(1)+'%';
-  const MES_ES = {'01':'Ene','02':'Feb','03':'Mar','04':'Abr','05':'May','06':'Jun','07':'Jul','08':'Ago','09':'Sep','10':'Oct','11':'Nov','12':'Dic'};
-  const monthLabel = ym => { const [y,m] = ym.split('-'); return MES_ES[m]+' '+y.slice(2); };
-
-  const OP_META = {
-    upsell:       {label:'2.1.- Upsell',                              color:'var(--series-1)'},
-    recurrence:   {label:'Recurrence',                                 color:'var(--series-2)'},
-    bootcamp:     {label:'Bootcamp',                                   color:'var(--series-3)'},
-    resurrection: {label:'Resurrection',                               color:'var(--series-4)'},
-    post_subtotal:{label:'Recurrence+Bootcamp+Resurrection (subtotal)',color:'var(--text-muted,#9a9a94)'},
-  };
-  const METRIC_META = {
-    revenue:      {label:'Revenue ($)',            fmt:fmtMoney,  fmtK:fmtMoneyK, isPct:false},
-    ventas:       {label:'Ventas (unidades)',       fmt:fmt0,      fmtK:fmt0,      isPct:false},
-    asp:          {label:'ASP — precio prom. ($)',  fmt:fmtMoney,  fmtK:fmtMoney,  isPct:false},
-    calls_to_agent:{label:'Llamadas al agente',      fmt:fmt0,      fmtK:v=>v==null?'—':(Math.abs(v)>=1000?(v/1000).toFixed(0)+'K':fmt0(v)), isPct:false},
-    cr_2min:      {label:'%CR llamadas > 2 min',    fmt:fmtPct1,   fmtK:fmtPct1,   isPct:true},
-    rev_per_2min: {label:'Revenue / llamada > 2min',fmt:fmtMoney,  fmtK:fmtMoney,  isPct:false},
-  };
-
-  /* ---------- helpers SVG / tooltip (copia reducida del mismo patrón que ct_app.js) ---------- */
-  function svg(tag, attrs){
-    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
-    for (const k in attrs) if (attrs[k]!=null) el.setAttribute(k, attrs[k]);
-    return el;
-  }
-  let tipEl = null;
-  function ensureTip(){
-    if (tipEl) return tipEl;
-    tipEl = document.createElement('div');
-    tipEl.className = 'ct-tooltip';
-    document.body.appendChild(tipEl);
-    return tipEl;
-  }
-  function showTip(x,y,html){ const t=ensureTip(); t.innerHTML=html; t.style.left=x+'px'; t.style.top=y+'px'; t.classList.add('show'); }
-  function hideTip(){ if (tipEl) tipEl.classList.remove('show'); }
-
-  function renderLineChart(container, series, opts){
-    opts = opts || {};
-    const W = opts.width||760, H = opts.height||230, PAD = {l:opts.padLeft||58,r:14,t:14,b:26};
-    const allY = series.flatMap(s=>s.points.map(p=>p.y)).filter(v=>v!=null);
-    let yMin = opts.yMin!=null?opts.yMin:Math.min(0,...allY);
-    let yMax = opts.yMax!=null?opts.yMax:Math.max(...allY);
-    if (yMax===yMin) yMax = yMin+1;
-    const n = Math.max(...series.map(s=>s.points.length));
-    const xAt = i => PAD.l + (i/(Math.max(n-1,1))) * (W-PAD.l-PAD.r);
-    const yAt = v => H-PAD.b - ((v-yMin)/(yMax-yMin)) * (H-PAD.t-PAD.b);
-    const root = svg('svg', {viewBox:`0 0 ${W} ${H}`, class:'ct-chart', preserveAspectRatio:'xMidYMid meet'});
-    for (let g=0; g<=4; g++){
-      const v = yMin + (yMax-yMin)*g/4, y = yAt(v);
-      root.appendChild(svg('line',{x1:PAD.l,x2:W-PAD.r,y1:y,y2:y,stroke:'var(--border)','stroke-width':1,'stroke-dasharray':g===0?'0':'2,3'}));
-      const t = svg('text',{x:PAD.l-6,y:y+3,'text-anchor':'end','font-size':9,fill:'var(--text-secondary)'});
-      t.textContent = opts.yFormat ? opts.yFormat(v) : Math.round(v);
-      root.appendChild(t);
-    }
-    if (opts.refLine!=null){
-      const y = yAt(opts.refLine);
-      root.appendChild(svg('line',{x1:PAD.l,x2:W-PAD.r,y1:y,y2:y,stroke:'var(--bad)','stroke-width':1.3,'stroke-dasharray':'4,3',opacity:.7}));
-    }
-    series.forEach(s => {
-      const pts = s.points.map((p,i)=>[xAt(i), p.y==null?null:yAt(p.y)]).filter(p=>p[1]!=null);
-      if (pts.length>1){
-        const d = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
-        root.appendChild(svg('path',{d, fill:'none', stroke:s.color, 'stroke-width':s.width||2, 'stroke-linejoin':'round','stroke-linecap':'round','stroke-dasharray':s.dash||''}));
-      }
-      s.points.forEach((p,i) => {
-        if (p.y==null) return;
-        const cx = xAt(i), cy = yAt(p.y);
-        const c = svg('circle',{cx,cy,r:3,fill:s.color,opacity:0.001});
-        c.addEventListener('mouseenter', e => { c.setAttribute('opacity','1'); showTip(e.clientX, e.clientY-8, `<strong>${s.label}</strong><br>${p.label||''}: ${opts.tipFormat?opts.tipFormat(p.y):p.y}`); });
-        c.addEventListener('mousemove', e => showTip(e.clientX, e.clientY-8, `<strong>${s.label}</strong><br>${p.label||''}: ${opts.tipFormat?opts.tipFormat(p.y):p.y}`));
-        c.addEventListener('mouseleave', () => { c.setAttribute('opacity','0.001'); hideTip(); });
-        root.appendChild(c);
-      });
-    });
-    if (opts.xLabels){
-      const step = Math.ceil(opts.xLabels.length/10);
-      opts.xLabels.forEach((lbl,i) => {
-        if (i%step!==0 && i!==opts.xLabels.length-1) return;
-        const t = svg('text',{x:xAt(i),y:H-6,'text-anchor':'middle','font-size':9,fill:'var(--text-secondary)'});
-        t.textContent = lbl; root.appendChild(t);
-      });
-    }
-    container.innerHTML=''; container.appendChild(root);
-    if (opts.legend){
-      const lg = document.createElement('div'); lg.className='ct-legend';
-      lg.innerHTML = series.map(s=>`<span><i style="background:${s.color}"></i>${s.label}</span>`).join('');
-      if (opts.refLine!=null) lg.innerHTML += `<span><i style="background:var(--bad)"></i>${opts.refLineLabel||'Referencia'}</span>`;
-      container.appendChild(lg);
-    }
-  }
-
-  function renderBarChart(container, bars, opts){
-    opts = opts||{};
-    const W = opts.width||760, H = opts.height||210, PAD={l:opts.padLeft||58,r:14,t:14,b:28};
-    const vals = bars.map(b=>b.value).filter(v=>v!=null);
-    const yMax = Math.max(0, ...vals), yMin = Math.min(0, ...vals);
-    const range = (yMax-yMin)||1;
-    const yAt = v => H-PAD.b - ((v-yMin)/range)*(H-PAD.t-PAD.b);
-    const zeroY = yAt(0);
-    const bw = (W-PAD.l-PAD.r)/bars.length;
-    const root = svg('svg',{viewBox:`0 0 ${W} ${H}`, class:'ct-chart'});
-    for (let g=0; g<=4; g++){
-      const v = yMin+range*g/4, y=yAt(v);
-      root.appendChild(svg('line',{x1:PAD.l,x2:W-PAD.r,y1:y,y2:y,stroke:'var(--border)','stroke-width':1,'stroke-dasharray':g===0?'0':'2,3'}));
-      const t = svg('text',{x:PAD.l-6,y:y+3,'text-anchor':'end','font-size':9,fill:'var(--text-secondary)'});
-      t.textContent = opts.yFormat?opts.yFormat(v):Math.round(v);
-      root.appendChild(t);
-    }
-    bars.forEach((b,i) => {
-      if (b.value==null) return;
-      const x = PAD.l + i*bw + bw*0.15, w = bw*0.7;
-      const y0=zeroY, y1=yAt(b.value);
-      const y=Math.min(y0,y1), h=Math.max(1,Math.abs(y1-y0));
-      const rect = svg('rect',{x,y,width:w,height:h,rx:2,fill:b.color||'var(--series-1)'});
-      rect.addEventListener('mouseenter', e => showTip(e.clientX, e.clientY-8, `<strong>${b.label}</strong><br>${opts.tipFormat?opts.tipFormat(b.value):b.value}`));
-      rect.addEventListener('mousemove', e => showTip(e.clientX, e.clientY-8, `<strong>${b.label}</strong><br>${opts.tipFormat?opts.tipFormat(b.value):b.value}`));
-      rect.addEventListener('mouseleave', hideTip);
-      root.appendChild(rect);
-    });
-    if (opts.xLabels){
-      bars.forEach((b,i) => {
-        const t = svg('text',{x:PAD.l+i*bw+bw/2,y:H-6,'text-anchor':'middle','font-size':9,fill:'var(--text-secondary)'});
-        t.textContent = b.xLabel||''; root.appendChild(t);
-      });
-    }
-    container.innerHTML=''; container.appendChild(root);
-    if (opts.legend){
-      const lg = document.createElement('div'); lg.className='ct-legend';
-      lg.innerHTML = opts.legend.map(s=>`<span><i style="background:${s.color}"></i>${s.label}</span>`).join('');
-      container.appendChild(lg);
-    }
-  }
-
-  /* ---------- datos derivados ---------- */
-  const MONTHS = HIST_DATA.months; // más reciente primero, ej. ['2026-09','2026-08',...,'2024-04']
-  const N = MONTHS.length;
-  const LATEST_PARTIAL_IDX = 0; // 2026-09, mes en curso
-  const LATEST_COMPLETE_IDX = 1; // 2026-08
-  function opSeries(opKey, metricKey){ return HIST_DATA.ops[opKey][metricKey]; }
-  function totalSeries(metricKey){
-    // Total Post-Venta real = Upsell + Recurrence + Bootcamp + Resurrection (NO usar post_subtotal, que excluye Upsell)
-    const parts = ['upsell','recurrence','bootcamp','resurrection'].map(k=>opSeries(k,metricKey));
-    const out = [];
-    for (let i=0;i<N;i++){
-      let sum=null, any=false;
-      parts.forEach(arr=>{ if (arr[i]!=null){ sum=(sum||0)+arr[i]; any=true; } });
-      out.push(any?sum:null);
-    }
-    return out;
-  }
-  function pctChange(curr, prev){ if (curr==null||prev==null||prev===0) return null; return 100*(curr-prev)/prev; }
-
-  /* ================= VISTA RESUMEN ================= */
-  function renderResumen(){
-    const el = $('#h2ViewResumen');
-    el.innerHTML = `
-      <div class="ct-filter-row">
-        <label style="font-size:12px;color:var(--text-secondary)">Operación</label>
-        <select class="ct-select" id="h2ResumenOpSel"></select>
-      </div>
-      <div class="ct-kpi-grid" id="h2ResumenKpis"></div>
-      <div class="ct-card">
-        <h3>Revenue mensual histórico — Abr 2024 a Sep 2026</h3>
-        <p class="ct-q">Cada operación por separado, más el total Post-Venta (Upsell + Recurrence + Bootcamp + Resurrection). Septiembre 2026 es un mes parcial (todavía en curso).</p>
-        <div id="h2ResumenChart"></div>
-      </div>
-      <div class="ct-note">"Recurrence+Bootcamp+Resurrection (subtotal)" no se suma aparte del total — ya está incluido dentro del total Post-Venta mostrado arriba. Sales Chat y 1.5.-Bootcamp no tienen historia mensual en este archivo (no aparecen en ninguna pestaña de histórico), así que no están en este total.</div>
-    `;
-    const sel = $('#h2ResumenOpSel');
-    Object.keys(OP_META).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=OP_META[k].label; sel.appendChild(o); });
-    sel.value = 'upsell';
-
-    function draw(){
-      const opKey = sel.value;
-      const kpis = [];
-      ['revenue','ventas','asp','cr_2min'].forEach(mKey => {
-        const meta = METRIC_META[mKey];
-        const arr = opSeries(opKey, mKey);
-        const curr = arr[LATEST_COMPLETE_IDX], prior = arr[LATEST_COMPLETE_IDX+1];
-        const yoyIdx = LATEST_COMPLETE_IDX+12;
-        const yoy = yoyIdx<N ? arr[yoyIdx] : null;
-        const mom = pctChange(curr, prior), yoyPct = pctChange(curr, yoy);
-        kpis.push(`<div class="ct-kpi">
-          <div class="lbl">${meta.label} · ${monthLabel(MONTHS[LATEST_COMPLETE_IDX])}</div>
-          <div class="val">${meta.fmt(curr)}</div>
-          <div class="sub">Vs ${monthLabel(MONTHS[LATEST_COMPLETE_IDX+1])}: ${mom==null?'—':fmtSignedPct1(mom)} &nbsp;·&nbsp; Vs ${monthLabel(MONTHS[yoyIdx]||'')} (año ant.): ${yoyPct==null?'—':fmtSignedPct1(yoyPct)}</div>
-        </div>`);
-      });
-      $('#h2ResumenKpis').innerHTML = kpis.join('');
-
-      const xLabels = MONTHS.slice().reverse().map(monthLabel);
-      const series = Object.keys(OP_META).filter(k=>k!=='post_subtotal').map(k => ({
-        label: OP_META[k].label, color: OP_META[k].color,
-        points: opSeries(k,'revenue').slice().reverse().map((y,i)=>({y, label: monthLabel(MONTHS.slice().reverse()[i])})),
-      }));
-      series.push({
-        label:'Total Post-Venta (4 operaciones)', color:'var(--text-primary)', width:2.6,
-        points: totalSeries('revenue').slice().reverse().map((y,i)=>({y, label: monthLabel(MONTHS.slice().reverse()[i])})),
-      });
-      renderLineChart($('#h2ResumenChart'), series, {legend:true, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels, height:260});
-    }
-    sel.addEventListener('change', draw);
-    draw();
-  }
-
-  /* ================= VISTA EXPLORADOR ================= */
-  function renderExplorador(){
-    const el = $('#h2ViewExplorador');
-    el.innerHTML = `
-      <div class="ct-filter-row" id="h2ExplOpRow" style="gap:14px">
-        <span style="font-size:12px;color:var(--text-secondary)">Operaciones:</span>
-      </div>
-      <div class="ct-filter-row">
-        <label style="font-size:12px;color:var(--text-secondary)">Métrica</label>
-        <select class="ct-select" id="h2ExplMetricSel"></select>
-      </div>
-      <div class="ct-card">
-        <h3>Tendencia mensual — 30 meses</h3>
-        <p class="ct-q">Elige una o varias operaciones y una métrica para comparar su evolución completa.</p>
-        <div id="h2ExplChart"></div>
-      </div>
-    `;
-    const opRow = $('#h2ExplOpRow');
-    Object.keys(OP_META).forEach(k => {
-      const id = 'h2ExplOp_'+k;
-      const wrap = document.createElement('label');
-      wrap.style.cssText = 'display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-primary);cursor:pointer';
-      wrap.innerHTML = `<input type="checkbox" id="${id}" ${k==='upsell'||k==='recurrence'?'checked':''}> <span style="display:inline-flex;align-items:center;gap:4px"><i style="width:9px;height:9px;border-radius:2px;background:${OP_META[k].color};display:inline-block"></i>${OP_META[k].label}</span>`;
-      opRow.appendChild(wrap);
-    });
-    const metricSel = $('#h2ExplMetricSel');
-    Object.keys(METRIC_META).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=METRIC_META[k].label; metricSel.appendChild(o); });
-    metricSel.value = 'revenue';
-
-    function draw(){
-      const mKey = metricSel.value;
-      const meta = METRIC_META[mKey];
-      const activeOps = Object.keys(OP_META).filter(k => $('#h2ExplOp_'+k).checked);
-      const xLabels = MONTHS.slice().reverse().map(monthLabel);
-      const series = activeOps.map(k => ({
-        label: OP_META[k].label, color: OP_META[k].color,
-        points: opSeries(k, mKey).slice().reverse().map((y,i)=>({y, label:xLabels[i]})),
-      }));
-      if (!series.length){ $('#h2ExplChart').innerHTML = '<div class="ct-note">Selecciona al menos una operación.</div>'; return; }
-      renderLineChart($('#h2ExplChart'), series, {legend:true, yFormat: meta.isPct? v=>(v*100).toFixed(0)+'%' : v=>meta.fmtK(v), tipFormat: meta.fmt, xLabels, height:280});
-    }
-    Object.keys(OP_META).forEach(k => $('#h2ExplOp_'+k).addEventListener('change', draw));
-    metricSel.addEventListener('change', draw);
-    draw();
-  }
-
-  /* ================= VISTA COMPARATIVA ANUAL ================= */
-  function renderAnual(){
-    const el = $('#h2ViewAnual');
-    el.innerHTML = `
-      <div class="ct-filter-row">
-        <label style="font-size:12px;color:var(--text-secondary)">Operación</label>
-        <select class="ct-select" id="h2AnualOpSel"></select>
-        <label style="font-size:12px;color:var(--text-secondary);margin-left:10px">Métrica</label>
-        <select class="ct-select" id="h2AnualMetricSel"></select>
-      </div>
-      <div class="ct-card">
-        <h3>Comparativa por mes del año — 2024 vs 2025 vs 2026</h3>
-        <p class="ct-q">Cada línea es un año; el eje horizontal es el mes calendario (Ene-Dic). Sirve para ver estacionalidad y si 2026 va mejor o peor que los años anteriores en el mismo mes. 2024 solo tiene datos desde abril; 2026 solo hasta septiembre (parcial).</p>
-        <div id="h2AnualChart"></div>
-      </div>
-      <div class="ct-note">Los puntos que faltan (ej. Ene-Mar 2024) no están inventados: ese mes simplemente no existe en el histórico de la hoja.</div>
-    `;
-    const opSel = $('#h2AnualOpSel'); const metricSel = $('#h2AnualMetricSel');
-    Object.keys(OP_META).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=OP_META[k].label; opSel.appendChild(o); });
-    Object.keys(METRIC_META).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=METRIC_META[k].label; metricSel.appendChild(o); });
-    opSel.value='upsell'; metricSel.value='revenue';
-
-    const MONTH_ORDER = ['01','02','03','04','05','06','07','08','09','10','11','12'];
-    function draw(){
-      const opKey = opSel.value, mKey = metricSel.value;
-      const meta = METRIC_META[mKey];
-      const arr = opSeries(opKey, mKey);
-      const byYear = {}; // year -> {month(mm): value}
-      MONTHS.forEach((ym,i) => {
-        const [y,m] = ym.split('-');
-        byYear[y] = byYear[y] || {};
-        byYear[y][m] = arr[i];
-      });
-      const years = Object.keys(byYear).sort();
-      const colors = ['var(--series-4)','var(--series-2)','var(--series-1)'];
-      const series = years.map((y,idx) => ({
-        label: y, color: colors[idx%colors.length],
-        points: MONTH_ORDER.map(m => ({y: byYear[y][m], label: MES_ES[m]+' '+y})),
-      }));
-      renderLineChart($('#h2AnualChart'), series, {legend:true, yFormat: meta.isPct? v=>(v*100).toFixed(0)+'%' : v=>meta.fmtK(v), tipFormat: meta.fmt, xLabels: MONTH_ORDER.map(m=>MES_ES[m]), height:270});
-    }
-    opSel.addEventListener('change', draw); metricSel.addEventListener('change', draw);
-    draw();
-  }
-
-  /* ================= VISTA EXPANSIÓN ================= */
-  function renderExpansion(){
-    const el = $('#h2ViewExpansion');
-    const arr = opSeries('upsell','expansion');
-    const xLabels = MONTHS.slice().reverse().map(monthLabel);
-    const first = arr[arr.length-1], lastComplete = arr[LATEST_COMPLETE_IDX];
-    el.innerHTML = `
-      <div class="ct-card">
-        <h3>Expansión Activación → Upsell — histórico completo</h3>
-        <p class="ct-q">De cada $100 que trae Activación (ACQ), cuánto trae Upsell. La meta interna de la hoja es 26%. Este es el mismo indicador de la pestaña "Post-Venta · WFM Control Tower" (vista diaria de Upsell), pero aquí con 30 meses de contexto en vez de solo septiembre.</p>
-        <div id="h2ExpansionChart"></div>
-      </div>
-      <div class="ct-note">De ${monthLabel(MONTHS[MONTHS.length-1])} a ${monthLabel(MONTHS[LATEST_COMPLETE_IDX])} (último mes completo) la expansión pasó de ${fmtPct1(first)} a ${fmtPct1(lastComplete)} — ${lastComplete>first?'una mejora sostenida':'una caída'} de ${fmtSignedPct1(100*(lastComplete-first))} puntos porcentuales a lo largo del período. Es una tendencia observada, no una proyección.</div>
-    `;
-    renderLineChart($('#h2ExpansionChart'), [
-      {label:'Expansión real (mensual)', color:'var(--series-1)', points: arr.slice().reverse().map((y,i)=>({y,label:xLabels[i]}))},
-    ], {refLine:0.26, refLineLabel:'Meta interna 26%', legend:true, yFormat:v=>(v*100).toFixed(0)+'%', tipFormat:fmtPct1, xLabels, height:270});
-  }
-
-  /* ================= VISTA TABLA ================= */
-  function renderTabla(){
-    const el = $('#h2ViewTabla');
-    el.innerHTML = `
-      <div class="ct-filter-row">
-        <label style="font-size:12px;color:var(--text-secondary)">Operación</label>
-        <select class="ct-select" id="h2TablaOpSel"></select>
-      </div>
-      <div class="ct-card">
-        <h3>Detalle mensual completo</h3>
-        <p class="ct-q">Los 30 meses, más recientes primero. Desplázate horizontalmente para ver el histórico completo.</p>
-        <div style="overflow-x:auto"><table class="ct-table" id="h2TablaTable"></table></div>
-      </div>
-    `;
-    const sel = $('#h2TablaOpSel');
-    Object.keys(OP_META).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=OP_META[k].label; sel.appendChild(o); });
-    sel.value='upsell';
-    function draw(){
-      const opKey = sel.value;
-      const cols = ['calls_to_agent','ventas','revenue','asp','cr_2min','rev_per_2min'];
-      let html = '<thead><tr><th>Mes</th>' + cols.map(c=>`<th class="num">${METRIC_META[c].label}</th>`).join('') + '</tr></thead><tbody>';
-      MONTHS.forEach((ym,i) => {
-        html += `<tr><td>${monthLabel(ym)}${i===LATEST_PARTIAL_IDX?' <small style="color:var(--text-secondary)">(parcial)</small>':''}</td>` +
-          cols.map(c => {
-            const v = opSeries(opKey,c)[i];
-            const meta = METRIC_META[c];
-            return `<td class="num">${meta.isPct ? fmtPct1(v) : meta.fmt(v)}</td>`;
-          }).join('') + '</tr>';
-      });
-      html += '</tbody>';
-      $('#h2TablaTable').innerHTML = html;
-    }
-    sel.addEventListener('change', draw);
-    draw();
-  }
-
-  /* ================= NAV ================= */
-  $$('#h2Nav button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      $$('#h2Nav button').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      $$('.h2-view').forEach(v=>v.classList.remove('active'));
-      $(`.h2-view[data-view="${btn.dataset.view}"]`).classList.add('active');
-    });
-  });
-
-  function initHist(){
-    renderResumen();
-    renderExplorador();
-    renderAnual();
-    renderExpansion();
-    renderTabla();
-  }
-  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', initHist); else initHist();
 })();
 
 </script>
