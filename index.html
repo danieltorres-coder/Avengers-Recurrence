@@ -320,6 +320,13 @@
   @media (max-width:760px){.esc-strip{grid-template-columns:repeat(2,minmax(0,1fr));}}
   .ld-sum{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--text-secondary);margin:2px 0 4px;}
   .ld-sum b.neg{color:var(--bad);} .ld-sum b.pos{color:var(--series-3);}
+  .rca-kpis{flex-wrap:wrap;margin:8px 0 10px;}
+  .rca-kpis button[disabled]{opacity:.45;cursor:not-allowed;}
+  .rca-tgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;}
+  .rca-tcard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;}
+  .rca-tcard.click{cursor:pointer;} .rca-tcard.click:hover{border-color:var(--border-strong);}
+  .rca-tt{font-size:12.5px;font-weight:700;margin-bottom:4px;}
+  .rca-meta tr.ex-row td{cursor:pointer;}
   .ex-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;}
   .ex-card{cursor:pointer;margin-bottom:0;}
   .ex-card:hover{border-color:var(--border-strong);}
@@ -2126,7 +2133,9 @@ let CT_DATA = {"meta":{"fuente":"Google Sheet 'Post-Sales-Operations Calls', pes
         cumpl_pct: (pvReal !== null && pvPlan) ? 100 * pvReal / pvPlan : null,
       };
 
-      var expMetaFrac = num(r.ah_expan_meta_ups), expRealFrac = num(r.ai_expan_real_ups);
+      // CR y Expansión de Upsell: columnas DU (CR) y DV (Expansión) de Planif_2026 (campos du_cr / dv_expansion
+      // del Web App); si no vienen, se usan las columnas anteriores (BO / AI).
+      var expMetaFrac = num(r.ah_expan_meta_ups), expRealFrac = num(r.dv_expansion) !== null ? num(r.dv_expansion) : num(r.ai_expan_real_ups);
       var expVarPctFrac = num(r.aj_expan_var_pct_ups), expVarPpFrac = num(r.ak_expan_var_pp_ups);
       var upsell_expansion = {
         meta_pct: expMetaFrac !== null ? expMetaFrac * 100 : null,
@@ -2136,7 +2145,7 @@ let CT_DATA = {"meta":{"fuente":"Google Sheet 'Post-Sales-Operations Calls', pes
       };
 
       var aspPlan = num(r.bl_asp_plan), aspReal = num(r.bn_asp_real);
-      var crPlanFrac = num(r.bk_cr_plan), crRealFrac = num(r.bo_cr_real);
+      var crPlanFrac = num(r.bk_cr_plan), crRealFrac = num(r.du_cr) !== null ? num(r.du_cr) : num(r.bo_cr_real);
       var varAspPct = (aspReal !== null && aspPlan) ? 100 * (aspReal - aspPlan) / aspPlan : null;
       var varCrPct = (crRealFrac !== null && crPlanFrac) ? 100 * (crRealFrac - crPlanFrac) / crPlanFrac : null;
       var upsell_revenue = {
@@ -3109,7 +3118,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
   /* ---------- mismo indicador por día de la semana (lun…dom) ---------- */
   var WD_ORDER = [1, 2, 3, 4, 5, 6, 0];
   var WD_NAME = { 1: 'Lun', 2: 'Mar', 3: 'Mié', 4: 'Jue', 5: 'Vie', 6: 'Sáb', 0: 'Dom' };
-  function metricOf(m, t) {      // t = {ventas,revenue,staff,calls2,nTrab}; aditivos = promedio por día trabajado, razones = sobre sumas
+  function metricOf(m, t, suma) {      // t = {ventas,revenue,staff,calls2,nTrab}; aditivos = promedio por día trabajado (o suma si `suma`), razones = sobre sumas
+    if (suma && (m === 'ventas' || m === 'revenue' || m === 'staff' || m === 'calls2')) return t.nTrab ? t[m] : null;
     switch (m) {
       case 'ventas': return t.nTrab ? t.ventas / t.nTrab : null;
       case 'revenue': return t.nTrab ? t.revenue / t.nTrab : null;
@@ -3137,19 +3147,19 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       if (filtros.sup && grupoDe(a) !== filtros.sup) return false;
       return D.some(function (f) { return !!a.d[f]; });
     }).map(function (a) {
-      return { id: a.id, n: a.n, grupo: grupoDe(a), cel: WD_ORDER.map(function (w) { var t = acc(a, byWd[w]); return { v: metricOf(metric, t), nTrab: t.nTrab, ventas: t.ventas }; }),
-        tot: metricOf(metric, acc(a, D)), ventasTot: acc(a, D).ventas };
+      return { id: a.id, n: a.n, grupo: grupoDe(a), cel: WD_ORDER.map(function (w) { var t = acc(a, byWd[w]); return { v: metricOf(metric, t, filtros.suma), nTrab: t.nTrab, ventas: t.ventas }; }),
+        tot: metricOf(metric, acc(a, D), filtros.suma), ventasTot: acc(a, D).ventas };
     });
     // totales de la operación por día de la semana (aditivos: promedio por día de esa semana)
     var totCel = WD_ORDER.map(function (w) {
       var days = byWd[w]; if (!days.length) return { v: null, n: 0 };
       var t = { ventas: 0, revenue: 0, staff: 0, calls2: 0, nTrab: days.length };
       days.forEach(function (f) { rows.forEach(function (r) { var a = o.agentes.filter(function (x) { return x.id === r.id; })[0], d = a && a.d[f]; if (d) { t.ventas += d[1]; t.revenue += (d[2] || 0); t.staff += d[0]; t.calls2 += (d[6] || 0); } }); });
-      return { v: metricOf(metric, t), n: days.length };
+      return { v: metricOf(metric, t, filtros.suma), n: days.length };
     });
     var tAll = { ventas: 0, revenue: 0, staff: 0, calls2: 0, nTrab: D.length };
     D.forEach(function (f) { rows.forEach(function (r) { var a = o.agentes.filter(function (x) { return x.id === r.id; })[0], d = a && a.d[f]; if (d) { tAll.ventas += d[1]; tAll.revenue += (d[2] || 0); tAll.staff += d[0]; tAll.calls2 += (d[6] || 0); } }); });
-    return { ok: true, metric: metric, cols: WD_ORDER.map(function (w) { return { wd: w, nombre: WD_NAME[w], n: byWd[w].length }; }), rows: rows, totCel: totCel, totAll: metricOf(metric, tAll), nDias: D.length };
+    return { ok: true, metric: metric, cols: WD_ORDER.map(function (w) { return { wd: w, nombre: WD_NAME[w], n: byWd[w].length }; }), rows: rows, totCel: totCel, totAll: metricOf(metric, tAll, filtros.suma), nDias: D.length };
   }
 
   /* ---------- tira de días: plan vs real por día (para ir al día bajo) ---------- */
@@ -4138,6 +4148,13 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     if (x.serie && x.rs.some(r => !r.closed)) series.push({label:'Proyección', color:PJ_COLOR, points:x.serie.puntos.map((y,i)=>({y, label:x.rs[i].fecha})), dash:'2,4'});
     renderLineChart(container, series, {width:380, height:150, padLeft:46, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels:x.rs.map(r=>r.fecha.slice(8,10))});
   }
+  function execUpsRates(){
+    const C = upsRateMtd('cr'), E = upsRateMtd('exp');
+    if (C.real==null && E.real==null) return '<div class="ex-kv"><span>CR y Expansión: pendientes de Planif_2026 (DU/DV)</span></div>';
+    const p = v => v==null ? '—' : v.toFixed(1) + '%';
+    const c = (r, pl) => r==null || pl==null ? '' : (r>=pl ? 'ct-pill-good' : 'ct-pill-bad');
+    return `<div class="ex-kv"><span>CR <b class="${c(C.real, C.plan)}">${p(C.real)}</b> (plan ${p(C.plan)})</span><span>Expansión <b class="${c(E.real, E.plan)}">${p(E.real)}</b> (meta ${p(E.plan)})</span></div>`;
+  }
   function renderExec(){
     const el = $('#ctViewExec');
     const rows = EXEC_ROWS.map(r => ({...r, x:execMetric(r.k)})).filter(r => r.x);
@@ -4169,6 +4186,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         return `<div class="ct-card ex-card" data-op="${k}">
           <div class="ct-card-head"><h3>${esc(execLabel(k))}</h3><span class="ct-pill ${sev}">${fmtPct1(m.cumpl)}</span></div>
           <div class="ex-kv"><span>Real ${fmtMoneyK(m.real)} de ${fmtMoneyK(m.planMes)}</span><span>Proy. <b>${m.proy==null?'—':fmtMoneyK(m.proy)}</b> (${m.gapProy==null?'—':fmtSignedMoney(m.gapProy)})</span></div>
+          ${k==='upsell' ? execUpsRates() : ''}
           <div class="ex-mini"></div>
         </div>`;
       }).join('')}</div>`;
@@ -4546,7 +4564,27 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     return {rev, a};
   }
 
+  // CR y Expansión de Upsell (diario: valor del día; acumulado: promedio de los días hasta la fecha)
+  const UPS_RATE = {
+    cr:  {lbl:'CR',        plan: d => d.upsell_revenue && d.upsell_revenue.cr_plan,     real: d => d.upsell_revenue && d.upsell_revenue.cr_real},
+    exp: {lbl:'Expansión', plan: d => d.upsell_expansion && d.upsell_expansion.meta_pct, real: d => d.upsell_expansion && d.upsell_expansion.real_pct},
+  };
+  function upsRateSeries(metric, mode){
+    const R = UPS_RATE[metric]; let sp = 0, np = 0, sr = 0, nr = 0;
+    return (CT_DATA.daily || []).map(d => {
+      const closed = d.status==='elapsed', p = R.plan(d), r = closed ? R.real(d) : null;
+      if (p!=null){ sp += p; np++; } if (r!=null){ sr += r; nr++; }
+      return {fecha:d.fecha, closed, plan: mode==='acum' ? (np ? sp/np : null) : (p==null ? null : p), real: mode==='acum' ? (closed && nr ? sr/nr : null) : (r==null ? null : r)};
+    });
+  }
+  function upsRateMtd(metric){
+    const R = UPS_RATE[metric], ds = (CT_DATA.daily || []).filter(d => d.status==='elapsed');
+    const avg = xs => { const v = xs.filter(x => x!=null); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
+    const last = ds.slice().reverse().find(d => R.real(d)!=null);
+    return {plan: avg(ds.map(R.plan)), real: avg(ds.map(R.real)), ultimo: last ? {fecha:last.fecha, v:R.real(last)} : null};
+  }
   function heroSeries(key, metric, mode){
+    if (UPS_RATE[metric]) return key==='upsell' ? upsRateSeries(metric, mode) : null;
     const det = CT_DATA.detalle && CT_DATA.detalle[key];
     let rows;
     if (det) rows = det.dias.map(d=>({fecha:d.fecha, closed:d.status==='elapsed', rp:d.rev_plan, rr:d.rev_real, vp:d.ventas_plan, vr:d.ventas_real}));
@@ -4642,14 +4680,14 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     if (ms) ms.addEventListener('change', () => { CT_MES = ms.value; bootCT(true); });
   }
 
-  function fmtByMetric(metric, v){ return v==null ? '—' : (metric==='vol' ? fmt0(v) : (metric==='asp' ? '$'+v.toFixed(0) : fmtMoney(v))); }
+  function fmtByMetric(metric, v){ return v==null ? '—' : UPS_RATE[metric] ? v.toFixed(1)+'%' : (metric==='vol' ? fmt0(v) : (metric==='asp' ? '$'+v.toFixed(0) : fmtMoney(v))); }
 
   function renderHeroChart(container, series, metric, mode, color){
     const W=900,H=300,PAD={l:58,r:18,t:20,b:30};
     const vals = series.flatMap(p=>[p.plan,p.real,p.proj,p.req,p.best,p.worst,p.m5]).filter(v=>v!=null);
     if (!vals.length){ container.innerHTML = '<div class="ct-note">Sin datos para este mes todavía.</div>'; return; }
     let yMax = Math.max(...vals)*1.08, yMin = 0;
-    if (metric==='asp'){ yMin = Math.max(0, Math.min(...vals)*0.8); }
+    if (metric==='asp' || UPS_RATE[metric]){ yMin = Math.max(0, Math.min(...vals)*0.8); }
     if (yMax<=yMin) yMax = yMin+1;
     const n = series.length;
     const x = i => PAD.l + i/(Math.max(n-1,1))*(W-PAD.l-PAD.r);
@@ -4659,7 +4697,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       const v = yMin + (yMax-yMin)*g/4, yy = y(v);
       root.appendChild(svg('line',{x1:PAD.l,x2:W-PAD.r,y1:yy,y2:yy,stroke:'var(--border)','stroke-width':1}));
       const t = svg('text',{x:PAD.l-8,y:yy+3.5,'text-anchor':'end','font-size':10.5,fill:'var(--text-muted)'});
-      t.textContent = metric==='rev' ? fmtMoneyK(v) : (metric==='asp' ? '$'+Math.round(v) : fmt0(v));
+      t.textContent = metric==='rev' ? fmtMoneyK(v) : (metric==='asp' ? '$'+Math.round(v) : (UPS_RATE[metric] ? v.toFixed(1)+'%' : fmt0(v)));
       root.appendChild(t);
     }
     series.forEach((p,i)=>{
@@ -4738,6 +4776,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     if (!rev){ el.innerHTML=''; return; }
     const det = !!(CT_DATA.detalle && CT_DATA.detalle[key]);
     if (!det && CT_HERO_METRIC!=='rev') CT_HERO_METRIC = 'rev';
+    if (UPS_RATE[CT_HERO_METRIC] && key!=='upsell') CT_HERO_METRIC = 'rev';
     const metric = CT_HERO_METRIC, mode = CT_HERO_MODE;
     const sev = sevTxt(rev.cumpl), col = SEV_COLOR[sev];
     const label = (SIDE_FULL[key] && !CT_DATA.monthly[key]) ? SIDE_FULL[key] : (key==='resurrection' && !hasRes14()) ? '2.4.- Resurrection' : ((CT_DATA.monthly[key] ? CT_DATA.monthly[key].label : (CT_DATA.detalle[key]||{}).label) || key);
@@ -4758,7 +4797,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     const prs = projRows(key); let PJ = null;
     try { if (prs && prs.some(r=>r.closed)){ PJ = ProjCalc.proyectar(prs); PJ.rows = prs; projAttach(series, PJ, metric, mode); } } catch(e){ console.warn('[Proyección]', e); PJ = null; }
     let ESC = null;
-    try { if (PJ && series && mode==='acum' && metric!=='asp') ESC = projEscenarios(series, prs, metric); } catch(e){ console.warn('[Escenarios]', e); ESC = null; }
+    try { if (PJ && series && mode==='acum' && (metric==='rev' || metric==='vol')) ESC = projEscenarios(series, prs, metric); } catch(e){ console.warn('[Escenarios]', e); ESC = null; }
     el.innerHTML = `${warnHtml}<div class="ct-hero">
       <div class="ct-hero-top">
         <div><h3>${label}</h3><div class="sub">${CT_DATA.meta.mes?mesLabel(CT_DATA.meta.mes):''} · ${CT_DATA.meta.dias_transcurridos_completos} días cerrados</div></div>
@@ -4767,16 +4806,17 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       <div class="ct-hero-val"><span class="big">${fmtMoney(rev.real)}</span><span class="dl ${cls}">${fmtSignedMoney(rev.gap)} · ${rev.cumpl==null?'—':fmtSignedPct1(rev.cumpl-100)} vs plan a la fecha</span><span class="ct-pill ${sev}">${SEV_LABEL[sev]}</span></div>
       <div class="ct-hero-ctrl">
         <div class="ct-seg" id="ctHeroMode"><button data-v="acum" class="${mode==='acum'?'active':''}">Acumulado</button><button data-v="dia" class="${mode==='dia'?'active':''}">Diario</button></div>
-        ${det ? `<div class="ct-seg" id="ctHeroMetric"><button data-v="rev" class="${metric==='rev'?'active':''}">Revenue</button><button data-v="vol" class="${metric==='vol'?'active':''}">Ventas</button><button data-v="asp" class="${metric==='asp'?'active':''}">ASP</button></div>` : ''}
+        ${det ? `<div class="ct-seg" id="ctHeroMetric"><button data-v="rev" class="${metric==='rev'?'active':''}">Revenue</button><button data-v="vol" class="${metric==='vol'?'active':''}">Ventas</button><button data-v="asp" class="${metric==='asp'?'active':''}">ASP</button>${key==='upsell' ? `<button data-v="cr" class="${metric==='cr'?'active':''}">CR</button><button data-v="exp" class="${metric==='exp'?'active':''}">Expansión</button>` : ''}</div>` : ''}
         <span style="font-size:12px;color:var(--text-muted)"><svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="var(--text-muted)" stroke-width="2" stroke-dasharray="5,4"/></svg> Plan &nbsp; <svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="${col}" stroke-width="2"/></svg> Real</span>
         ${projLegend(metric, mode, ESC)}
       </div>
       <div class="ct-hero-chart" id="ctHeroChart"></div>
       ${escHtml(ESC, metric)}
       <div class="ct-stats">${stats}</div>
-      ${projHtml(PJ)}
+      ${projHtml(PJ, key)}
     </div>`;
-    if (series) renderHeroChart($('#ctHeroChart'), series, metric, mode, col);
+    if (series && UPS_RATE[metric] && !series.some(p => p.real!=null || p.plan!=null)) $('#ctHeroChart').innerHTML = `<div class="ct-note">Todavía no llega ${UPS_RATE[metric].lbl} desde Planif_2026 (columna ${metric==='cr'?'DU':'DV'}): hay que agregarla en el Apps Script para verla aquí.</div>`;
+    else if (series) renderHeroChart($('#ctHeroChart'), series, metric, mode, col);
     $$('#ctHeroMode button', el).forEach(b=>b.addEventListener('click',()=>{ CT_HERO_MODE=b.dataset.v; renderHero(); }));
     $$('#ctHeroMetric button', el).forEach(b=>b.addEventListener('click',()=>{ CT_HERO_METRIC=b.dataset.v; renderHero(); }));
     const rs = $('#ctResSel', el);
@@ -5151,7 +5191,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
   const DOW_METRICS = [['ventas','Ventas','Promedio por día trabajado'],['revenue','Revenue','Promedio por día trabajado'],['asp','ASP',''],['staff','STAFF (h)','Promedio por día trabajado'],['sph','SPH',''],['cr','%CR 2 min',''],['revCalls','Rev./Calls 2 min',''],['calls2','Calls ≥2 min','Promedio por día trabajado']];
   const fmtMetric = (m, v) => { const c = PERF_COLS.find(x => x.k === m); return c ? c.f(v) : (v==null?'—':v.toFixed(1)); };
   function perfFechas(o){
-    if (RCA.vista === 'dow') return o.analizables.slice();                   // por día de la semana siempre mira todos los días cerrados del mes
+    if (RCA.vista === 'dow' || RCA.vista === 'dowsum') return o.analizables.slice();                   // por día de la semana siempre mira todos los días cerrados del mes
     return rcaFechas(o, RCA.per);
   }
   function estadoChip(e){ return e==='NO_TRABAJO' ? chip('NO_TRABAJO') : (e==='SIN_VENTA' ? chip('SIN_VENTA') : ''); }
@@ -5169,8 +5209,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     const o = AP_MODEL.ops[RCA.op]; if (!o) return;
     const fechas = perfFechas(o), q = (RCA.q||'').toLowerCase();
     $$('#rcaVista button').forEach(b => b.classList.toggle('active', b.dataset.v === RCA.vista));
-    const mw = $('#rcaMetricWrap'); if (mw) mw.style.display = RCA.vista === 'dow' ? '' : 'none';
-    if (RCA.vista === 'dow'){ drawTablaDow(el, o, fechas, q); return; }
+    const mw = $('#rcaMetricWrap'); if (mw) mw.style.display = RCA.vista !== 'total' ? '' : 'none';
+    if (RCA.vista === 'dow' || RCA.vista === 'dowsum'){ drawTablaDow(el, o, fechas, q); return; }
     const T = AgentPerfRCA.tablaAgentes(AP_MODEL, RCA.op, fechas, { sup: RCA.sup });
     if (!T.ok){ el.innerHTML = `<div class="ct-note">${esc(T.error||'Sin datos')}</div>`; return; }
     let rows = T.rows.filter(r => (!q || r.n.toLowerCase().indexOf(q) >= 0) && passFiltro(r.estado, r.ventas));
@@ -5214,7 +5254,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     }));
   }
   function drawTablaDow(el, o, fechas, q){
-    const W = AgentPerfRCA.tablaDiaSemana(AP_MODEL, RCA.op, fechas, RCA.metric, { sup: RCA.sup });
+    const suma = RCA.vista === 'dowsum';
+    const W = AgentPerfRCA.tablaDiaSemana(AP_MODEL, RCA.op, fechas, RCA.metric, { sup: RCA.sup, suma });
     if (!W.ok){ el.innerHTML = `<div class="ct-note">${esc(W.error||'Sin datos')}</div>`; return; }
     const sort = RCA.dowSort || {k:'tot', dir:1};
     const nT = r => r.cel.reduce((t, c) => t + c.nTrab, 0);
@@ -5234,7 +5275,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     const mx = Math.max(0.0001, ...allV);
     el.innerHTML = `<div style="overflow:auto"><table class="ct-table rca-perf"><thead><tr><th>#</th><th class="sortable" data-sk="n">Agente${arrow('n')}</th><th class="sortable" data-sk="grupo">Grupo${arrow('grupo')}</th>
       ${W.cols.map((c, i) => `<th class="num sortable ${c.n?'':'dim'}" data-sk="${i}" title="${c.n} día(s) de ${c.nombre} en el período">${c.nombre}${c.n>1?` <span class="rca-note-s">×${c.n}</span>`:''}${arrow(i)}</th>`).join('')}
-      <th class="num sortable" data-sk="tot">Total/Prom.${arrow('tot')}</th><th>Estado</th></tr></thead><tbody>
+      <th class="num sortable" data-sk="tot">${suma ? 'Total' : 'Total/Prom.'}${arrow('tot')}</th><th>Estado</th></tr></thead><tbody>
       <tr class="rca-totrow tot"><td></td><td colspan="2"><b>Total operación${RCA.sup?' · '+esc(RCA.sup):''}</b></td>${W.totCel.map(c => `<td class="num"><b>${c.n ? fmtMetric(RCA.metric, c.v) : '—'}</b></td>`).join('')}<td class="num"><b>${fmtMetric(RCA.metric, W.totAll)}</b></td><td></td></tr>
       ${rows.map((r, i) => `<tr><td>${i+1}</td><td><b>${esc(r.n)}</b></td><td>${esc(r.grupo)}</td>${r.cel.map(c => {
           const hasDay = c.nTrab > 0, v = c.v;
@@ -5242,7 +5283,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
           return `<td class="num ${hasDay && (RCA.metric==='ventas') && v===0 ? 'zero':''}" style="background:${bg}">${hasDay ? fmtMetric(RCA.metric, v) : '<span class="rca-note-s">–</span>'}</td>`; }).join('')}
         <td class="num"><b>${fmtMetric(RCA.metric, r.tot)}</b></td><td>${estadoChip(r.estado)}</td></tr>`).join('') || `<tr><td colspan="12" class="rca-note-s">Ningún agente cumple el filtro.</td></tr>`}
       </tbody></table></div>
-      <div class="ct-q" style="margin:8px 0 0"><b>${esc(mname)}</b> por día de la semana · todos los días cerrados del mes (${W.nDias}) ${mnote ? '· '+esc(mnote)+' (las razones se calculan sobre las sumas)' : ''}. "–" = no trabajó ese día de la semana. Clic en un día para ordenar.</div>`;
+      <div class="ct-q" style="margin:8px 0 0"><b>${esc(mname)}</b> ${suma ? 'acumulado (suma) de todos los lunes, martes…' : 'por día de la semana'} · todos los días cerrados del mes (${W.nDias}) ${mnote && !suma ? '· '+esc(mnote)+' (las razones se calculan sobre las sumas)' : ''}${suma ? ' · ASP, SPH, %CR y Rev./Calls se calculan sobre las sumas' : ''}. "–" = no trabajó ese día de la semana. Clic en un día para ordenar.</div>`;
     $$('th.sortable', el).forEach(th => th.addEventListener('click', () => {
       const k = th.dataset.sk, cur = RCA.dowSort || {k:'tot', dir:1};
       RCA.dowSort = String(cur.k) === k ? {k, dir:-cur.dir} : {k, dir:1};
@@ -5268,45 +5309,107 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     return `<div class="rca-days rca-days-g"><span class="rca-days-l">Días · cumplimiento vs plan</span>${html}</div>`;
   }
 
-  /* Tendencia diaria en Causa raíz: líneas por supervisor (de la operación elegida) y por
-     operación / grupo de agentes. Indicador: cumplimiento %, ventas u horas conectadas. */
+  /* Seguimiento diario en Causa raíz: una gráfica por supervisor (o por agente, al elegir un
+     supervisor arriba), por día del mes o por día de la semana, para el indicador elegido.
+     Meta de revenue por supervisor = plan de revenue de la operación (Planif_2026) ÷ nº de
+     supervisores de la operación (los grupos "Formación" no cuentan como supervisor ni llevan meta). */
   const RCA_TREND_PAL = ['var(--series-1)','var(--series-2)','var(--series-3)','var(--series-4)','var(--bad)','#14b8b0','#8a5a8a'];
+  const TREND_KPIS = [
+    ['revenue','Revenue'],['ventas','Ventas'],['asp','ASP'],['staff','STAFF'],['sph','SPH'],
+    ['cr','%CR 2 min (sin manual)'],['revCalls','Rev./Calls 2 min (sin manual)'],['calls2','Calls ≥2 min (sin manual)'],
+    ['tmo','TMO >2 min'],
+  ];
+  const TREND_ADD = {revenue:1, ventas:1, staff:1, calls2:1};          // aditivos: total del día (o promedio por día en vista día de semana)
+  const isFormacion = g => /^Formación/.test(g);
+  function trendSum(agentes, dias){
+    const t = {ventas:0, revenue:0, staff:0, calls2:0, n:0};
+    agentes.forEach(a => dias.forEach(f => { const d = a.d[f]; if (!d) return; t.staff += +d[0]||0; t.ventas += +d[1]||0; t.revenue += +d[2]||0; t.calls2 += +d[6]||0; t.n++; }));
+    return t;
+  }
+  function trendVal(m, t, div){
+    if (!t.n) return null;
+    if (TREND_ADD[m]) return div ? t[m] / div : t[m];
+    if (m==='asp') return t.ventas ? t.revenue / t.ventas : null;
+    if (m==='sph') return t.staff ? t.ventas / t.staff : null;
+    if (m==='cr') return t.calls2 ? 100 * t.ventas / t.calls2 : null;
+    if (m==='revCalls') return t.calls2 ? t.revenue / t.calls2 : null;
+    return null;
+  }
+  function trendFmt(m, v){
+    if (v==null) return '—';
+    if (m==='revenue') return fmtMoney(v);
+    if (m==='asp' || m==='revCalls') return '$' + Math.round(v).toLocaleString('es-CO');
+    if (m==='cr') return v.toFixed(1) + '%';
+    if (m==='sph') return v.toFixed(2);
+    if (m==='staff') return (Math.round(v*10)/10).toLocaleString('es-CO') + ' h';
+    return (Math.round(v*10)/10).toLocaleString('es-CO');
+  }
+  function trendAxisFmt(m, v){ return m==='revenue' ? fmtMoneyK(v) : (m==='cr' ? Math.round(v)+'%' : (m==='sph' ? v.toFixed(1) : Math.round(v).toLocaleString('es-CO'))); }
   function drawRcaTrend(M, opKey){
     const box = $('#rcaTrend'); if (!box) return;
-    const met = RCA.trend || 'cumpl';
-    const fmtV = v => met==='cumpl' ? Math.round(v)+'%' : (met==='h' ? Math.round(v)+' h' : fmt0(v));
-    const tipV = v => met==='cumpl' ? fmtPct1(v) : (met==='h' ? (Math.round(v*10)/10).toLocaleString('es-CO')+' h' : fmt0(v));
-    const o = M.ops[opKey];
-    const ss = AgentPerfRCA.serieSupervisores(M, opKey);
-    const dias = o.analizables;
-    const supSeries = o.sups.map((g, i) => ({label:g, color:RCA_TREND_PAL[i % RCA_TREND_PAL.length],
-      points: dias.map(f => { const x = (ss[g] && ss[g].serie || []).find(z => z.fecha===f); return {y: x ? (met==='cumpl' ? x.cumpl : x[met]) : null, label:fechaDM(f)}; })}));
-    // por operación: ventas y horas de las pestañas de agentes; cumplimiento = ventas ÷ plan de ventas de Planif_2026
-    const allDias = Array.from(new Set(M.orden.flatMap(k => M.ops[k].analizables))).sort();
-    const opSeries = M.orden.map((k, i) => {
-      const q = M.ops[k], det = CT_DATA.detalle && CT_DATA.detalle[q.ctKey];
-      return {label:q.label, color:RCA_TREND_PAL[i % RCA_TREND_PAL.length], points: allDias.map(f => {
-        if (q.analizables.indexOf(f) < 0) return {y:null, label:fechaDM(f)};
-        let v = 0, h = 0; q.agentes.forEach(a => { const d = a.d[f]; if (d && +d[0] > 0){ h += +d[0]; v += +d[1] || 0; } });
-        if (met==='v') return {y:v, label:fechaDM(f)};
-        if (met==='h') return {y:h, label:fechaDM(f)};
-        const pd = det && det.dias.find(x => x.fecha===f);
-        return {y: (pd && pd.ventas_plan > 0) ? 100*v/pd.ventas_plan : null, label:fechaDM(f)};
-      })};
+    const met = TREND_KPIS.some(k => k[0]===RCA.trend && k[0]!=='tmo') ? RCA.trend : 'revenue';
+    const eje = RCA.trendEje === 'dow' ? 'dow' : 'dia';
+    const o = M.ops[opKey], dias = o.analizables.slice();
+    const det = CT_DATA.detalle && CT_DATA.detalle[o.ctKey];
+    const planDia = f => { const x = det && det.dias.find(z => z.fecha===f); return x ? (x.rev_plan || 0) : 0; };
+    const grupos = o.sups.slice(), supsReales = grupos.filter(g => !isFormacion(g)), nSup = Math.max(1, supsReales.length);
+    const agDe = g => o.agentes.filter(a => (a.formador ? 'Formación · ' + a.s : a.s) === g);
+    // eje X: días del mes o Lun..Dom
+    const WD = [1,2,3,4,5,6,0], WDN = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    const wdOfF = f => new Date(f + 'T00:00:00Z').getUTCDay();
+    const cols = eje==='dia' ? dias.map(f => ({lbl:fechaDM(f), dias:[f], div:0}))
+      : WD.map((w,i) => { const ds = dias.filter(f => wdOfF(f)===w); return {lbl:WDN[i], dias:ds, div:ds.length}; });
+    const serieDe = ags => cols.map(c => ({y: c.dias.length ? trendVal(met, trendSum(ags, c.dias), c.div) : null, label:c.lbl}));
+    const metaSerie = frac => cols.map(c => ({y: c.dias.length ? c.dias.reduce((s,f) => s + planDia(f), 0) / (c.div || 1) * frac : null, label:c.lbl}));
+    const conMeta = met==='revenue' && det;
+    const chartOpts = h => ({legend:true, width:380, height:h||170, padLeft:46, yFormat:v => trendAxisFmt(met, v), tipFormat:v => trendFmt(met, v), xLabels: cols.map(c => c.lbl)});
+    // tabla de meta de revenue por supervisor (mes a la fecha)
+    const metaMtd = dias.reduce((s,f) => s + planDia(f), 0);
+    const filaSup = g => {
+      const real = trendSum(agDe(g), dias).revenue, form = isFormacion(g), meta = form ? null : metaMtd / nSup;
+      const gap = meta==null ? null : real - meta, c = meta ? 100 * real / meta : null;
+      return {g, real, meta, gap, c, nAg: agDe(g).length};
+    };
+    const filas = grupos.map(filaSup);
+    const metaTabla = !det ? '' : `<div class="ct-det-wrap"><table class="ct-table ex-table rca-meta">
+        <thead><tr><th>Supervisor</th><th class="num">Agentes</th><th class="num">Revenue real</th><th class="num">Meta (plan ÷ ${nSup})</th><th class="num">Gap</th><th class="num">Cumplimiento</th></tr></thead>
+        <tbody>${filas.map(r => `<tr class="ex-row ${RCA.sup===r.g?'lvl0':''}" data-sup="${esc(r.g)}" tabindex="0"><td class="ex-nm">${esc(r.g)}</td><td class="num">${r.nAg}</td><td class="num">${fmtMoney(r.real)}</td>
+          <td class="num">${r.meta==null?'<span class="rca-note-s">sin meta (formación)</span>':fmtMoney(r.meta)}</td>
+          <td class="num ${r.gap==null?'':(r.gap<0?'ct-pill-bad':'ct-pill-good')}">${r.gap==null?'—':fmtSignedMoney(r.gap)}</td>
+          <td class="num">${r.c==null?'—':`<span class="ct-pill ${ctSeverity(r.c)}">${fmtPct1(r.c)}</span>`}</td></tr>`).join('')}</tbody></table></div>
+      <div class="ct-note" style="margin:6px 0 12px">Meta mes a la fecha: plan de revenue de ${esc(o.label)} en Planif_2026 (${fmtMoney(metaMtd)} en ${dias.length} días cerrados) ÷ ${nSup} supervisor${nSup===1?'':'es'}. Clic en un supervisor para ver sus agentes.</div>`;
+    // tarjetas: sin supervisor elegido → total + una por supervisor; con supervisor → el supervisor + una por agente
+    let cards;
+    if (!RCA.sup){
+      cards = [{t:'Total ' + o.label, ags:o.agentes, meta: conMeta ? metaSerie(1) : null, metaLbl:'Plan de la operación'}]
+        .concat(grupos.map(g => ({t:g, ags:agDe(g), meta: conMeta && !isFormacion(g) ? metaSerie(1/nSup) : null, metaLbl:'Meta del supervisor', sup:g})));
+    } else {
+      const ags = agDe(RCA.sup).filter(a => dias.some(f => a.d[f]));
+      cards = [{t:RCA.sup + ' · total del grupo', ags: agDe(RCA.sup), meta: conMeta && !isFormacion(RCA.sup) ? metaSerie(1/nSup) : null, metaLbl:'Meta del supervisor'}]
+        .concat(ags.map(a => ({t:a.n, ags:[a]})));
+    }
+    const kpiBtns = TREND_KPIS.map(([k,l]) => k==='tmo'
+      ? `<button disabled title="La pestaña de agentes todavía no envía TMO al tablero (hay que agregarlo en el Apps Script)">${l}</button>`
+      : `<button data-v="${k}" class="${met===k?'active':''}">${l}</button>`).join('');
+    box.innerHTML = `<div class="ct-card-head"><h3>📈 Seguimiento diario · ${esc(o.label)}${RCA.sup ? ' · ' + esc(RCA.sup) : ''}</h3>
+        <div class="ct-seg" id="rcaTrendEje"><button data-v="dia" class="${eje==='dia'?'active':''}">Por día del mes</button><button data-v="dow" class="${eje==='dow'?'active':''}">Por día de la semana</button></div></div>
+      <div class="ct-seg rca-kpis" id="rcaTrendMet">${kpiBtns}</div>
+      ${RCA.sup ? '' : metaTabla}
+      <div class="rca-tgrid">${cards.map((c,i) => `<div class="rca-tcard ${c.sup?'click':''}" ${c.sup?`data-sup="${esc(c.sup)}" title="Ver los agentes de ${esc(c.sup)}"`:''}><div class="rca-tt">${esc(c.t)}</div><div class="rca-tc" data-i="${i}"></div></div>`).join('')}</div>
+      <div class="ct-note" style="margin:8px 0 0">${eje==='dia' ? 'Total de cada día.' : 'Promedio por día de cada día de la semana (en ASP, SPH, %CR y Rev./Calls: sobre las sumas).'} ${TREND_ADD[met] ? '' : 'Razón calculada sobre las sumas del grupo.'} Fuente: pestañas de agentes (Agent Performance)${conMeta ? '; meta: Planif_2026' : ''}.</div>`;
+    cards.forEach((c,i) => {
+      const color = RCA_TREND_PAL[i % RCA_TREND_PAL.length];
+      const series = [{label: TREND_KPIS.find(k => k[0]===met)[1], color: i===0 ? 'var(--text-primary)' : color, points: serieDe(c.ags)}];
+      if (c.meta) series.push({label: c.metaLbl, color:'var(--text-muted)', points: c.meta, dash:'5,4'});
+      if (!series[0].points.some(p => p.y)){ $(`.rca-tc[data-i="${i}"]`, box).innerHTML = '<div class="ct-note" style="margin:0">Sin datos de este indicador en el período.</div>'; return; }
+      renderLineChart($(`.rca-tc[data-i="${i}"]`, box), series, chartOpts(i===0 ? 190 : 160));
     });
-    const nota = met==='cumpl' ? 'Supervisores: ventas ÷ capacidad esperada del grupo (lo que suelen vender sus agentes conectados). Operaciones: ventas de la pestaña de agentes ÷ plan de ventas de Planif_2026.' :
-      (met==='v' ? 'Ventas por día (suma de los agentes que trabajaron).' : 'Horas conectadas por día (STAFF).');
-    box.innerHTML = `<div class="ct-card-head"><h3>📈 Tendencia diaria</h3>
-        <div class="ct-seg" id="rcaTrendMet"><button data-v="cumpl" class="${met==='cumpl'?'active':''}">Cumplimiento %</button><button data-v="v" class="${met==='v'?'active':''}">Ventas</button><button data-v="h" class="${met==='h'?'active':''}">Horas</button></div></div>
-      <div class="ct-grid-2">
-        <div><div class="ct-q" style="margin:6px 0 4px"><b>Por supervisor</b> · ${esc(o.label)}</div><div id="rcaTrendSup"></div></div>
-        <div><div class="ct-q" style="margin:6px 0 4px"><b>Por operación (grupo de agentes)</b></div><div id="rcaTrendOp"></div></div>
-      </div>
-      <div class="ct-note" style="margin:8px 0 0">${nota}</div>`;
-    const opts = xs => ({legend:true, width:520, height:230, padLeft:44, refLine: met==='cumpl' ? 100 : null, refLineLabel:'100%', yFormat:fmtV, tipFormat:tipV, xLabels:xs.map(fechaDM)});
-    if (dias.length) renderLineChart($('#rcaTrendSup'), supSeries, opts(dias)); else $('#rcaTrendSup').innerHTML = '<div class="ct-note">Sin días cerrados.</div>';
-    if (allDias.length) renderLineChart($('#rcaTrendOp'), opSeries, opts(allDias)); else $('#rcaTrendOp').innerHTML = '<div class="ct-note">Sin días cerrados.</div>';
-    $$('#rcaTrendMet button', box).forEach(b => b.addEventListener('click', () => { RCA.trend = b.dataset.v; drawRcaTrend(M, opKey); }));
+    $$('#rcaTrendMet button[data-v]', box).forEach(b => b.addEventListener('click', () => { RCA.trend = b.dataset.v; drawRcaTrend(M, opKey); }));
+    $$('#rcaTrendEje button', box).forEach(b => b.addEventListener('click', () => { RCA.trendEje = b.dataset.v; drawRcaTrend(M, opKey); }));
+    $$('[data-sup]', box).forEach(n => {
+      const go = () => { RCA.sup = n.dataset.sup; renderRca(); const t = $('#rcaTrend'); if (t) t.scrollIntoView({behavior:'smooth', block:'start'}); };
+      n.addEventListener('click', go); n.addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); go(); } });
+    });
   }
 
   /* ---------- vista ---------- */
@@ -5373,11 +5476,11 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       <div class="ct-kpi-grid">${cards}</div>
       <div class="ct-card" id="rcaTrend"></div>
       <div class="ct-card" id="rcaPerf">
-        <div class="ct-card-head"><h3>🧑‍💼 Desempeño por agente</h3><span class="ct-q" style="margin:0">${esc(R.label)} · ${esc(titulo)}${RCA.vista==='dow'?' · por día de la semana':''}</span></div>
+        <div class="ct-card-head"><h3>🧑‍💼 Desempeño por agente</h3><span class="ct-q" style="margin:0">${esc(R.label)} · ${esc(titulo)}${RCA.vista==='dow'?' · por día de la semana':(RCA.vista==='dowsum'?' · acumulado por día de la semana':'')}</span></div>
         
         <div class="ct-filter-row rca-ctrl">
-          <div class="ct-seg" id="rcaVista"><button data-v="total" class="${RCA.vista==='total'?'active':''}">Total del período</button><button data-v="dow" class="${RCA.vista==='dow'?'active':''}">Por día de la semana</button></div>
-          <span id="rcaMetricWrap" style="display:${RCA.vista==='dow'?'':'none'}"><select class="ct-select" id="rcaMetric" title="Indicador por día de la semana">${DOW_METRICS.map(m=>`<option value="${m[0]}" ${m[0]===RCA.metric?'selected':''}>${m[1]}</option>`).join('')}</select></span>
+          <div class="ct-seg" id="rcaVista"><button data-v="total" class="${RCA.vista==='total'?'active':''}">Total del período</button><button data-v="dow" class="${RCA.vista==='dow'?'active':''}">Por día de la semana</button><button data-v="dowsum" class="${RCA.vista==='dowsum'?'active':''}">Acumulado por día de la semana</button></div>
+          <span id="rcaMetricWrap" style="display:${RCA.vista!=='total'?'':'none'}"><select class="ct-select" id="rcaMetric" title="Indicador por día de la semana">${DOW_METRICS.map(m=>`<option value="${m[0]}" ${m[0]===RCA.metric?'selected':''}>${m[1]}</option>`).join('')}</select></span>
           <label>Mostrar</label><select class="ct-select" id="rcaFiltro"><option value="todos">Todos los agentes</option><option value="sin">No vendieron (0 ventas)</option><option value="conectados">Trabajaron y no vendieron</option><option value="notrab">No trabajaron</option><option value="piso">Piso: ventas ≤ …</option></select>
           <input class="ct-select" id="rcaPiso" type="number" min="0" step="1" value="${RCA.piso}" style="width:70px" title="Piso de ventas: muestra a quienes vendieron este número o menos">
         </div>
@@ -5716,13 +5819,13 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     return null;
   }
   function projLegend(metric, mode, esc){
-    if (metric==='asp') return '';
+    if (metric==='asp' || UPS_RATE[metric]) return '';
     const sw = (c, d) => `<svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="${c}" stroke-width="2.4" stroke-dasharray="${d}"/></svg>`;
     return `<span style="font-size:12px;color:var(--text-muted)">${sw(PJ_COLOR,'2,3')} ${mode==='acum'?'Proyección al ritmo actual':'Necesario por día'}</span>` +
       (mode==='acum' && esc ? ESC_LINES.map(es => `<span style="font-size:12px;color:var(--text-muted)">${sw(es.color,'6,4')} ${es.label}</span>`).join('') : '');
   }
   function projAttach(series, PJ, metric, mode){
-    if (!PJ || !series || metric==='asp') return;
+    if (!PJ || !series || metric==='asp' || UPS_RATE[metric]) return;
     if (mode==='acum'){
       const s = metric==='rev' ? PJ.serieRev : PJ.serieVol; if (!s) return;
       series.forEach((p, i) => { p.proj = s.puntos[i]; });
@@ -5774,7 +5877,23 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       ${item('var(--series-3)', 'Mejor caso', E.cierre.best, `ritmo ${(E.c+E.sd).toFixed(1)}%`)}
       <div class="esc-n">El ritmo es el cumplimiento acumulado (real ÷ plan). Mejor y peor caso suman o restan una desviación típica del cumplimiento diario (${E.sd.toFixed(1)} pp) a los días que faltan.</div></div>`;
   }
-  function projHtml(PJ){
+  // Bloque de CR y Expansión de Upsell dentro de "Proyección al ritmo actual"
+  function upsRatesHtml(){
+    const C = upsRateMtd('cr'), E = upsRateMtd('exp');
+    const kv = (k, v, cls) => `<div class="ct-stat"><span>${k}</span><b class="${cls||''}">${v}</b></div>`;
+    const pct = v => v==null ? '—' : v.toFixed(1).replace('.', ',') + '%';
+    const dif = (r, p) => (r==null || p==null) ? '—' : `${r-p>=0?'+':'−'}${Math.abs(r-p).toFixed(1).replace('.', ',')} pp`;
+    const panel = (t, M, planLbl) => `<div class="ct-proj-p"><h4>${t}</h4>
+        ${kv('Real · promedio de los días cerrados', pct(M.real))}
+        ${kv(planLbl, pct(M.plan))}
+        ${kv('Diferencia', dif(M.real, M.plan), M.real!=null && M.plan!=null ? (M.real>=M.plan?'pos':'neg') : '')}
+        ${kv('Último día con dato', M.ultimo ? `${fechaDM(M.ultimo.fecha)} · ${pct(M.ultimo.v)}` : '—')}
+      </div>`;
+    const sinDatos = C.real==null && E.real==null;
+    return `<div class="ct-grid-2" style="margin-top:12px">${panel('CR de Upsell', C, 'Plan')}${panel('Expansión de Upsell', E, 'Meta')}</div>` +
+      (sinDatos ? `<div class="ct-note" style="margin:8px 0 0">Todavía no llegan CR ni Expansión desde Planif_2026 (columnas DU y DV): hay que agregarlas en el Apps Script para que se vean aquí y en el gráfico.</div>` : '');
+  }
+  function projHtml(PJ, key){
     if (!PJ || !PJ.rev) return '';
     const R = PJ.rev, V = PJ.vol;
     const pct = v => v==null ? '—' : v.toFixed(1).replace('.', ',') + '%';
@@ -5814,6 +5933,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     return `<div class="ct-proj"><div class="ct-proj-h"><b>🟡 Proyección al ritmo actual y lo que falta para llegar al plan</b>
         <span>${pct(R.cumpl)} del plan en revenue${V?` · ${pct(V.cumpl)} en ventas`:''} · run-rate lineal ${fmtMoney(R.runRate)}</span></div>
       <div class="ct-grid-2">${panel('Revenue', R, true)}${panel('Volumen de ventas', V, false)}</div>
+      ${key==='upsell' ? upsRatesHtml() : ''}
       <div class="ct-proj-t">${fr.join('<br>')}</div></div>`;
   }
 
