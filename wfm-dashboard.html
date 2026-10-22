@@ -190,14 +190,6 @@
   .delta-pill.down{background:rgba(216,67,67,0.13);color:var(--bad);}
   .delta-pill.up{background:var(--series-3-soft);color:var(--series-3);}
   .delta-pill.flat{background:var(--surface);color:var(--text-muted);border:1px solid var(--border);}
-  td.trk-flag-down{background:rgba(216,67,67,0.13);color:var(--bad);font-weight:700;}
-  td.trk-flag-up{background:var(--series-3-soft);color:var(--series-3);font-weight:700;}
-  .trk-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:16px;}
-  .trk-summary-card{background:var(--surface-raised);border:1px solid var(--border);border-radius:12px;padding:13px 15px;}
-  .trk-summary-card h4{margin:0 0 8px;font-size:12.5px;font-weight:700;}
-  .trk-summary-line{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:6px;}
-  .trk-summary-line:last-child{margin-bottom:0;}
-  .trk-summary-line b{color:var(--text-primary);}
   .na{color:var(--text-muted);font-size:11px;}
 
   .heat{border-radius:4px;font-weight:600;}
@@ -309,6 +301,29 @@
   .ct-drill-box{background:var(--surface);border-radius:14px;max-width:640px;width:100%;max-height:80vh;overflow:auto;padding:20px 22px;position:relative;}
   .ct-drill-box.wide{max-width:980px;}
   .ct-card-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+  .ex-table tr.ex-row{cursor:pointer;}
+  .ex-table tr.ex-row:hover td{background:var(--surface);}
+  .ex-table tr.lvl0 td{font-weight:800;}
+  .ex-table tr.lvl2 td.ex-nm{padding-left:26px;color:var(--text-secondary);}
+  .ex-table tr.ex-sep td{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:700;padding-top:12px;}
+  .ex-table .ct-pill{margin-top:0;}
+  .esc-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:10px 0 4px;}
+  .esc-h{grid-column:1/-1;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);}
+  .esc-i{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;font-size:12px;}
+  .esc-i i{display:inline-block;width:18px;height:3px;border-radius:2px;margin-bottom:2px;}
+  .esc-i span{color:var(--text-secondary);font-weight:700;}
+  .esc-i b{font-size:15px;font-variant-numeric:tabular-nums;}
+  .esc-i em{font-style:normal;font-weight:700;font-size:11.5px;}
+  .esc-i em.neg{color:var(--bad);} .esc-i em.pos{color:var(--series-3);}
+  .esc-i small{color:var(--text-muted);font-size:11px;}
+  .esc-n{grid-column:1/-1;font-size:11px;color:var(--text-muted);}
+  @media (max-width:760px){.esc-strip{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  .ld-sum{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--text-secondary);margin:2px 0 4px;}
+  .ld-sum b.neg{color:var(--bad);} .ld-sum b.pos{color:var(--series-3);}
+  .ex-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;}
+  .ex-card{cursor:pointer;margin-bottom:0;}
+  .ex-card:hover{border-color:var(--border-strong);}
+  .ex-kv{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--text-secondary);margin:4px 0 6px;}
   .ct-expand-btn{font:inherit;font-size:11px;font-weight:700;padding:4px 9px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);cursor:pointer;white-space:nowrap;}
   .ct-expand-btn:hover{border-color:var(--series-1);color:var(--series-1);}
   .ct-drill-box h3{margin-top:0;}
@@ -414,10 +429,22 @@
   .ct-det tr.tot td{font-weight:800;background:var(--surface);}
   .ct-det td.neg{color:var(--bad);} .ct-det td.pos{color:var(--series-3);}
   .ct-det .grp{border-left:1px solid var(--border);}
+  /* Operaciones en una franja horizontal arriba (antes: columna fija a la izquierda que quitaba ancho a las gráficas). */
+  .ct-shell{display:block;}
+  .ct-side{position:static;max-height:none;overflow:visible;display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;padding:10px;margin-bottom:14px;}
+  .ct-side-head{flex:0 0 100%;padding:0 4px 2px;}
+  .ct-side-sec{flex:0 0 100%;padding:4px 4px 0;}
+  .ct-row{flex:1 1 190px;max-width:250px;grid-template-columns:minmax(0,1fr) auto;gap:6px;padding:8px 10px;border-color:var(--border);}
+  .ct-row.lvl1,.ct-row.lvl2{margin-left:0;padding:8px 10px;}
+  .ct-row.lvl1::before,.ct-row.lvl2::before{display:none;}
+  .ct-row.lvl2{border-style:dashed;}
+  .ct-row .ct-spark{display:none;}
+  .ct-row .nm{font-size:13px;}
   @media (max-width:1000px){
-    .ct-shell{grid-template-columns:1fr;}
-    .ct-side{position:static;max-height:none;}
     .ct-hero-val .big{font-size:36px;}
+  }
+  @media (max-width:640px){
+    .ct-row{flex-basis:calc(50% - 4px);max-width:none;}
   }
 
   /* ===== Expandir gráficas (pantalla casi completa para pantallazo) + vista Vie–Dom ===== */
@@ -538,46 +565,22 @@
       <button data-view="exec" class="active">📌 Ejecutivo</button>
       <button data-view="detalle">🧮 Detalle diario / acumulado</button>
       <button data-view="rca">🔬 Causa raíz</button>
-      <button data-view="daily">📈 Plan vs Real</button>
       <button data-view="dow">📅 Día de semana</button>
-      <button data-view="weekly">🗓️ Semanal</button>
-      <button data-view="fds">🏁 Vie–Dom</button>
-      <button data-view="byop">🧩 Por operación</button>
-      <button data-view="acq">🔗 ACQ</button>
       <button data-view="critical">🚨 Días críticos</button>
       <button data-view="patterns">🔎 Patrones</button>
-      <button data-view="goal">🏁 Meta $500K</button>
     </div>
 
     <!-- ---------- EJECUTIVO / VIP ---------- -->
     <div class="ct-view active" data-view="exec" id="ctViewExec"></div>
 
-    <!-- ---------- PLAN VS REAL (diario) ---------- -->
-    <div class="ct-view" data-view="daily" id="ctViewDaily"></div>
-
     <!-- ---------- DÍA DE SEMANA ---------- -->
     <div class="ct-view" data-view="dow" id="ctViewDow"></div>
-
-    <!-- ---------- SEMANAL ---------- -->
-    <div class="ct-view" data-view="weekly" id="ctViewWeekly"></div>
-
-    <!-- ---------- VIERNES–DOMINGO ---------- -->
-    <div class="ct-view" data-view="fds" id="ctViewFds"></div>
-
-    <!-- ---------- POR OPERACIÓN (mensual) ---------- -->
-    <div class="ct-view" data-view="byop" id="ctViewByOp"></div>
-
-    <!-- ---------- ACQ DEPENDENCY ---------- -->
-    <div class="ct-view" data-view="acq" id="ctViewAcq"></div>
 
     <!-- ---------- DÍAS CRÍTICOS ---------- -->
     <div class="ct-view" data-view="critical" id="ctViewCritical"></div>
 
     <!-- ---------- PATRONES ---------- -->
     <div class="ct-view" data-view="patterns" id="ctViewPatterns"></div>
-
-    <!-- ---------- META $500K ---------- -->
-    <div class="ct-view" data-view="goal" id="ctViewGoal"></div>
 
     <!-- ---------- DETALLE DIARIO / ACUMULADO (Planif_2026) ---------- -->
     <div class="ct-view" data-view="detalle" id="ctViewDetalle"></div>
@@ -616,10 +619,7 @@
     <button class="tab-btn" data-tab="resumen">📊 Resumen</button>
     <button class="tab-btn" data-tab="manual-inbound">📞 Manual e Inbound</button>
     <button class="tab-btn" data-tab="oportunidades">🎯 Oportunidades (cambios mes a mes)</button>
-    <button class="tab-btn" data-tab="validar">🔍 Validar cambios</button>
-    <button class="tab-btn" data-tab="simulador">🧪 Simulador <span class="mes-actual">Septiembre</span></button>
     <button class="tab-btn" data-tab="detalle">📋 Segmentos y detalle</button>
-    <button class="tab-btn" data-tab="tracker">🗂️ 092026 - Tracker:MKTSales</button>
   </div>
 
   <div class="tab-panel" data-tab="resumen">
@@ -687,35 +687,6 @@
   </div>
   </div><!-- /tab-panel oportunidades -->
 
-  <div class="tab-panel" data-tab="validar">
-  <div class="panel">
-    <div class="changes-toolbar">
-      <h2 style="margin:0;">Cambios detectados <small id="changesCount"></small></h2>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <input class="search" id="changesSearch" style="min-width:180px;" placeholder="Buscar campaña…">
-        <select class="sort-select" id="changesSort">
-          <option value="severity">Ordenar: más relevante primero</option>
-          <option value="volAsc">Ordenar: mayor caída de volumen</option>
-          <option value="volDesc">Ordenar: mayor subida de volumen</option>
-          <option value="rateAsc">Ordenar: mayor caída de contacto</option>
-          <option value="recent">Ordenar: más reciente primero</option>
-        </select>
-        <button class="btn-copy" id="copyChangesBtn">📋 Copiar (CSV)</button>
-      </div>
-    </div>
-    <div class="table-scroll">
-      <table>
-        <thead><tr><th>Campaña</th><th>Grupo</th><th>Periodo</th><th style="min-width:260px;">Diagnóstico</th><th class="num">Llamadas (antes→después)</th><th class="num">Δ Volumen</th><th class="num">Contacto (antes→después)</th><th class="num">Δ pp</th><th class="num">Cierre (antes→después)</th><th class="num">Δ pp</th></tr></thead>
-        <tbody id="changesBody"></tbody>
-      </table>
-    </div>
-    <div class="alert-empty" id="changesEmpty" style="display:none;">No hay cambios que cumplan el criterio para esta operación.</div>
-  </div>
-  </div><!-- /tab-panel validar -->
-
-  <div class="tab-panel" data-tab="simulador">
-  <div id="simContent"></div>
-  </div><!-- /tab-panel simulador -->
 
   <div class="tab-panel" data-tab="manual-inbound">
   <div class="panel">
@@ -854,13 +825,6 @@
   </div>
   </div><!-- /tab-panel detalle -->
 
-  <div class="tab-panel" data-tab="tracker">
-  <div id="trackerLoadState" class="load-state">Cargando 092026 - Tracker:MKTSales…</div>
-  <div class="pill-row" id="trackerOpFilter" style="margin-bottom:14px;"></div>
-  <div id="trackerSummary"></div>
-  <div id="trackerContent"></div>
-  </div><!-- /tab-panel tracker -->
-
   <footer class="foot">Fuente: Google Sheet "Post-Sales-Operations Calls" · Five9 · leído el <span id="exportDate"></span></footer>
 
 </div>
@@ -900,7 +864,6 @@ function boot() {
   // mes en curso (parcial), el anterior es el último mes completo.
   const SEPT_IDX = N_MONTHS - 1;   // mes en curso (parcial)
   const LAST_FULL = N_MONTHS - 2;  // último mes completo
-  const PREV_FULL = N_MONTHS - 3;  // el anterior al último completo
   // Fecha/hora real en que se leyó el Google Sheet "Post-Sales-Operations Calls" y se
   // regeneró este archivo (build_wfm_data.py). NO uses new Date() para esto — mostraría
   // siempre "hoy" sin importar qué tan viejos estén los datos. Actualizar este valor a
@@ -1019,7 +982,7 @@ function boot() {
     const b = document.createElement('button');
     b.className = 'pill month active' + (i===SEPT_IDX ? ' partial':'');
     b.textContent = m + (i===SEPT_IDX ? '*':'');
-    b.title = i===SEPT_IDX ? 'Septiembre es un mes parcial' : '';
+    b.title = i===SEPT_IDX ? MES_ACT + ' es un mes parcial (en curso)' : '';
     b.dataset.idx = i;
     b.addEventListener('click', () => {
       const idx = state.months.indexOf(i);
@@ -1211,8 +1174,6 @@ function boot() {
     renderLtv();
     if (typeof renderCampAccordion === 'function') renderCampAccordion();
     if (typeof renderCampVol === 'function') renderCampVol();
-    if (typeof renderChanges === 'function') renderChanges();
-    if (typeof renderSimulator === 'function') renderSimulator();
     updateActiveFilterBanner();
     document.querySelectorAll('#agPills .pill').forEach(b => b.classList.toggle('active', b.dataset.key===state.ag));
     document.querySelectorAll('#monthPills .pill.month').forEach(b => b.classList.toggle('active', state.months.includes(+b.dataset.idx)));
@@ -1291,20 +1252,27 @@ function boot() {
   }
 
   // ---------- Agent group cards ----------
+  // Variación % del ritmo diario: mes en curso (parcial) vs. último mes completo. null si no hay volumen suficiente.
+  function momRitmo(arr){
+    const prev = arr[LAST_FULL], cur = arr[SEPT_IDX];
+    if (prev < MIN_VOL || cur < Math.max(10, MIN_VOL*SEPT_DAYS_ELAPSED/daysInMonth(LAST_FULL))) return null;
+    const rPrev = prev/daysInMonth(LAST_FULL), rCur = cur/daysInMonth(SEPT_IDX);
+    return 100*(rCur-rPrev)/rPrev;
+  }
   function renderAgGrid(){
     const grid = document.getElementById('agGrid');
     grid.innerHTML = visibleAgs().map(ag => {
       const t = AG_TOTALS[ag];
       const totalCalls = sum(t.calls), totalC2 = sum(t.calls2min), totalVt = sum(t.ventas);
-      const cJul = t.calls[PREV_FULL], cAug = t.calls[LAST_FULL];
+      // Mes en curso (parcial) vs. el mes anterior completo, por ritmo diario (llamadas ÷ días).
+      const delta = momRitmo(t.calls);
       let mom;
-      if (cJul>=MIN_VOL && cAug>=MIN_VOL){
-        const delta = 100*(cAug-cJul)/cJul;
+      if (delta !== null){
         const cls = delta<=-10?'down':(delta>=10?'up':'flat');
         const arrow = delta<=-10?'▼':(delta>=10?'▲':'≈');
-        mom = `<span class="delta-pill ${cls}">${arrow} ${delta>=0?'+':''}${delta.toFixed(0)}% <span class="mes-prev">Jul</span>→<span class="mes-ult">Ago</span></span>`;
+        mom = `<span class="delta-pill ${cls}" title="Llamadas por día: ${MES_ULT} completo vs. ${MES_ACT} (${SEPT_DAYS_ELAPSED} días)">${arrow} ${delta>=0?'+':''}${delta.toFixed(0)}% ${MONTHS_ES[LAST_FULL]}→${MONTHS_ES[SEPT_IDX]} (por día)</span>`;
       } else {
-        mom = `<span class="na">volumen insuficiente en Jul/Ago para comparar</span>`;
+        mom = `<span class="na">volumen insuficiente en ${MONTHS_ES[LAST_FULL]}/${MONTHS_ES[SEPT_IDX]} para comparar</span>`;
       }
       const rateContacto = totalCalls? 100*totalC2/totalCalls : 0;
       const rateCierre = totalC2? 100*totalVt/totalC2 : 0;
@@ -1345,7 +1313,7 @@ function boot() {
         ? `<td class="num heat heat-na">—</td>`
         : `<td class="num heat" style="background:${heatBg(hi>lo?(v-lo)/(hi-lo):0.5)}">${fmtPct(v)}</td>`
       ).join('');
-      const rJul = rates[PREV_FULL], rAug = rates[LAST_FULL];
+      const rJul = rates[LAST_FULL], rAug = rates[SEPT_IDX];   // mes anterior completo → mes en curso
       let trend;
       if (rJul!==null && rAug!==null){
         const d = rAug-rJul;
@@ -1462,14 +1430,16 @@ function boot() {
     const ags = visibleAgs();
     const camp = WFM_DATA.campaigns.filter(c => ags.includes(c.agentGroup)).map(c => {
       const calls = sumRange(c.calls, FULL_MONTHS), c2 = sumRange(c.calls2min, FULL_MONTHS), vt = sumRange(c.ventas, FULL_MONTHS);
-      const cJul = c.calls[PREV_FULL], cAug = c.calls[LAST_FULL];
-      const c2Jul = c.calls2min[PREV_FULL], c2Aug = c.calls2min[LAST_FULL];
+      // "Jul/Aug" = mes anterior completo / mes en curso (nombres históricos de las variables).
+      const cJul = c.calls[LAST_FULL], cAug = c.calls[SEPT_IDX];
+      const c2Jul = c.calls2min[LAST_FULL], c2Aug = c.calls2min[SEPT_IDX];
+      const momD = momRitmo(c.calls);
       const rateContJul = cJul>=10 ? 100*c2Jul/cJul : null;
       const rateContAug = cAug>=10 ? 100*c2Aug/cAug : null;
       const rateDeltaPP = (rateContJul!==null && rateContAug!==null) ? rateContAug-rateContJul : null;
       return { name:c.name, agentGroup:c.agentGroup, calls, c2, vt,
         rateContacto: calls? 100*c2/calls : null, rateCierre: c2? 100*vt/c2 : null,
-        cJul, cAug, rateContJul, rateContAug, rateDeltaPP };
+        cJul, cAug, momD, rateContJul, rateContAug, rateDeltaPP };
     });
     const withVol = camp.filter(c => c.calls >= MIN_VOL);
     const rContacto = withVol.map(c=>c.rateContacto).sort((a,b)=>a-b);
@@ -1484,10 +1454,8 @@ function boot() {
       .sort((a,b)=>b.calls-a.calls).slice(0,6);
     const highVolLowCierre = withC2.filter(c => c.c2>=medVol*0.3 && c.rateCierre < medCierre*0.5)
       .sort((a,b)=>b.c2-a.c2).slice(0,6);
-    const momDrops = camp.filter(c => c.cJul>=MIN_VOL && c.cAug>=MIN_VOL && (100*(c.cAug-c.cJul)/c.cJul)<=-25)
-      .sort((a,b)=> (a.cAug-a.cJul)/a.cJul - (b.cAug-b.cJul)/b.cJul).slice(0,6);
-    const momGrowth = camp.filter(c => c.cJul>=MIN_VOL && c.cAug>=MIN_VOL && (100*(c.cAug-c.cJul)/c.cJul)>=40)
-      .sort((a,b)=> (b.cAug-b.cJul)/b.cJul - (a.cAug-a.cJul)/a.cJul).slice(0,6);
+    const momDrops = camp.filter(c => c.momD!==null && c.momD<=-25).sort((a,b)=> a.momD - b.momD).slice(0,6);
+    const momGrowth = camp.filter(c => c.momD!==null && c.momD>=40).sort((a,b)=> b.momD - a.momD).slice(0,6);
 
     return {highVolLowContacto, highVolLowCierre, momDrops, momGrowth, medVol, medContacto, medCierre};
   }
@@ -1506,10 +1474,10 @@ function boot() {
         c => `<li><span class="nm" title="${c.name} · ${c.agentGroup}">${c.name} <span class="na">· ${c.agentGroup}</span></span><span class="mt">${fmt(c.calls)} · ${fmtPct(c.rateContacto)}</span></li>`) +
       alertCard('high', '💸 Se contacta bien pero no cierra', `Cierre muy por debajo de la mediana (${fmtPct(a.medCierre)}) con contactos suficientes`, a.highVolLowCierre,
         c => `<li><span class="nm" title="${c.name} · ${c.agentGroup}">${c.name} <span class="na">· ${c.agentGroup}</span></span><span class="mt">${fmt(c.c2)} cont. · ${fmtPct(c.rateCierre)}</span></li>`) +
-      alertCard('med', '📉 Caída fuerte <span class="mes-prev">Jul</span>→<span class="mes-ult">Ago</span> (≥25%) — posible detonante', `Llamadas −25% o más entre los dos últimos meses completos`, a.momDrops,
-        c => { const volD = 100*(c.cAug-c.cJul)/c.cJul; return `<li><span class="nm" title="${c.name} · ${c.agentGroup}">${c.name} <span class="na">· ${c.agentGroup}</span></span><span class="mt">${fmt(c.cJul)} → ${fmt(c.cAug)}</span><div class="diag">${diagnoseChange(volD, c.rateDeltaPP)}</div></li>`; }) +
-      alertCard('info', '📈 Subida fuerte <span class="mes-prev">Jul</span>→<span class="mes-ult">Ago</span> (≥40%) — posible detonante', `Llamadas +40% o más entre los dos últimos meses completos`, a.momGrowth,
-        c => { const volD = 100*(c.cAug-c.cJul)/c.cJul; return `<li><span class="nm" title="${c.name} · ${c.agentGroup}">${c.name} <span class="na">· ${c.agentGroup}</span></span><span class="mt">${fmt(c.cJul)} → ${fmt(c.cAug)}</span><div class="diag">${diagnoseChange(volD, c.rateDeltaPP)}</div></li>`; });
+      alertCard('med', `📉 Caída fuerte ${MONTHS_ES[LAST_FULL]}→${MONTHS_ES[SEPT_IDX]} (≥25%) — posible detonante`, `Llamadas por día −25% o más: ${MES_ACT.toLowerCase()} (${SEPT_DAYS_ELAPSED} días) vs. ${MES_ULT.toLowerCase()} completo`, a.momDrops,
+        c => { const volD = c.momD; return `<li><span class="nm" title="${c.name} · ${c.agentGroup}">${c.name} <span class="na">· ${c.agentGroup}</span></span><span class="mt">${fmt(c.cJul)} → ${fmt(c.cAug)} · ${volD>=0?'+':''}${volD.toFixed(0)}%/día</span><div class="diag">${diagnoseChange(volD, c.rateDeltaPP)}</div></li>`; }) +
+      alertCard('info', `📈 Subida fuerte ${MONTHS_ES[LAST_FULL]}→${MONTHS_ES[SEPT_IDX]} (≥40%) — posible detonante`, `Llamadas por día +40% o más: ${MES_ACT.toLowerCase()} (${SEPT_DAYS_ELAPSED} días) vs. ${MES_ULT.toLowerCase()} completo`, a.momGrowth,
+        c => { const volD = c.momD; return `<li><span class="nm" title="${c.name} · ${c.agentGroup}">${c.name} <span class="na">· ${c.agentGroup}</span></span><span class="mt">${fmt(c.cJul)} → ${fmt(c.cAug)} · ${volD>=0?'+':''}${volD.toFixed(0)}%/día</span><div class="diag">${diagnoseChange(volD, c.rateDeltaPP)}</div></li>`; });
   }
 
   // ---------- Manual Outbound e Inbound por grupo de agentes (agregado + mensual) ----------
@@ -1603,195 +1571,9 @@ function boot() {
     renderMonthlyRateTable('inboundCierreBody', INBOUND_DATA, ags, 'ventas', 'calls2min', 5);
   }
 
-  // ---------- Simulador de palancas para <span class="mes-actual-min">septiembre</span> ----------
+  // Días transcurridos del mes en curso y días totales del mes (vienen del Web App).
   const SEPT_DAYS_ELAPSED = WFM_META.daysElapsed, SEPT_DAYS_TOTAL = WFM_META.daysInMonth;  // calculados en el servidor
-  const SEPT_PACE = SEPT_DAYS_TOTAL / SEPT_DAYS_ELAPSED;
-  function rateOrNull(num, den){ return den ? 100*num/den : null; }
-  function sumAgsField(data, ags, key, idx){ return ags.reduce((s,ag)=> s + (data[ag] ? data[ag][key][idx] : 0), 0); }
-  function fmtDeltaPct(v){ return v===null||v===undefined ? '—' : (v>=0?'+':'')+v.toFixed(0)+'%'; }
-  function fmtDeltaPP(v){ return v===null||v===undefined ? '—' : (v>=0?'+':'')+v.toFixed(1)+'pp'; }
 
-  let SIM_BASE = null;
-  function calcSim(kind){
-    const baseKey = kind.toLowerCase();
-    if (!SIM_BASE || !SIM_BASE[baseKey]) return;
-    const base = SIM_BASE[baseKey];
-    const volInput = document.getElementById('sim'+kind+'Vol');
-    const contInput = document.getElementById('sim'+kind+'Contacto');
-    const cierInput = document.getElementById('sim'+kind+'Cierre');
-    if (!volInput) return;
-    const volPct = parseFloat(volInput.value) || 0;
-    const contacto = parseFloat(contInput.value);
-    const cierre = parseFloat(cierInput.value);
-    const calls = base.calls * (1+volPct/100);
-    const contactos = calls * (isNaN(contacto)?0:contacto) / 100;
-    const ventas = contactos * (isNaN(cierre)?0:cierre) / 100;
-    const deltaVentas = ventas - base.ventas;
-    const out = document.getElementById('sim'+kind+'Out');
-    if (out){
-      out.innerHTML = `<div class="big">${fmt(ventas)} ventas/mes</div><div class="cmp">vs. ${fmt(base.ventas)} en ${MES_ULT.toLowerCase()} (${deltaVentas>=0?'+':''}${fmt(deltaVentas)}) · ${fmt(calls)} llamadas · ${fmt(contactos)} contactos</div>`;
-    }
-  }
-
-  function renderSimulator(){
-    const el = document.getElementById('simContent');
-    if (!el) return;
-    const ags = visibleAgs();
-    const manualAgs = MANUAL_AGS.filter(ag => ags.includes(ag));
-    const inboundAgs = INBOUND_AGS.filter(ag => ags.includes(ag));
-
-    const mCallsAug = sumAgsField(MANUAL_DATA, manualAgs, 'calls', LAST_FULL);
-    const mCallsSep = sumAgsField(MANUAL_DATA, manualAgs, 'calls', SEPT_IDX);
-    const mC2Aug = sumAgsField(MANUAL_DATA, manualAgs, 'calls2min', LAST_FULL);
-    const mC2Sep = sumAgsField(MANUAL_DATA, manualAgs, 'calls2min', SEPT_IDX);
-    const mVtAug = sumAgsField(MANUAL_DATA, manualAgs, 'ventas', LAST_FULL);
-    const mVtSep = sumAgsField(MANUAL_DATA, manualAgs, 'ventas', SEPT_IDX);
-
-    const iCallsAug = sumAgsField(INBOUND_DATA, inboundAgs, 'calls', LAST_FULL);
-    const iCallsSep = sumAgsField(INBOUND_DATA, inboundAgs, 'calls', SEPT_IDX);
-    const iC2Aug = sumAgsField(INBOUND_DATA, inboundAgs, 'calls2min', LAST_FULL);
-    const iC2Sep = sumAgsField(INBOUND_DATA, inboundAgs, 'calls2min', SEPT_IDX);
-    const iVtAug = sumAgsField(INBOUND_DATA, inboundAgs, 'ventas', LAST_FULL);
-    const iVtSep = sumAgsField(INBOUND_DATA, inboundAgs, 'ventas', SEPT_IDX);
-
-    const mRateAug = rateOrNull(mC2Aug,mCallsAug), mRateSep = rateOrNull(mC2Sep,mCallsSep);
-    const mCierreAug = rateOrNull(mVtAug,mC2Aug), mCierreSep = rateOrNull(mVtSep,mC2Sep);
-    const iRateAug = rateOrNull(iC2Aug,iCallsAug), iRateSep = rateOrNull(iC2Sep,iCallsSep);
-    const iCierreAug = rateOrNull(iVtAug,iC2Aug), iCierreSep = rateOrNull(iVtSep,iC2Sep);
-
-    const mCallsSepProj = mCallsSep*SEPT_PACE, iCallsSepProj = iCallsSep*SEPT_PACE;
-    const mVtSepProj = (mRateSep!==null && mCierreSep!==null) ? mCallsSepProj*mRateSep/100*mCierreSep/100 : null;
-    const iVtSepProj = (iRateSep!==null && iCierreSep!==null) ? iCallsSepProj*iRateSep/100*iCierreSep/100 : null;
-
-    const totalAug = mCallsAug+iCallsAug, totalSep = mCallsSep+iCallsSep;
-    const mixManualAug = totalAug? 100*mCallsAug/totalAug : 0, mixInboundAug = totalAug? 100-mixManualAug : 0;
-    const mixManualSep = totalSep? 100*mCallsSep/totalSep : 0, mixInboundSep = totalSep? 100-mixManualSep : 0;
-
-    function cmpRow(label, aug, sepReal, sepProj, isRate){
-      const f = isRate ? fmtPct : fmt;
-      return `<tr><td>${label}</td><td class="num">${aug===null?'—':f(aug)}</td><td class="num">${sepReal===null?'—':f(sepReal)}</td><td class="num">${sepProj===null||sepProj===undefined?'—':f(sepProj)}</td></tr>`;
-    }
-    const cmpTable = `<div class="table-scroll"><table>
-      <thead><tr><th>Métrica</th><th class="num">${MES_ULT} (completo)</th><th class="num"><span class="mes-actual">Septiembre</span> (real, ${SEPT_DAYS_ELAPSED} días)</th><th class="num">${MES_ACT} (proyectado a ritmo actual)</th></tr></thead>
-      <tbody>
-        ${cmpRow('Llamadas Manual', mCallsAug, mCallsSep, mCallsSepProj, false)}
-        ${cmpRow('Llamadas Inbound', iCallsAug, iCallsSep, iCallsSepProj, false)}
-        ${cmpRow('Total llamadas', totalAug, totalSep, mCallsSepProj+iCallsSepProj, false)}
-        ${cmpRow('Tasa contacto Manual', mRateAug, mRateSep, mRateSep, true)}
-        ${cmpRow('Tasa contacto Inbound', iRateAug, iRateSep, iRateSep, true)}
-        ${cmpRow('Tasa cierre Manual', mCierreAug, mCierreSep, mCierreSep, true)}
-        ${cmpRow('Tasa cierre Inbound', iCierreAug, iCierreSep, iCierreSep, true)}
-        ${cmpRow('Ventas Manual', mVtAug, mVtSep, mVtSepProj, false)}
-        ${cmpRow('Ventas Inbound', iVtAug, iVtSep, iVtSepProj, false)}
-      </tbody>
-    </table></div>`;
-
-    const mixHtml = `<div style="margin-top:14px;">
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Mezcla ${MES_ULT}: Manual ${mixManualAug.toFixed(0)}% / Inbound ${mixInboundAug.toFixed(0)}%</div>
-      <div class="mixbar"><span style="width:${mixManualAug}%;background:var(--series-2);">${mixManualAug>=12?'Manual '+mixManualAug.toFixed(0)+'%':''}</span><span style="width:${mixInboundAug}%;background:var(--series-1);">${mixInboundAug>=12?'Inbound '+mixInboundAug.toFixed(0)+'%':''}</span></div>
-      <div style="font-size:12px;color:var(--text-muted);margin:10px 0 4px;">Mezcla <span class="mes-actual">Septiembre</span> (real): Manual ${mixManualSep.toFixed(0)}% / Inbound ${mixInboundSep.toFixed(0)}%</div>
-      <div class="mixbar"><span style="width:${mixManualSep}%;background:var(--series-2);">${mixManualSep>=12?'Manual '+mixManualSep.toFixed(0)+'%':''}</span><span style="width:${mixInboundSep}%;background:var(--series-1);">${mixInboundSep>=12?'Inbound '+mixInboundSep.toFixed(0)+'%':''}</span></div>
-    </div>`;
-
-    // Composición de Inbound por subtipo de campaña
-    const inboundCamps = WFM_DATA.campaigns.filter(c => c.name.toLowerCase().includes('inbound') && ags.includes(c.agentGroup));
-    const subtypeAgg = {};
-    inboundCamps.forEach(c => {
-      if (!subtypeAgg[c.name]) subtypeAgg[c.name] = Array(N_MONTHS).fill(0);
-      for (let i=0;i<N_MONTHS;i++) subtypeAgg[c.name][i]+=c.calls[i];
-    });
-    const subtypeRows = Object.entries(subtypeAgg).map(([name,calls]) => ({ name, aug:calls[LAST_FULL], sep:calls[SEPT_IDX] }))
-      .filter(r=>r.aug>0||r.sep>0).sort((a,b)=>b.aug-a.aug);
-    const subtypeHtml = subtypeRows.length ? `<div class="table-scroll"><table>
-      <thead><tr><th>Subtipo de campaña Inbound</th><th class="num">${MES_ULT}</th><th class="num"><span class="mes-actual">Septiembre</span> (real)</th><th class="num">Δ ritmo diario</th></tr></thead>
-      <tbody>${subtypeRows.map(r => {
-        const dailyAug = r.aug/31, dailySep = r.sep/SEPT_DAYS_ELAPSED;
-        const d = dailyAug>0 ? 100*(dailySep-dailyAug)/dailyAug : null;
-        return `<tr><td class="nm" title="${r.name}">${r.name}</td><td class="num">${fmt(r.aug)}</td><td class="num">${fmt(r.sep)}</td><td class="num">${d===null?'—':fmtDeltaPct(d)}</td></tr>`;
-      }).join('')}</tbody>
-    </table></div>` : `<div class="alert-empty">Esta operación no tiene campañas Inbound.</div>`;
-
-    // Mezcla de segmentos (ltv_type)
-    const ltvRows = WFM_DATA.ltv.filter(r => ags.includes(r.agentGroup));
-    const segAgg = {};
-    ltvRows.forEach(r => {
-      if (!segAgg[r.ltvType]) segAgg[r.ltvType] = {aug:0, sep:0};
-      segAgg[r.ltvType].aug += r.calls[LAST_FULL];
-      segAgg[r.ltvType].sep += r.calls[SEPT_IDX];
-    });
-    const totalSegAug = Object.values(segAgg).reduce((s,v)=>s+v.aug,0) || 1;
-    const totalSegSep = Object.values(segAgg).reduce((s,v)=>s+v.sep,0) || 1;
-    const segRows = Object.entries(segAgg).map(([seg,v]) => ({
-      seg, aug:v.aug, sep:v.sep, shareAug: 100*v.aug/totalSegAug, shareSep: 100*v.sep/totalSegSep,
-    })).sort((a,b)=> b.aug-a.aug).slice(0,8);
-    const segHtml = `<div class="table-scroll"><table>
-      <thead><tr><th>Segmento (ltv_type)</th><th class="num">% de llamadas ${MES_ULT}</th><th class="num">% de llamadas ${MES_ACT}</th><th class="num">Δ pp de participación</th></tr></thead>
-      <tbody>${segRows.map(r => `<tr><td>${r.seg}</td><td class="num">${fmtPct(r.shareAug)}</td><td class="num">${fmtPct(r.shareSep)}</td><td class="num">${fmtDeltaPP(r.shareSep-r.shareAug)}</td></tr>`).join('')}</tbody>
-    </table></div>`;
-
-    // Palancas (narrativa data-driven)
-    const levers = [];
-    if (mRateSep!==null && mRateAug!==null && Math.abs(mRateSep-mRateAug)>=1.5){
-      const d = mRateSep-mRateAug;
-      levers.push(`<b>Manual — tasa de contacto:</b> ${d>0?'subió':'bajó'} de ${fmtPct(mRateAug)} (${MES_ULT.toLowerCase()}) a ${fmtPct(mRateSep)} (${MES_ACT.toLowerCase()}, ${SEPT_DAYS_ELAPSED} días) — ${fmtDeltaPP(d)}. ${d>0? 'Si se sostiene, mejora el embudo sin necesidad de más volumen.':'Palanca a revisar antes de subir volumen: guion, horario de marcación o calidad de la base.'}`);
-    }
-    if (iRateSep!==null && iRateAug!==null && Math.abs(iRateSep-iRateAug)>=1.5){
-      const d = iRateSep-iRateAug;
-      levers.push(`<b>Inbound — tasa de contacto:</b> ${d>0?'subió':'bajó'} de ${fmtPct(iRateAug)} (${MES_ULT.toLowerCase()}) a ${fmtPct(iRateSep)} (${MES_ACT.toLowerCase()}, ${SEPT_DAYS_ELAPSED} días) — ${fmtDeltaPP(d)}.`);
-    }
-    if (mCierreSep!==null && mCierreAug!==null && Math.abs(mCierreSep-mCierreAug)>=2){
-      const d = mCierreSep-mCierreAug;
-      levers.push(`<b>Manual — tasa de cierre:</b> pasó de ${fmtPct(mCierreAug)} a ${fmtPct(mCierreSep)} (${fmtDeltaPP(d)}) — ${d>0?'mejor conversión de los contactos logrados.':'se están perdiendo más contactos sin convertir; revisar oferta/guión de cierre.'}`);
-    }
-    if (iCierreSep!==null && iCierreAug!==null && Math.abs(iCierreSep-iCierreAug)>=2){
-      const d = iCierreSep-iCierreAug;
-      levers.push(`<b>Inbound — tasa de cierre:</b> pasó de ${fmtPct(iCierreAug)} a ${fmtPct(iCierreSep)} (${fmtDeltaPP(d)}).`);
-    }
-    if (totalAug>0 && totalSep>0 && Math.abs(mixManualSep-mixManualAug)>=5){
-      levers.push(`<b>Mezcla Manual/Inbound:</b> ${MES_ULT.toLowerCase()} ${mixManualAug.toFixed(0)}%/${mixInboundAug.toFixed(0)}% → ${MES_ACT.toLowerCase()} ${mixManualSep.toFixed(0)}%/${mixInboundSep.toFixed(0)}% — se está inclinando hacia ${mixManualSep>mixManualAug?'Manual':'Inbound'}. ${iRateAug!==null && mRateAug!==null && iRateAug>mRateAug ? 'Como el Inbound suele contactar mejor, empujar más volumen ahí (más horario/visibilidad para que llamen) es una palanca de contacto.' : ''}`);
-    }
-    const dailyAugTotal = totalAug/31, dailySepTotal = totalSep/SEPT_DAYS_ELAPSED;
-    if (dailyAugTotal>0 && Math.abs(100*(dailySepTotal-dailyAugTotal)/dailyAugTotal)>=10){
-      const d = 100*(dailySepTotal-dailyAugTotal)/dailyAugTotal;
-      levers.push(`<b>Ritmo diario de llamadas:</b> ${fmt(dailyAugTotal)} llamadas/día en ${MES_ULT.toLowerCase()} vs. ${fmt(dailySepTotal)} llamadas/día en lo que va de <span class="mes-actual-min">septiembre</span> (${fmtDeltaPct(d)}). ${d<0? `Si se mantiene este ritmo, ${MES_ACT.toLowerCase()} cierra por debajo de ${MES_ULT.toLowerCase()} en volumen — palanca de dotación/discado.`:`El ritmo de marcación va por encima de ${MES_ULT.toLowerCase()}.`}`);
-    }
-    if (!levers.length) levers.push(`Con los ${SEPT_DAYS_ELAPSED} días de <span class="mes-actual-min">septiembre</span> disponibles no hay cambios de mezcla o de tasas por encima del umbral — todavía es pronto para concluir; vuelve a revisar en unos días.`);
-
-    // Calculadora interactiva (solo con una operación específica seleccionada)
-    const singleAg = !['__ALL__','__RECURRENCE__'].includes(state.ag);
-    let calcHtml;
-    if (singleAg){
-      const ag = state.ag;
-      const mHas = MANUAL_DATA[ag], iHas = INBOUND_DATA[ag];
-      SIM_BASE = {
-        manual: mHas ? { calls: mHas.calls[LAST_FULL], rate: rateOrNull(mHas.calls2min[LAST_FULL], mHas.calls[LAST_FULL]), cierre: rateOrNull(mHas.ventas[LAST_FULL], mHas.calls2min[LAST_FULL]), ventas: mHas.ventas[LAST_FULL] } : null,
-        inbound: iHas ? { calls: iHas.calls[LAST_FULL], rate: rateOrNull(iHas.calls2min[LAST_FULL], iHas.calls[LAST_FULL]), cierre: rateOrNull(iHas.ventas[LAST_FULL], iHas.calls2min[LAST_FULL]), ventas: iHas.ventas[LAST_FULL] } : null,
-      };
-      function calcCard(kind, label, base){
-        if (!base) return `<div class="sim-card"><h4>${label}</h4><div class="alert-empty">${ag} no tiene campañas de este tipo.</div></div>`;
-        return `<div class="sim-card">
-          <h4>${label} — línea base: ${MES_ULT.toLowerCase()}</h4>
-          <div class="sim-row"><span>Δ% volumen vs. ${MES_ULT.toLowerCase()}</span><input type="number" id="sim${kind}Vol" value="0" step="5" oninput="calcSim('${kind}')"></div>
-          <div class="sim-row"><span>Tasa de contacto objetivo (%)</span><input type="number" id="sim${kind}Contacto" value="${base.rate===null?0:base.rate.toFixed(1)}" step="0.5" oninput="calcSim('${kind}')"></div>
-          <div class="sim-row"><span>Tasa de cierre objetivo (%)</span><input type="number" id="sim${kind}Cierre" value="${base.cierre===null?0:base.cierre.toFixed(1)}" step="0.5" oninput="calcSim('${kind}')"></div>
-          <div class="sim-out" id="sim${kind}Out"></div>
-        </div>`;
-      }
-      calcHtml = `<div class="sim-grid">${calcCard('Manual','📞 Manual Outbound', SIM_BASE.manual)}${calcCard('Inbound','☎️ Inbound', SIM_BASE.inbound)}</div>`;
-    } else {
-      SIM_BASE = null;
-      calcHtml = `<div class="sim-note">Elige una operación puntual en el filtro para activar el simulador.</div>`;
-    }
-
-    el.innerHTML = `
-      <div class="panel"><h2><span class="mes-ult-largo">Agosto</span> vs. <span class="mes-actual">Septiembre</span> (real y proyectado) <small>operación: ${currentFilterLabel()}</small></h2>${cmpTable}${mixHtml}</div>
-      <div class="panel"><h2>Composición del Inbound por subtipo <small>¿cambió qué tipo de Inbound está entrando?</small></h2>${subtypeHtml}</div>
-      <div class="panel"><h2>Mezcla de segmentos (ltv_type) <small>¿hay más peso de algún segmento del ciclo de vida?</small></h2>${segHtml}</div>
-      <div class="panel"><h2>Palancas identificadas <small>lecturas automáticas a partir de los datos, no una recomendación genérica</small></h2><ul class="lever-list">${levers.map(l=>`<li>${l}</li>`).join('')}</ul></div>
-      <div class="panel"><h2>Simulador "¿qué pasaría si...?" <small>ajusta volumen y tasas objetivo para ver el impacto en ventas</small></h2>${calcHtml}</div>
-    `;
-    if (singleAg){ calcSim('Manual'); calcSim('Inbound'); }
-  }
 
   // ---------- ltv_type ----------
   let ltvSortKey = 'calls', ltvSortDir = -1;
@@ -2039,87 +1821,6 @@ function boot() {
     });
   });
 
-  // ---------- Validar cambios: bitácora de cambios mes a mes (Ene→Feb … <span class="mes-prev">Jul</span>→<span class="mes-ult">Ago</span>) ----------
-  let changesSortMode = 'severity';
-  let lastChangesRows = [];
-  function computeChanges(){
-    const FULL_PAIRS = [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]];
-    const ags = visibleAgs();
-    const MINV = 30;
-    const out = [];
-    WFM_DATA.campaigns.filter(c => ags.includes(c.agentGroup)).forEach(c => {
-      FULL_PAIRS.forEach(([i,j]) => {
-        const cb=c.calls[i], ca=c.calls[j];
-        if (cb<MINV && ca<MINV) return;
-        const c2b=c.calls2min[i], c2a=c.calls2min[j];
-        const vb=c.ventas[i], va=c.ventas[j];
-        const rb = cb>=10 ? 100*c2b/cb : null, ra = ca>=10 ? 100*c2a/ca : null;
-        const clb = c2b>=5 ? 100*vb/c2b : null, cla = c2a>=5 ? 100*va/c2a : null;
-        const volDelta = cb>=MINV ? 100*(ca-cb)/cb : null;
-        const rateDelta = (rb!==null && ra!==null) ? ra-rb : null;
-        const cierreDelta = (clb!==null && cla!==null) ? cla-clb : null;
-        const flagged = (volDelta!==null && Math.abs(volDelta)>=25) || (rateDelta!==null && Math.abs(rateDelta)>=4) || (cierreDelta!==null && Math.abs(cierreDelta)>=6);
-        if (!flagged) return;
-        const severity = Math.max(Math.abs(volDelta||0), Math.abs(rateDelta||0)*6, Math.abs(cierreDelta||0)*5);
-        out.push({
-          name:c.name, agentGroup:c.agentGroup, mAIdx:i, mA:MONTHS_ES[i], mB:MONTHS_ES[j],
-          cb, ca, volDelta, rb, ra, rateDelta, vb, va, clb, cla, cierreDelta, severity,
-          diag: diagnoseChange(volDelta, rateDelta),
-        });
-      });
-    });
-    return out;
-  }
-  function renderChanges(){
-    const tbody = document.getElementById('changesBody');
-    if (!tbody) return;
-    const search = document.getElementById('changesSearch').value.toLowerCase();
-    let rows = computeChanges().filter(r => !search || r.name.toLowerCase().includes(search));
-    const total = rows.length;
-    switch (changesSortMode){
-      case 'volAsc': rows.sort((a,b)=> (a.volDelta===null?999:a.volDelta) - (b.volDelta===null?999:b.volDelta)); break;
-      case 'volDesc': rows.sort((a,b)=> (b.volDelta===null?-999:b.volDelta) - (a.volDelta===null?-999:a.volDelta)); break;
-      case 'rateAsc': rows.sort((a,b)=> (a.rateDelta===null?999:a.rateDelta) - (b.rateDelta===null?999:b.rateDelta)); break;
-      case 'recent': rows.sort((a,b)=> b.mAIdx - a.mAIdx); break;
-      default: rows.sort((a,b)=> b.severity - a.severity);
-    }
-    lastChangesRows = rows;
-    const shown = rows.slice(0, 250);
-    document.getElementById('changesCount').textContent = `${total} cambio(s) detectado(s)${total>shown.length? ` · mostrando los ${shown.length} más relevantes`:''} · filtro: ${currentFilterLabel()}`;
-    document.getElementById('changesEmpty').style.display = total ? 'none':'block';
-    tbody.innerHTML = shown.map(r => `<tr>
-      <td class="nm" title="${r.name}">${r.name}</td>
-      <td><span class="ag-tag"><span class="sw" style="background:${AGENT_COLORS[r.agentGroup]||'var(--text-muted)'}"></span>${r.agentGroup}</span></td>
-      <td>${r.mA} → ${r.mB}</td>
-      <td style="max-width:280px;font-size:11.5px;color:var(--text-secondary);">${r.diag}</td>
-      <td class="num">${fmt(r.cb)} → ${fmt(r.ca)}</td>
-      <td class="num">${r.volDelta===null?'—':(r.volDelta>=0?'+':'')+r.volDelta.toFixed(0)+'%'}</td>
-      <td class="num">${r.rb===null?'—':fmtPct(r.rb)} → ${r.ra===null?'—':fmtPct(r.ra)}</td>
-      <td class="num">${r.rateDelta===null?'—':(r.rateDelta>=0?'+':'')+r.rateDelta.toFixed(1)+'pp'}</td>
-      <td class="num">${r.clb===null?'—':fmtPct(r.clb)} → ${r.cla===null?'—':fmtPct(r.cla)}</td>
-      <td class="num">${r.cierreDelta===null?'—':(r.cierreDelta>=0?'+':'')+r.cierreDelta.toFixed(1)+'pp'}</td>
-    </tr>`).join('');
-  }
-  document.getElementById('changesSearch').addEventListener('input', renderChanges);
-  document.getElementById('changesSort').addEventListener('change', e => { changesSortMode = e.target.value; renderChanges(); });
-  function changesRowsToCsv(rows){
-    const header = ['Campaña','Grupo de agentes','Mes antes','Mes después','Llamadas antes','Llamadas después','Δ Volumen (%)','Contacto antes (%)','Contacto después (%)','Δ Contacto (pp)','Cierre antes (%)','Cierre después (%)','Δ Cierre (pp)','Diagnóstico'];
-    const esc = v => `"${String(v).replace(/"/g,'""')}"`;
-    const lines = [header.map(esc).join(',')];
-    rows.forEach(r => lines.push([r.name, r.agentGroup, r.mA, r.mB, r.cb, r.ca, r.volDelta===null?'':r.volDelta.toFixed(1), r.rb===null?'':r.rb.toFixed(1), r.ra===null?'':r.ra.toFixed(1), r.rateDelta===null?'':r.rateDelta.toFixed(1), r.clb===null?'':r.clb.toFixed(1), r.cla===null?'':r.cla.toFixed(1), r.cierreDelta===null?'':r.cierreDelta.toFixed(1), r.diag].map(esc).join(',')));
-    return lines.join('\n');
-  }
-  document.getElementById('copyChangesBtn').addEventListener('click', async () => {
-    const csv = changesRowsToCsv(lastChangesRows);
-    try {
-      await navigator.clipboard.writeText(csv);
-      showToast(`Copiado ✓ (${lastChangesRows.length} filas)`);
-    } catch (err) {
-      const overlay = document.getElementById('copyOverlay');
-      const ta = document.getElementById('copyTextarea');
-      ta.value = csv; overlay.hidden = false; ta.focus(); ta.select();
-    }
-  });
 
   // ---------- copiar tabla como CSV ----------
   function rowsToCsv(rows){
@@ -2176,8 +1877,8 @@ function boot() {
     const actual = LARGOS[MONTHS_ES[SEPT_IDX]] || MONTHS_ES[SEPT_IDX];
     const ultimo = LARGOS[MONTHS_ES[LAST_FULL]] || MONTHS_ES[LAST_FULL];
     const set = (sel, txt) => document.querySelectorAll(sel).forEach(el => { el.textContent = txt; });
-    set('.mes-prev', MONTHS_ES[PREV_FULL]);
-    set('.mes-ult', MONTHS_ES[LAST_FULL]);
+    set('.mes-prev', MONTHS_ES[LAST_FULL]);     // comparativos: mes anterior completo → mes en curso
+    set('.mes-ult', MONTHS_ES[SEPT_IDX]);
     set('.mes-ult-largo', ultimo);
     set('.mes-actual', actual);
     set('.mes-actual-min', actual.toLowerCase());
@@ -2241,181 +1942,6 @@ async function cargarYArrancar() {
 
 cargarYArrancar();
 
-// ================================================================
-//  092026 - Tracker:MKTSales — pestaña independiente, autocontenida
-//  No depende del Web App (WFM_ENDPOINT); lee sus propios JSON en
-//  data/tracker_manifest.json + data/tracker_YYYY-MM.json.
-//  Si falla, no rompe el resto del dashboard (try/catch propio).
-// ================================================================
-let TRACKER_DATA = null;
-const TRACKER_MONTHS_LARGO = {'2026-01':'Enero','2026-02':'Febrero','2026-03':'Marzo','2026-04':'Abril',
-  '2026-05':'Mayo','2026-06':'Junio','2026-07':'Julio','2026-08':'Agosto','2026-09':'Septiembre',
-  '2026-10':'Octubre','2026-11':'Noviembre','2026-12':'Diciembre'};
-
-function trkFmtUsd(n){ return n===null||n===undefined ? '—' : '$'+Math.round(n).toLocaleString('es-CO'); }
-function trkFmtNum(n){ return n===null||n===undefined ? '—' : Math.round(n).toLocaleString('es-CO'); }
-function trkFmtPct(n){ return n===null||n===undefined ? '—' : (Math.round(n*1000)/10).toLocaleString('es-CO')+'%'; }
-function trkFmtVal(kpi, v){ return kpi.unit==='pct' ? trkFmtPct(v) : (kpi.unit==='usd' ? trkFmtUsd(v) : trkFmtNum(v)); }
-function trkFmtDelta(v){
-  if (v===null||v===undefined) return '<span class="delta-pill flat">—</span>';
-  const pct = v*100, cls = pct>=0 ? 'up':'down', arrow = pct>=0 ? '▲':'▼';
-  return `<span class="delta-pill ${cls}">${arrow} ${pct>=0?'+':''}${pct.toFixed(1)}%</span>`;
-}
-
-// Umbral para marcar una semana como "desviada" (mismo criterio usado en el análisis
-// original: >=15% de desviación vs. la referencia propia del KPI).
-const TRK_FLAG_THRESHOLD = 0.15;
-// Referencia por semana: solo los KPIs que se ACUMULAN mes a mes (Revenue, Volumen)
-// prorratean el PLAN mensual por los días de esa semana ya transcurridos (comparación
-// justa en semanas parciales). Los promedios (ASP) y las tasas (%) no se prorratean —
-// se comparan directo contra el PLAN, igual que una tasa.
-function trkWeekRef(D, kpi, weekIdx){
-  if (kpi.plan===null || kpi.plan===undefined) return null;
-  if (!kpi.cumulative) return kpi.plan;
-  const elapsed = (D.weekDaysElapsed||[])[weekIdx] || 0;
-  if (!elapsed) return null;
-  return kpi.plan * (elapsed / (D.daysInMonth||30));
-}
-function trkWeekDev(D, kpi, weekIdx){
-  const v = kpi.weeks[weekIdx];
-  const ref = trkWeekRef(D, kpi, weekIdx);
-  if (v===null || v===undefined || !ref) return null;
-  return (v/ref) - 1;
-}
-
-const TRK_OP_ORDER = ['upsell','recurrence','bootcamp_ltv','resurrection'];
-let trkOpFilter = 'all';
-
-function trkOpLabel(D, key){ return (D.operations[key]||{}).label || key; }
-
-function renderTrackerOpFilter(D){
-  const el = document.getElementById('trackerOpFilter');
-  if (!el) return;
-  const opts = [{key:'all', label:'Todas las operaciones'}].concat(TRK_OP_ORDER.filter(k=>D.operations[k]).map(k=>({key:k, label:D.operations[k].label})));
-  el.innerHTML = opts.map(o => `<button class="pill${o.key===trkOpFilter?' active':''}" data-op="${o.key}">${o.label}</button>`).join('');
-  el.querySelectorAll('.pill').forEach(b => b.addEventListener('click', () => { trkOpFilter = b.dataset.op; renderTracker(); }));
-}
-
-// Resumen ejecutivo por operación: el KPI más afectado (mayor desviación negativa,
-// "meter lupa") y el que mejor amortigua (mayor desviación positiva) entre las semanas
-// que ya arrancaron — mismo criterio de "mayor desviación % vs. referencia propia",
-// aplicado automáticamente a cualquier mes que se cargue.
-function trkComputeStandouts(D, op){
-  let worst = null, best = null;
-  op.kpis.forEach(kpi => {
-    (D.weekLabels||[]).forEach((wl, i) => {
-      if (!(D.weekDaysElapsed||[])[i]) return; // semana sin arrancar, no se evalúa
-      const dev = trkWeekDev(D, kpi, i);
-      if (dev===null) return;
-      if (!worst || dev < worst.dev) worst = {kpi, dev, week:wl};
-      if (!best || dev > best.dev) best = {kpi, dev, week:wl};
-    });
-  });
-  return {worst, best};
-}
-function renderTrackerSummary(D){
-  const el = document.getElementById('trackerSummary');
-  if (!el) return;
-  const ops = TRK_OP_ORDER.filter(k => D.operations[k] && (trkOpFilter==='all' || trkOpFilter===k));
-  const cards = ops.map(opKey => {
-    const op = D.operations[opKey];
-    const {worst, best} = trkComputeStandouts(D, op);
-    const worstLine = worst
-      ? `<div class="trk-summary-line">🔎 <span><b>A vigilar:</b> ${worst.kpi.label} — semana del ${worst.week} (<span class="delta-pill down" style="padding:1px 6px;">${(worst.dev*100).toFixed(1)}%</span> vs. referencia)</span></div>`
-      : '';
-    const bestLine = best && best.dev > 0
-      ? `<div class="trk-summary-line">🟢 <span><b>Amortiguador:</b> ${best.kpi.label} — semana del ${best.week} (<span class="delta-pill up" style="padding:1px 6px;">+${(best.dev*100).toFixed(1)}%</span> vs. referencia)</span></div>`
-      : '';
-    return `<div class="trk-summary-card"><h4>${op.label}</h4>${worstLine}${bestLine}</div>`;
-  }).join('');
-  el.innerHTML = `<div class="trk-summary-grid">${cards}</div>`;
-}
-
-async function loadTrackerData(){
-  try{
-    const manResp = await fetch('./data/tracker_manifest.json');
-    if (!manResp.ok) throw new Error('No se encontró data/tracker_manifest.json');
-    const manifest = await manResp.json();
-    const months = manifest.months || [];
-    if (!months.length) throw new Error('El manifest no tiene meses cargados');
-    const currentMonth = months[months.length-1]; // el último cargado = el mes en curso (parcial)
-    const dataResp = await fetch(`./data/tracker_${currentMonth}.json`);
-    if (!dataResp.ok) throw new Error(`No se encontró data/tracker_${currentMonth}.json`);
-    TRACKER_DATA = await dataResp.json();
-    TRACKER_DATA._allMonths = months;
-    document.getElementById('trackerLoadState').hidden = true;
-    renderTracker();
-  } catch(err){
-    const el = document.getElementById('trackerLoadState');
-    if (el){ el.textContent = 'No se pudo cargar 092026 - Tracker:MKTSales: ' + err.message; el.className = 'load-state load-error'; el.hidden = false; }
-    console.error('[tracker]', err);
-  }
-}
-
-function trkKpiRow(D, kpi){
-  const weekCells = (D.weekLabels||[]).map((wl, i) => {
-    const elapsed = (D.weekDaysElapsed||[])[i] || 0;
-    const v = kpi.weeks[i];
-    if (!elapsed) return `<td class="num" title="Semana aún no inicia">—</td>`;
-    const dev = trkWeekDev(D, kpi, i);
-    let cls = 'num';
-    if (dev!==null && Math.abs(dev) >= TRK_FLAG_THRESHOLD) cls += dev < 0 ? ' trk-flag-down' : ' trk-flag-up';
-    const partial = elapsed < (D.weekDaysTotal||[])[i] ? ' (parcial)' : '';
-    return `<td class="${cls}" title="${dev===null?'':'vs. referencia'+partial+': '+(dev*100).toFixed(1)+'%'}">${trkFmtVal(kpi, v)}</td>`;
-  }).join('');
-  return `<tr>
-    <td>${kpi.label}</td>
-    ${weekCells}
-    <td class="num"><strong>${trkFmtVal(kpi, kpi.mtd)}</strong></td>
-    <td class="num">${kpi.plan===null||kpi.plan===undefined ? '—' : trkFmtVal(kpi, kpi.plan)}</td>
-    <td class="num">${kpi.proyeccion===null||kpi.proyeccion===undefined ? '—' : trkFmtVal(kpi, kpi.proyeccion)}</td>
-    <td class="num">${trkFmtDelta(kpi.diferencia)}</td>
-  </tr>`;
-}
-
-function trkTrendRow(D, kpi){
-  const m = kpi.monthly || {};
-  const cells = ['2025-09','2026-06','2026-07','2026-08'].map(mo => `<td class="num">${trkFmtVal(kpi, m[mo])}</td>`).join('');
-  return `<tr><td>${kpi.label}</td>${cells}<td class="num"><strong>${trkFmtVal(kpi, kpi.mtd)}</strong></td></tr>`;
-}
-
-function renderTracker(){
-  if (!TRACKER_DATA) return;
-  const D = TRACKER_DATA;
-  const weekHeaders = (D.weekLabels||[]).map((wl,i) => {
-    const elapsed = (D.weekDaysElapsed||[])[i] || 0;
-    const total = (D.weekDaysTotal||[])[i] || 7;
-    const tag = elapsed===0 ? ' — sin iniciar' : (elapsed<total ? ' — parcial' : '');
-    return `<th class="num">${wl}${tag}</th>`;
-  }).join('');
-
-  renderTrackerOpFilter(D);
-  renderTrackerSummary(D);
-
-  let html = `<div class="panel"><h2>${D.monthLabel||TRACKER_MONTHS_LARGO[D.month]||D.month} ${D.partial?'<small>mes en curso — parcial, '+(D.daysElapsed||'?')+' de '+(D.daysInMonth||'?')+' días</small>':''}</h2>
-    <div style="font-size:13px;color:var(--text-muted);">Fuente: pestaña <strong>${D.sourceTab}</strong> del Google Sheet "Post-Sales-Operations Calls" (datos y PLAN/PROYECCIÓN/DIFERENCIA tal como están calculados ahí — no estimados). ${D.note||''} Las celdas resaltadas marcan una semana con desviación de ${(TRK_FLAG_THRESHOLD*100).toFixed(0)}% o más contra la referencia propia de ese KPI. Las semanas que aún no arrancan se muestran en blanco.</div></div>`;
-
-  TRK_OP_ORDER.filter(k => trkOpFilter==='all' || trkOpFilter===k).forEach(opKey => {
-    const op = D.operations[opKey];
-    if (!op) return;
-    html += `<div class="panel">
-      <h2>${op.label} <small>detalle por semana ${D.monthLabel||D.month} + acumulado vs. PLAN</small></h2>
-      <div class="table-scroll"><table>
-        <thead><tr><th>KPI</th>${weekHeaders}<th class="num">Acumulado (MTD)</th><th class="num">PLAN</th><th class="num">PROYECCIÓN</th><th class="num">Diferencia</th></tr></thead>
-        <tbody>${op.kpis.map(k => trkKpiRow(D, k)).join('')}</tbody>
-      </table></div>
-      <h2 style="margin-top:18px;">${op.label} <small>tendencia mensual (acumulado por mes) — para ver caídas/subidas</small></h2>
-      <div class="table-scroll"><table>
-        <thead><tr><th>KPI</th><th class="num">Sep 2025</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">${D.monthLabel?D.monthLabel.slice(0,3):D.month} (MTD)</th></tr></thead>
-        <tbody>${op.kpis.map(k => trkTrendRow(D, k)).join('')}</tbody>
-      </table></div>
-    </div>`;
-  });
-
-  document.getElementById('trackerContent').innerHTML = html;
-}
-
-loadTrackerData();
 
 </script>
 
@@ -4324,7 +3850,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     if (opts.xLabels){
       const step = Math.ceil(opts.xLabels.length/8);
       opts.xLabels.forEach((lbl,i) => {
-        if (i%step!==0 && i!==opts.xLabels.length-1) return;
+        const lastI = opts.xLabels.length-1;
+        if ((i%step!==0 && i!==lastI) || (i!==lastI && lastI-i < step/2)) return;
         const t = svg('text',{x:xAt(i),y:H-6,'text-anchor':'middle','font-size':9,fill:'var(--text-secondary)'});
         t.textContent = lbl;
         root.appendChild(t);
@@ -4337,47 +3864,6 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       if (opts.refLine!=null) lg.innerHTML += `<span><i style="background:var(--bad)"></i>${opts.refLineLabel||'Referencia'}</span>`;
       container.appendChild(lg);
     }
-  }
-
-  // gráfico de barras verticales con línea base en 0 (para Gap $ diario/semanal)
-  function renderBarChart(container, bars, opts){
-    opts = opts||{};
-    const W = opts.width||760, H = opts.height||200, PAD={l:opts.padLeft||58,r:14,t:14,b:28};
-    const vals = bars.map(b=>b.value);
-    const yMax = Math.max(0, ...vals), yMin = Math.min(0, ...vals);
-    const range = (yMax-yMin)||1;
-    const yAt = v => H-PAD.b - ((v-yMin)/range)*(H-PAD.t-PAD.b);
-    const zeroY = yAt(0);
-    const bw = (W-PAD.l-PAD.r)/bars.length;
-    const root = svg('svg',{viewBox:`0 0 ${W} ${H}`, class:'ct-chart'});
-    for (let g=0; g<=4; g++){
-      const v = yMin+range*g/4, y=yAt(v);
-      root.appendChild(svg('line',{x1:PAD.l,x2:W-PAD.r,y1:y,y2:y,stroke:'var(--border)','stroke-width':1,'stroke-dasharray':g===0?'0':'2,3'}));
-      const t = svg('text',{x:PAD.l-6,y:y+3,'text-anchor':'end','font-size':9,fill:'var(--text-secondary)'});
-      t.textContent = opts.yFormat?opts.yFormat(v):Math.round(v);
-      root.appendChild(t);
-    }
-    bars.forEach((b,i) => {
-      const x = PAD.l + i*bw + bw*0.15;
-      const w = bw*0.7;
-      const y0 = zeroY, y1 = yAt(b.value);
-      const y = Math.min(y0,y1), h = Math.max(1,Math.abs(y1-y0));
-      const rect = svg('rect',{x,y,width:w,height:h,rx:2,fill: b.color || (b.value>=0?'var(--series-3)':'var(--bad)')});
-      rect.addEventListener('mouseenter', e => showTip(e.clientX, e.clientY-8, `<strong>${b.label}</strong><br>${opts.tipFormat?opts.tipFormat(b.value):b.value}`));
-      rect.addEventListener('mousemove', e => showTip(e.clientX, e.clientY-8, `<strong>${b.label}</strong><br>${opts.tipFormat?opts.tipFormat(b.value):b.value}`));
-      rect.addEventListener('mouseleave', hideTip);
-      root.appendChild(rect);
-    });
-    if (opts.xLabels){
-      const step = Math.ceil(bars.length/8);
-      bars.forEach((b,i) => {
-        if (i%step!==0 && i!==bars.length-1) return;
-        const t = svg('text',{x:PAD.l+i*bw+bw/2,y:H-6,'text-anchor':'middle','font-size':9,fill:'var(--text-secondary)'});
-        t.textContent = b.xLabel||'';
-        root.appendChild(t);
-      });
-    }
-    container.innerHTML=''; container.appendChild(root);
   }
 
   // barras horizontales (top peores/mejores días, contribución)
@@ -4447,36 +3933,6 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     container.innerHTML=''; container.appendChild(root);
   }
 
-  // heatmap DOW x operación (cumplimiento %)
-  function renderHeatmap(container, rows, cols, matrix, opts){
-    opts = opts||{};
-    const cellW=64, cellH=30, PAD={l:110,t:20};
-    const W = PAD.l + cols.length*cellW + 10, H = PAD.t + rows.length*cellH + 10;
-    const root = svg('svg',{viewBox:`0 0 ${W} ${H}`, class:'ct-chart'});
-    cols.forEach((c,ci) => {
-      const t = svg('text',{x:PAD.l+ci*cellW+cellW/2, y:14, 'text-anchor':'middle','font-size':9.5,fill:'var(--text-secondary)','font-weight':700});
-      t.textContent = c; root.appendChild(t);
-    });
-    rows.forEach((r,ri) => {
-      const t = svg('text',{x:PAD.l-8, y:PAD.t+ri*cellH+cellH/2+4, 'text-anchor':'end','font-size':10.5,fill:'var(--text-primary)'});
-      t.textContent = r; root.appendChild(t);
-      cols.forEach((c,ci) => {
-        const v = matrix[ri][ci];
-        const fill = heatColorFor(v);
-        const txt = v==null ? '—' : Math.round(v)+'%';
-        const x = PAD.l+ci*cellW+3, y=PAD.t+ri*cellH+3;
-        const rect = svg('rect',{x,y,width:cellW-6,height:cellH-6,rx:5,fill});
-        rect.addEventListener('mouseenter', e => showTip(e.clientX, e.clientY-8, `<strong>${r} · ${c}</strong><br>Cumplimiento: ${txt}`));
-        rect.addEventListener('mousemove', e => showTip(e.clientX, e.clientY-8, `<strong>${r} · ${c}</strong><br>Cumplimiento: ${txt}`));
-        rect.addEventListener('mouseleave', hideTip);
-        root.appendChild(rect);
-        const label = svg('text',{x:x+(cellW-6)/2,y:y+(cellH-6)/2+4,'text-anchor':'middle','font-size':10.5,fill:'var(--text-primary)','font-weight':700});
-        label.textContent = txt; root.appendChild(label);
-      });
-    });
-    container.innerHTML=''; container.appendChild(root);
-  }
-
   // calendario del mes: una casilla por día, coloreada por cumplimiento % de
   // Post-Venta total ese día (heatColorFor ya se usa en el heatmap de arriba).
   function renderCalendarHeat(container, days, opKey){
@@ -4508,118 +3964,103 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     container.innerHTML = ''; container.appendChild(grid);
   }
 
-  // barras agrupadas verticales: 2 barras (Plan gris / Real por severidad) por
-  // cada categoría (ej. una fecha puntual), para comparar ocurrencias
-  // individuales del mismo día de semana (ej. "todos los lunes del mes" uno
-  // al lado del otro) en vez de un solo total acumulado -- pedido explícito
-  // del usuario para ver "cómo fue este lunes vs. lunes previos" de un
-  // vistazo.
-  //
-  // v2: reemplaza las 2 barras (Plan gris / Real de color) por el patrón
-  // "bullet chart" -- 1 sola barra (Real, coloreada según cumplimiento) +
-  // 1 línea de meta (Plan) que la cruza. Con 2 barras casi idénticas en alto
-  // el usuario no distinguía cuál era Plan y cuál era Real sin pasar el
-  // mouse; con este patrón no hace falta leyenda para diferenciarlas: la
-  // barra ES el resultado, la línea ES la meta. Encima/debajo de la línea ya
-  // dice todo (superó o no la meta) sin tener que comparar dos alturas.
-  function renderTargetBarChart(container, groups, opts){
-    opts = opts||{};
-    const W = opts.width || Math.max(240, groups.length*80);
-    const H = opts.height||190;
-    const PAD = {l:opts.padLeft||8, r:8, t:22, b:26};
-    const vals = groups.flatMap(g=>[g.plan||0, g.real||0]);
-    const yMax = Math.max(1, ...vals) * 1.08; // aire arriba para la etiqueta de valor
-    const plotH = H-PAD.t-PAD.b;
-    const yAt = v => H-PAD.b - (v/yMax)*plotH;
-    const groupW = (W-PAD.l-PAD.r)/Math.max(1,groups.length);
-    const barW = Math.min(26, groupW*0.5);
-
-    const root = svg('svg',{viewBox:`0 0 ${W} ${H}`, class:'ct-chart'});
-    for (let g=0; g<=2; g++){
-      const v = yMax*g/2, y=yAt(v);
-      root.appendChild(svg('line',{x1:PAD.l,x2:W-PAD.r,y1:y,y2:y,stroke:'var(--border)','stroke-width':1,'stroke-dasharray':g===0?'0':'2,3'}));
-    }
-
-    groups.forEach((gr,i) => {
-      const gx = PAD.l + i*groupW + groupW/2;
-      const sev = ctSeverity(gr.cumpl);
-      const realColor = gr.real==null ? 'var(--text-muted,#9a9a94)' : (SEV_COLOR[sev] || 'var(--series-3)');
-      const realVal = gr.real||0, planVal = gr.plan||0;
-      const x = gx - barW/2;
-      const yReal = yAt(realVal), yBase = yAt(0);
-      const rect = svg('rect',{x,y:yReal,width:barW,height:Math.max(1,yBase-yReal),rx:3,fill:realColor});
-      const tip = `<strong>${gr.label}</strong><br>Plan: ${fmtMoney(planVal)}<br>Real: ${gr.real==null?'—':fmtMoney(realVal)}` + (gr.cumpl!=null?`<br>Cumpl: ${fmtPct1(gr.cumpl)}`:'');
-      rect.addEventListener('mouseenter', e => showTip(e.clientX, e.clientY-8, tip));
-      rect.addEventListener('mousemove', e => showTip(e.clientX, e.clientY-8, tip));
-      rect.addEventListener('mouseleave', hideTip);
-      root.appendChild(rect);
-
-      // línea de meta (Plan): un tick horizontal más ancho que la barra, cruzándola --
-      // el mismo lenguaje visual en las 7 tarjetas, así se reconoce sin leyenda.
-      const yPlan = yAt(planVal);
-      const tick = svg('line',{x1:x-4,x2:x+barW+4,y1:yPlan,y2:yPlan,stroke:'var(--text-primary)','stroke-width':3,'stroke-linecap':'round'});
-      tick.addEventListener('mouseenter', e => showTip(e.clientX, e.clientY-8, tip));
-      tick.addEventListener('mousemove', e => showTip(e.clientX, e.clientY-8, tip));
-      tick.addEventListener('mouseleave', hideTip);
-      root.appendChild(tick);
-
-      // una sola etiqueta directa por barra (el resultado real) -- el plan se
-      // lee en la posición de la línea y en el tooltip, no hace falta repetirlo.
-      const labelY = Math.min(yReal, yPlan) - 5;
-      const label = svg('text',{x:gx, y:labelY, 'text-anchor':'middle','font-size':9,'font-weight':700,fill:'var(--text-secondary)','pointer-events':'none'});
-      label.textContent = gr.real==null ? '—' : fmtMoneyK(realVal);
-      root.appendChild(label);
-
-      const t = svg('text',{x:gx, y:H-8, 'text-anchor':'middle','font-size':9.5,fill:'var(--text-secondary)','font-weight':600});
-      t.textContent = gr.label;
-      root.appendChild(t);
+  // Gráfico de líneas compacto para las vistas por día de semana (reemplaza las barras):
+  // cfg = {xLabels, series:[{name, vals, color, dash?, dotColors?, valFmt?, labels?}], yFmt, ref?, refLabel?,
+  //        bands:[{from,to,label}], width, height, tip(i)}. Plan siempre punteado, Real sólido.
+  function renderPlanRealLines(container, cfg){
+    const n = cfg.xLabels.length;
+    if (!n){ container.innerHTML = '<div class="ct-note" style="margin:0">Sin días cerrados todavía.</div>'; return; }
+    const W = cfg.width || Math.max(300, n*64), H = cfg.height || 200, PAD = {l:cfg.padLeft||46, r:16, t:(cfg.bands&&cfg.bands.length)?30:16, b:26};
+    const all = cfg.series.flatMap(s => s.vals).filter(v => v!=null).concat(cfg.ref!=null ? [cfg.ref] : []);
+    let yMax = all.length ? Math.max(...all) : 1; yMax = yMax>0 ? yMax*1.12 : 1;
+    const yMin = 0;
+    const x = i => n===1 ? (PAD.l + W - PAD.r)/2 : PAD.l + 14 + i*(W-PAD.l-PAD.r-28)/(n-1);
+    const y = v => H-PAD.b - (v-yMin)/(yMax-yMin)*(H-PAD.t-PAD.b);
+    const root = svg('svg',{viewBox:`0 0 ${W} ${H}`, class:'ct-chart', preserveAspectRatio:'xMidYMid meet'});
+    (cfg.bands||[]).forEach(b => {
+      const half = n>1 ? (W-PAD.l-PAD.r-28)/(n-1)/2 : 20;
+      const x0 = x(b.from)-half, x1 = x(b.to)+half;
+      if (b.shade) root.appendChild(svg('rect',{x:x0,y:PAD.t-24,width:x1-x0,height:H-PAD.b-PAD.t+24,rx:8,fill:'var(--series-2)',opacity:.09}));
+      const t = svg('text',{x:(x0+x1)/2,y:PAD.t-11,'text-anchor':'middle','font-size':11,'font-weight':800,fill:'var(--text-secondary)'});
+      t.textContent = b.label; root.appendChild(t);
     });
-    container.innerHTML=''; container.appendChild(root);
+    for (let g=0; g<=3; g++){
+      const v = yMin + (yMax-yMin)*g/3, yy = y(v);
+      root.appendChild(svg('line',{x1:PAD.l,x2:W-PAD.r,y1:yy,y2:yy,stroke:'var(--border)','stroke-width':1,'stroke-dasharray':g===0?'0':'2,3'}));
+      const t = svg('text',{x:PAD.l-6,y:yy+3.5,'text-anchor':'end','font-size':9.5,fill:'var(--text-muted)'});
+      t.textContent = cfg.yFmt ? cfg.yFmt(v) : Math.round(v); root.appendChild(t);
+    }
+    if (cfg.ref!=null){
+      root.appendChild(svg('line',{x1:PAD.l,x2:W-PAD.r,y1:y(cfg.ref),y2:y(cfg.ref),stroke:'var(--text-primary)','stroke-width':1.3,'stroke-dasharray':'5,4',opacity:.6}));
+    }
+    const labels = [];
+    cfg.series.forEach(s => {
+      const pts = s.vals.map((v,i)=>v==null?null:[x(i),y(v)]);
+      // tramos continuos (un null corta la línea: día que no opera)
+      let seg = [];
+      const flush = () => { if (seg.length>1) root.appendChild(svg('polyline',{points:seg.map(q=>q.join(',')).join(' '),fill:'none',stroke:s.color,'stroke-width':s.dash?1.8:2.4,'stroke-dasharray':s.dash||'','stroke-linejoin':'round','stroke-linecap':'round'})); seg = []; };
+      pts.forEach(p => { if (p) seg.push(p); else flush(); }); flush();
+      pts.forEach((p,i) => {
+        if (!p) return;
+        const c = svg('circle',{cx:p[0],cy:p[1],r:s.dash?2.4:3.6,fill:(s.dotColors&&s.dotColors[i])||s.color,stroke:'var(--surface-raised)','stroke-width':1.2});
+        if (cfg.tip){ const tip = cfg.tip(i); c.addEventListener('mouseenter', e => showTip(e.clientX, e.clientY-8, tip)); c.addEventListener('mousemove', e => showTip(e.clientX, e.clientY-8, tip)); c.addEventListener('mouseleave', hideTip); c.style.cursor = 'default'; }
+        root.appendChild(c);
+        if (s.labels && s.labels[i]!=null){
+          const lb = svg('text',{x:p[0],y:p[1]-8,'text-anchor':'middle','font-size':10,'font-weight':700,fill:'var(--text-primary)','pointer-events':'none',stroke:'var(--surface-raised)','stroke-width':3,'paint-order':'stroke'});
+          lb.textContent = s.labels[i]; labels.push(lb);
+        }
+      });
+    });
+    labels.forEach(l => root.appendChild(l));
+    cfg.xLabels.forEach((lbl,i) => {
+      const t = svg('text',{x:x(i),y:H-8,'text-anchor':'middle','font-size':10,'font-weight':600,fill:'var(--text-secondary)'});
+      t.textContent = lbl; root.appendChild(t);
+    });
+    container.innerHTML = ''; container.appendChild(root);
+    if (cfg.legend){
+      const lg = document.createElement('div'); lg.className = 'ct-legend';
+      lg.innerHTML = cfg.series.map(s => `<span><svg width="20" height="8" style="vertical-align:middle"><line x1="0" x2="20" y1="4" y2="4" stroke="${s.color}" stroke-width="2.4" stroke-dasharray="${s.dash||''}"/></svg> ${s.name}</span>`).join('') +
+        (cfg.ref!=null ? `<span><svg width="20" height="8" style="vertical-align:middle"><line x1="0" x2="20" y1="4" y2="4" stroke="var(--text-primary)" stroke-width="1.5" stroke-dasharray="5,4"/></svg> ${cfg.refLabel||'Referencia'}</span>` : '');
+      container.appendChild(lg);
+    }
   }
 
-  // gráfica semanal: por semana (lunes-domingo) 2 barras -- L-V (sólida) y S-D (clara) -- en % de
-  // cumplimiento, con línea de Plan = 100%. Última agrupación: el mes en curso. Color = severidad.
+  // Plan vs Real por fecha (p. ej. los últimos 4 lunes): línea de Plan punteada y línea de Real sólida.
+  function renderTargetBarChart(container, groups, opts){
+    opts = opts||{};
+    renderPlanRealLines(container, {
+      xLabels: groups.map(g => g.label), width: opts.width || Math.max(260, groups.length*78), height: opts.height || 170, padLeft: 44,
+      series: [
+        {name:'Plan', vals: groups.map(g => g.plan==null ? null : g.plan), color:'var(--text-muted)', dash:'5,4'},
+        {name:'Real', vals: groups.map(g => g.real==null ? null : g.real), color:'var(--series-1)',
+         dotColors: groups.map(g => SEV_COLOR[ctSeverity(g.cumpl)]), labels: groups.map(g => g.real==null ? null : fmtMoneyK(g.real))},
+      ],
+      yFmt: v => fmtMoneyK(v),
+      tip: i => { const g = groups[i]; return `<strong>${g.label}</strong><br>Plan: ${fmtMoney(g.plan||0)}<br>Real: ${g.real==null?'—':fmtMoney(g.real)}` + (g.cumpl!=null?`<br>Cumpl: ${fmtPct1(g.cumpl)}`:''); },
+    });
+  }
+
+  // Cumplimiento semana a semana: una línea Lunes–Viernes y otra Sábado–Domingo, con Plan = 100%.
+  // El acumulado del mes se resume en la leyenda (no es una semana más del eje).
   function renderWeekTrendChart(container, weeks, mes, mesTxt){
     const fr = f => f.slice(8,10)+'/'+f.slice(5,7);
-    const groups = weeks.map(w => ({ label: fr(w.lunes)+'–'+fr(w.rango.slice(-10)), sub: w.parcial ? 'parcial' : '', lv: w.lv, sd: w.sd }));
-    if (mes && (mes.lv.n || mes.sd.n)) groups.push({ label: mesTxt, sub: 'mes', lv: mes.lv, sd: mes.sd, sep: true });
-    if (!groups.length){ container.innerHTML = '<div class="ct-note" style="margin:0">Sin días cerrados todavía.</div>'; return; }
-    const W = Math.max(520, groups.length*112), H = 240, PAD = {l:42,r:12,t:24,b:44};
-    const vals = groups.flatMap(g => [g.lv.cumpl, g.sd.cumpl]).filter(v => v != null);
-    const yMax = Math.max(125, Math.ceil(Math.max(...vals, 100)*1.1/25)*25);
-    const y = v => H-PAD.b - (v/yMax)*(H-PAD.t-PAD.b);
-    const gw = (W-PAD.l-PAD.r)/groups.length, bw = Math.min(24, gw*0.28);
-    const labels = [];
-    const root = svg('svg',{viewBox:`0 0 ${W} ${H}`, class:'ct-chart', preserveAspectRatio:'xMidYMid meet'});
-    for (let v=0; v<=yMax; v+=25){
-      root.appendChild(svg('line',{x1:PAD.l,x2:W-PAD.r,y1:y(v),y2:y(v),stroke:'var(--border)','stroke-width':1}));
-      const t = svg('text',{x:PAD.l-6,y:y(v)+3.5,'text-anchor':'end','font-size':10,fill:'var(--text-muted)'}); t.textContent = v+'%'; root.appendChild(t);
-    }
-    groups.forEach((g,i) => {
-      const cx = PAD.l + gw*i + gw/2;
-      if (g.sep) root.appendChild(svg('line',{x1:PAD.l+gw*i,x2:PAD.l+gw*i,y1:PAD.t-6,y2:H-PAD.b+6,stroke:'var(--border-strong)','stroke-width':1}));
-      [['lv','Lunes–Viernes',cx-bw-2,1],['sd','Sábado–Domingo',cx+2,0.45]].forEach(([k,name,x0,op]) => {
-        const b = g[k]; if (b.cumpl == null) return;
-        const sev = ctSeverity(b.cumpl), col = SEV_COLOR[sev] || 'var(--series-3)';
-        const incompleto = b.n < (k==='lv'?5:2);
-        const top = y(b.cumpl), base = y(0);
-        const r = svg('rect',{x:x0,y:top,width:bw,height:Math.max(1,base-top),rx:4,fill:col,opacity:op});
-        if (incompleto){ r.setAttribute('stroke',col); r.setAttribute('stroke-width',1.5); r.setAttribute('stroke-dasharray','3,2'); r.setAttribute('fill-opacity',op*0.7); }
-        const tip = `<strong>${g.label}${g.sub && g.sub!=='mes' ? ' ('+g.sub+')' : ''}</strong><br>${name}: ${fmtPct1(b.cumpl)}<br>Plan: ${fmtMoney(b.plan)}<br>Real: ${fmtMoney(b.real)}<br>${b.n} día${b.n===1?'':'s'} cerrado${b.n===1?'':'s'}${incompleto?' (incompleto)':''}`;
-        r.addEventListener('mouseenter', e => showTip(e.clientX, e.clientY-8, tip));
-        r.addEventListener('mousemove', e => showTip(e.clientX, e.clientY-8, tip));
-        r.addEventListener('mouseleave', hideTip);
-        root.appendChild(r);
-        const lab = svg('text',{x:x0+bw/2,y:top-5,'text-anchor':'middle','font-size':10,'font-weight':700,fill:'var(--text-primary)','pointer-events':'none','stroke':'var(--surface-raised)','stroke-width':3,'paint-order':'stroke'});
-        lab.textContent = Math.round(b.cumpl)+'%'; labels.push(lab);
-      });
-      const t1 = svg('text',{x:cx,y:H-PAD.b+15,'text-anchor':'middle','font-size':10,'font-weight':600,fill:'var(--text-secondary)'}); t1.textContent = g.label; root.appendChild(t1);
-      if (g.sub){ const t2 = svg('text',{x:cx,y:H-PAD.b+28,'text-anchor':'middle','font-size':9.5,fill:'var(--text-muted)'}); t2.textContent = g.sub==='mes' ? '(acumulado)' : '('+g.sub+')'; root.appendChild(t2); }
+    if (!weeks.length){ container.innerHTML = '<div class="ct-note" style="margin:0">Sin días cerrados todavía.</div>'; return; }
+    const pctLbl = v => v==null ? null : Math.round(v)+'%';
+    renderPlanRealLines(container, {
+      xLabels: weeks.map(w => fr(w.lunes) + (w.parcial ? '*' : '')), width: Math.max(520, weeks.length*110), height: 220, padLeft: 42,
+      series: [
+        {name:'Lunes–Viernes', vals: weeks.map(w => w.lv.cumpl), color:'var(--series-1)', dotColors: weeks.map(w => SEV_COLOR[ctSeverity(w.lv.cumpl)]), labels: weeks.map(w => pctLbl(w.lv.cumpl))},
+        {name:'Sábado–Domingo', vals: weeks.map(w => w.sd.cumpl), color:'var(--series-2)', dotColors: weeks.map(w => SEV_COLOR[ctSeverity(w.sd.cumpl)]), labels: weeks.map(w => pctLbl(w.sd.cumpl))},
+      ],
+      ref: 100, refLabel: 'Plan = 100%', legend: true, yFmt: v => Math.round(v)+'%',
+      tip: i => { const w = weeks[i]; const ln = (nm, b) => `${nm}: ${fmtPct1(b.cumpl)} · Plan ${fmtMoney(b.plan)} · Real ${fmtMoney(b.real)} (${b.n} día${b.n===1?'':'s'})`;
+        return `<strong>Semana ${fr(w.lunes)}–${fr(w.rango.slice(-10))}${w.parcial?' (parcial)':''}</strong><br>${ln('L–V', w.lv)}<br>${ln('S–D', w.sd)}`; },
     });
-    // Plan = 100% (encima de las barras para que se lea siempre)
-    root.appendChild(svg('line',{x1:PAD.l,x2:W-PAD.r,y1:y(100),y2:y(100),stroke:'var(--text-primary)','stroke-width':1.5,'stroke-dasharray':'5,4','pointer-events':'none'}));
-    labels.forEach(l => root.appendChild(l));
-    container.innerHTML = ''; container.appendChild(root);
+    if (mes && (mes.lv.n || mes.sd.n)){
+      const n = document.createElement('div'); n.className = 'ct-note'; n.style.margin = '6px 0 0';
+      n.innerHTML = `Acumulado de ${esc(mesTxt)}: Lunes–Viernes <b>${fmtPct1(mes.lv.cumpl)}</b> · Sábado–Domingo <b>${fmtPct1(mes.sd.cumpl)}</b>. * = semana parcial.`;
+      container.appendChild(n);
+    }
   }
 
   // tarjeta "últimos 4 [día]": bullet chart por fecha + % agregado + flecha de tendencia
@@ -4656,381 +4097,128 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     });
   });
 
-  /* ================= VISTA EJECUTIVA ================= */
+  /* ================= VISTA EJECUTIVA =================
+     Una fila y una tarjeta por operación: Plan del mes, Real a la fecha, Gap, Cumplimiento,
+     Proyección de cierre y Gap de la proyección vs. el plan del mes. La proyección usa el mismo
+     método que el gráfico de arriba (ProjCalc: ritmo de cumplimiento × plan que falta), para que
+     los números cuadren entre vistas. Las alertas ya están arriba, así que aquí no se repiten. */
+  const EXEC_ROWS = [
+    {k:'postventa_total', lvl:0},
+    {k:'upsell', lvl:1},
+    {k:'recurrence', lvl:1},
+    {k:'rec22', lvl:2},
+    {k:'resurrection', lvl:2},
+    {k:'bootcamp', lvl:2},
+  ];
+  const EXEC_CARDS = ['postventa_total','upsell','rec22','resurrection','bootcamp'];
+  function execLabel(k){
+    if (k==='acq') return 'ACQ · Plan ACQ (1.1 a 1.5)';
+    if (k==='resurrection' && !hasRes14()) return '2.4.- Resurrection';
+    return (CT_DATA.monthly[k] && CT_DATA.monthly[k].label) || (OP_META[k] && OP_META[k].label) || k;
+  }
+  function execMetric(k){
+    const det = CT_DATA.detalle && CT_DATA.detalle[k];
+    if (!det) return null;
+    const rs = ProjCalc.rows(det);
+    const m = ProjCalc.metrica(rs, 'rp', 'rr');
+    if (!m) return null;
+    return {m, rs, serie: ProjCalc.serie(rs, 'rp', 'rr')};
+  }
+  function execMini(container, x, color){
+    let cp = 0, cr = 0;
+    const plan = [], real = [];
+    x.rs.forEach(r => {
+      cp += r.rp || 0; plan.push({y:cp, label:r.fecha});
+      if (r.closed){ cr += r.rr || 0; real.push({y:cr, label:r.fecha}); } else real.push({y:null, label:r.fecha});
+    });
+    const series = [
+      {label:'Plan acumulado', color:'var(--text-muted)', points:plan, dash:'5,4'},
+      {label:'Real acumulado', color, points:real},
+    ];
+    if (x.serie && x.rs.some(r => !r.closed)) series.push({label:'Proyección', color:PJ_COLOR, points:x.serie.puntos.map((y,i)=>({y, label:x.rs[i].fecha})), dash:'2,4'});
+    renderLineChart(container, series, {width:380, height:150, padLeft:46, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels:x.rs.map(r=>r.fecha.slice(8,10))});
+  }
   function renderExec(){
     const el = $('#ctViewExec');
-    const pv = CT_DATA.monthly.postventa_total;
-    const goal = CT_DATA.goal_500k;
-    const acq = CT_DATA.acq;
-    const critPeor = CT_DATA.critical_days.postventa_total.top5_peores[0];
-    const critMejor = CT_DATA.critical_days.postventa_total.top5_mejores[0];
-
-    // peor / mejor operación por cumplimiento MTD (excluyendo postventa_total y el subtotal recurrence)
-    const opsForRank = ['upsell','rec22','resurrection','bootcamp'];
-    const ranked = opsForRank.map(k=>({k, ...CT_DATA.monthly[k]})).sort((a,b)=>(a.cumpl_pct_mtd??999)-(b.cumpl_pct_mtd??999));
-    const peorOp = ranked[0], mejorOp = ranked[ranked.length-1];
-    const mayorImpacto = opsForRank.map(k=>({k,...CT_DATA.monthly[k]})).sort((a,b)=>Math.abs(b.gap_mtd)-Math.abs(a.gap_mtd))[0];
-
-    const sev = ctSeverity(pv.cumpl_pct_mtd);
-    const sevGoal = ctSeverity(100*goal.proyeccion_cierre/goal.meta);
-
+    const rows = EXEC_ROWS.map(r => ({...r, x:execMetric(r.k)})).filter(r => r.x);
+    const td = (v, cls) => `<td class="num ${cls||''}">${v}</td>`;
+    const sgn = v => v==null ? '' : (v<0 ? 'ct-pill-bad' : 'ct-pill-good');
+    const tr = r => {
+      const m = r.x.m, sev = ctSeverity(m.cumpl);
+      return `<tr class="ex-row lvl${r.lvl}" data-op="${r.k}" tabindex="0" title="Ver ${esc(execLabel(r.k))} en el gráfico de arriba">
+        <td class="ex-nm">${esc(execLabel(r.k))}</td>
+        ${td(fmtMoney(m.planMes))}${td(fmtMoney(m.real))}${td(fmtSignedMoney(m.gap), sgn(m.gap))}
+        <td class="num"><span class="ct-pill ${sev}">${fmtPct1(m.cumpl)}</span></td>
+        ${td(m.proy==null ? '—' : fmtMoney(m.proy))}${td(m.gapProy==null ? '—' : fmtSignedMoney(m.gapProy), sgn(m.gapProy))}
+      </tr>`;
+    };
+    const acq = execMetric('acq');
+    const acqNote = CT_DATA.acq && CT_DATA.acq.promedio_Z_var_ups_vs_acq_pct != null
+      ? `Upsell vs ACQ (promedio diario de la columna Z): <b>${fmtSignedPct1(CT_DATA.acq.promedio_Z_var_ups_vs_acq_pct)}</b>` : '';
     el.innerHTML = `
-      <div class="ct-alert-row" id="ctAlerts"></div>
-      <div class="ct-kpi-grid">
-        <div class="ct-kpi sev-${sev}" data-drill="pvplan"><div class="lbl">Plan (mes)</div><div class="val">${fmtMoneyK(pv.plan_total_mes)}</div><div class="sub">a la fecha: ${fmtMoneyK(pv.plan_mtd_a_la_fecha)}</div></div>
-        <div class="ct-kpi sev-${sev}" data-drill="pvreal"><div class="lbl">Real (MTD)</div><div class="val">${fmtMoneyK(pv.real_mtd)}</div><div class="sub">${CT_DATA.meta.dias_transcurridos_completos} días completos${pv.hoy_parcial?' + hoy parcial':''}</div></div>
-        <div class="ct-kpi sev-${sev}" data-drill="pvgap"><div class="lbl">Gap MTD</div><div class="val">${fmtSignedMoney(pv.gap_mtd)}</div><div class="sub">${SEV_LABEL[sev]}</div></div>
-        <div class="ct-kpi sev-${sev}"><div class="lbl">Cumplimiento MTD</div><div class="val">${fmtPct1(pv.cumpl_pct_mtd)}</div><div class="sub">Real MTD ÷ Plan a la fecha</div></div>
-        <div class="ct-kpi sev-${sevGoal}" data-drill="proy"><div class="lbl">Proyección de cierre</div><div class="val">${fmtMoneyK(pv.proyeccion_cierre_run_rate)}</div><div class="sub">run-rate (Real MTD ÷ días transcurridos × ${CT_DATA.daily.length})</div></div>
-        <div class="ct-kpi sev-${sevGoal}"><div class="lbl">Gap proyectado vs Plan mes</div><div class="val">${fmtSignedMoney(pv.gap_proyectado_vs_plan_mes)}</div><div class="sub">vs. Plan interno de ${fmtMoneyK(pv.plan_total_mes)}</div></div>
+      <div class="ct-card">
+        <div class="ct-card-head"><h3>Resumen del mes por operación</h3><span class="ct-q" style="margin:0">${CT_DATA.meta.mes ? mesLabel(CT_DATA.meta.mes) : ''} · ${CT_DATA.meta.dias_transcurridos_completos} días cerrados · clic en una fila para verla arriba</span></div>
+        <div class="ct-det-wrap"><table class="ct-table ex-table">
+          <thead><tr><th>Operación</th><th class="num">Plan del mes</th><th class="num">Real a la fecha</th><th class="num">Gap a la fecha</th><th class="num">Cumplimiento</th><th class="num">Proyección cierre</th><th class="num">Gap proyectado</th></tr></thead>
+          <tbody>${rows.map(tr).join('')}${acq ? `<tr class="ex-sep"><td colspan="7">Referencia · no suma a Post-Venta</td></tr>${tr({k:'acq', lvl:1, x:acq})}` : ''}</tbody>
+        </table></div>
+        ${acqNote ? `<div class="ct-note" style="margin:8px 0 0">${acqNote}</div>` : ''}
       </div>
-
-      <div class="ct-grid-2">
-        <div class="ct-card"><h3>Gap mensual — Revenue a la fecha</h3><div id="ctExecGapMoneyChart"></div></div>
-        <div class="ct-card"><h3>Gap mensual — % a la fecha</h3><div id="ctExecGapPctChart"></div></div>
-      </div>
-
-      <div class="ct-grid-3">
-        <div class="ct-card">
-          <h3>Operaciones</h3>
-          
-          <div style="font-size:12.5px;line-height:1.9">
-            <div>🔻 <strong>Más por debajo:</strong> ${OP_META[peorOp.k].label} (${fmtPct1(peorOp.cumpl_pct_mtd)})</div>
-            <div>🟢 <strong>Compensando:</strong> ${OP_META[mejorOp.k].label} (${fmtPct1(mejorOp.cumpl_pct_mtd)})</div>
-            <div>⚖️ <strong>Mayor impacto $ (+/-):</strong> ${OP_META[mayorImpacto.k].label} (${fmtSignedMoney(mayorImpacto.gap_mtd)})</div>
-          </div>
-        </div>
-        <div class="ct-card">
-          <h3>ACQ</h3>
-          
-          <div style="font-size:12.5px;line-height:1.9">
-            <div><strong>Plan ACQ (MTD):</strong> ${fmtMoney(Object.values(CT_DATA.weekly).reduce((s,w)=>s+(w.acq.plan_acq_a_la_fecha||0),0))}</div>
-            <div><strong>Var Ups vs ACQ (prom.):</strong> ${fmtSignedPct1(acq.promedio_Z_var_ups_vs_acq_pct)}</div>
-            <div><strong>Correlación Var%Upsell↔Z:</strong> ${(acq.correlacion_var_upsell_vs_Z_var_ups_vs_acq==null?'—':acq.correlacion_var_upsell_vs_Z_var_ups_vs_acq.toFixed(2))} (moderada)</div>
-          </div>
-        </div>
-        <div class="ct-card">
-          <h3>Alertas y oportunidades</h3>
-          <div style="font-size:12.5px;line-height:1.9">
-            <div>🚨 <strong>Día crítico:</strong> ${critPeor.fecha} (${critPeor.dow}) · ${fmtSignedMoney(critPeor.gap)}</div>
-            <div>✅ <strong>Mejor día:</strong> ${critMejor.fecha} (${critMejor.dow}) · ${fmtSignedMoney(critMejor.gap)}</div>
-            <div>📅 <strong>Mejor día de semana:</strong> ${pv.mejor_dia_semana.dow}</div>
-          </div>
-        </div>
-      </div>
-      
-    `;
-
-    // alertas automáticas
-    const alerts = [];
-    if (pv.cumpl_pct_mtd < 90) alerts.push({sev:'critico', text:`Cumplimiento Post-Venta MTD ${fmtPct1(pv.cumpl_pct_mtd)} — por debajo de 90%`});
-    if (100*goal.proyeccion_cierre/goal.meta < 95) alerts.push({sev:'atencion', text:`Proyección de cierre (${fmtMoneyK(goal.proyeccion_cierre)}) por debajo de la meta $500K`});
-    opsForRank.forEach(k => {
-      const m = CT_DATA.monthly[k];
-      if (m.cumpl_pct_mtd!=null && m.cumpl_pct_mtd < 80) alerts.push({sev:'critico', text:`${OP_META[k].label} muy por debajo del plan (${fmtPct1(m.cumpl_pct_mtd)})`});
-    });
-    if (Math.abs(acq.promedio_Z_var_ups_vs_acq_pct) > 15) alerts.push({sev:'atencion', text:`Upsell se está desviando de ACQ (${fmtSignedPct1(acq.promedio_Z_var_ups_vs_acq_pct)} promedio)`});
-    if (!alerts.length) alerts.push({sev:'enlinea', text:'Sin alertas críticas activas este mes.'});
-    $('#ctAlerts').innerHTML = alerts.map(a=>`<span class="ct-alert ${a.sev}">${SEV_LABEL[a.sev]||a.sev.toUpperCase()} · ${a.text}</span>`).join('');
-
-    // Gap mensual a la fecha (Post-Venta total), en $ y en % -- "a la fecha
-    // tienes que tener esto (Plan) y estás en esto (Real)", a nivel general.
-    renderHBarChart($('#ctExecGapMoneyChart'), [
-      {label:'Plan a la fecha (Revenue)', value: pv.plan_mtd_a_la_fecha, color:'var(--text-muted,#9a9a94)'},
-      {label:'Real a la fecha (Revenue)', value: pv.real_mtd, color: SEV_COLOR[sev]},
-    ], {valFormat:fmtMoney, tipFormat:fmtMoney, padLeft:170});
-    renderHBarChart($('#ctExecGapPctChart'), [
-      {label:'Plan a la fecha (100%)', value: 100, color:'var(--text-muted,#9a9a94)'},
-      {label:'Cumplimiento real', value: pv.cumpl_pct_mtd, color: SEV_COLOR[sev]},
-    ], {valFormat:v=>v.toFixed(1)+'%', tipFormat:v=>fmtPct1(v), padLeft:170});
-
-    // drill-downs
-    $$('.ct-kpi[data-drill]', el).forEach(k => {
-      k.addEventListener('click', () => {
-        const which = k.dataset.drill;
-        if (which==='pvgap' || which==='pvplan' || which==='pvreal'){
-          const rows = opsForRank.map(key => {
-            const m = CT_DATA.monthly[key];
-            return `<tr><td>${OP_META[key].label}</td><td class="num">${fmtMoney(m.plan_mtd_a_la_fecha)}</td><td class="num">${fmtMoney(m.real_mtd)}</td><td class="num">${fmtSignedMoney(m.gap_mtd)}</td><td class="num">${fmtPct1(m.cumpl_pct_mtd)}</td></tr>`;
-          }).join('');
-          ctDrill('¿Qué explica el Gap de Post-Venta?', `<table class="ct-table"><thead><tr><th>Operación</th><th class="num">Plan MTD</th><th class="num">Real MTD</th><th class="num">Gap $</th><th class="num">Cumpl.%</th></tr></thead><tbody>${rows}<tr style="font-weight:800;border-top:2px solid var(--border-strong)"><td>Post-Venta total</td><td class="num">${fmtMoney(pv.plan_mtd_a_la_fecha)}</td><td class="num">${fmtMoney(pv.real_mtd)}</td><td class="num">${fmtSignedMoney(pv.gap_mtd)}</td><td class="num">${fmtPct1(pv.cumpl_pct_mtd)}</td></tr></tbody></table><div class="ct-note">Post-Venta = 2.1.-Upsell + 2.2.-Recurrence + 2.4.-Resurrection + 2.5.-Bootcamp. 2.3.-Sales Chat y 1.5.-Bootcamp quedaron excluidos de este total (y de todo el tablero) por pedido explícito.</div>`);
-        } else if (which==='proy'){
-          ctDrill('¿Cómo se calcula la proyección de cierre?', `<p style="font-size:13px;line-height:1.6">Método run-rate: <code>Real MTD ÷ días transcurridos completos (${CT_DATA.meta.dias_transcurridos_completos}) × días del mes (${CT_DATA.daily.length})</code>.</p><table class="ct-table"><tbody>
-            <tr><td>Real MTD</td><td class="num">${fmtMoney(pv.real_mtd)}</td></tr>
-            <tr><td>Días transcurridos completos</td><td class="num">${CT_DATA.meta.dias_transcurridos_completos}</td></tr>
-            <tr><td>Promedio diario real</td><td class="num">${fmtMoney(pv.promedio_diario_real)}</td></tr>
-            <tr><td>× días del mes</td><td class="num">${CT_DATA.daily.length}</td></tr>
-            <tr style="font-weight:800"><td>Proyección de cierre</td><td class="num">${fmtMoney(pv.proyeccion_cierre_run_rate)}</td></tr>
-            <tr><td>Meta $500K</td><td class="num">$500.000</td></tr>
-            <tr style="font-weight:800"><td>Gap proyectado vs meta</td><td class="num">${fmtSignedMoney(pv.proyeccion_cierre_run_rate-500000)}</td></tr>
-          </tbody></table><div class="ct-note">Es una proyección lineal simple (no estacional): asume que el ritmo diario promedio de lo ya transcurrido se mantiene igual en los días que faltan. No corrige por día de la semana.</div>`);
-        }
-      });
+      <div class="ex-grid">${EXEC_CARDS.filter(k => rows.some(r => r.k===k)).map(k => {
+        const m = rows.find(r => r.k===k).x.m, sev = ctSeverity(m.cumpl);
+        return `<div class="ct-card ex-card" data-op="${k}">
+          <div class="ct-card-head"><h3>${esc(execLabel(k))}</h3><span class="ct-pill ${sev}">${fmtPct1(m.cumpl)}</span></div>
+          <div class="ex-kv"><span>Real ${fmtMoneyK(m.real)} de ${fmtMoneyK(m.planMes)}</span><span>Proy. <b>${m.proy==null?'—':fmtMoneyK(m.proy)}</b> (${m.gapProy==null?'—':fmtSignedMoney(m.gapProy)})</span></div>
+          <div class="ex-mini"></div>
+        </div>`;
+      }).join('')}</div>`;
+    $$('.ex-card', el).forEach(c => { const r = rows.find(x => x.k===c.dataset.op); execMini($('.ex-mini', c), r.x, SEV_COLOR[ctSeverity(r.x.m.cumpl)]); });
+    $$('.ex-row[data-op], .ex-card[data-op]', el).forEach(n => {
+      const go = () => { if (n.dataset.op==='acq') return; selectOp(n.dataset.op); const h = $('#ctHero'); if (h) h.scrollIntoView({behavior:'smooth', block:'start'}); };
+      n.addEventListener('click', go);
+      n.addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); go(); } });
     });
   }
 
-  /* ================= VISTA DIARIA (Plan vs Real) ================= */
-  function renderDaily(){
-    const el = $('#ctViewDaily');
-    el.innerHTML = `
-      <div class="ct-filter-row">
-        <label style="font-size:12px;color:var(--text-secondary)">Operación</label>
-        <select class="ct-select" id="ctDailyOpSel"></select>
-        <label style="font-size:12px;color:var(--text-secondary);margin-left:10px">Ver día</label>
-        <select class="ct-select" id="ctDailyDateSel"></select>
-      </div>
-      <div class="ct-card"><div class="ct-card-head"><h3>Revenue diario: Plan vs Real (${OP_META['postventa_total'].label}, sin acumular)</h3><button class="ct-expand-btn" data-expand="rawsel">⤢ Expandir</button></div><div class="ct-chart-wrap" id="ctDailyRawChart"></div></div>
-      <div class="ct-card"><div class="ct-card-head"><h3>Plan vs Real acumulado</h3><button class="ct-expand-btn" data-expand="cum">⤢ Expandir</button></div><div class="ct-chart-wrap" id="ctDailyCumChart"></div></div>
-      <div class="ct-grid-2">
-        <div class="ct-card"><div class="ct-card-head"><h3>Gap $ diario</h3><button class="ct-expand-btn" data-expand="gap">⤢ Expandir</button></div><div class="ct-chart-wrap" id="ctDailyGapChart"></div></div>
-        <div class="ct-card"><div class="ct-card-head"><h3>Cumplimiento % diario</h3><button class="ct-expand-btn" data-expand="cumpl">⤢ Expandir</button></div><div class="ct-chart-wrap" id="ctDailyCumplChart"></div></div>
-      </div>
-      <div id="ctUpsellExtra"></div>
-      <h3 style="margin:20px 0 4px">Revenue diario por operación (Plan vs Real, sin acumular)</h3>
-      
-      <div class="ct-grid-2" id="ctDailyByOpGrid"></div>
-      <div class="ct-card" id="ctDayDetailCard"></div>
-    `;
-    const opSel = $('#ctDailyOpSel');
-    Object.keys(OP_META).forEach(k => { const o=document.createElement('option'); o.value=k; o.textContent=OP_META[k].label; opSel.appendChild(o); });
-    opSel.value = 'postventa_total';
-    const dateSel = $('#ctDailyDateSel');
-    CT_DATA.daily.forEach(d => { const o=document.createElement('option'); o.value=d.fecha; o.textContent=`${d.fecha} (${d.dow_es})`; dateSel.appendChild(o); });
-
-    let lastSeries = null; // guarda lo último dibujado, para poder reabrirlo más grande en el drill-down
-    function draw(){
-      const key = opSel.value;
-      const days = CT_DATA.daily;
-      let cum = 0, cumPlan = 0;
-      const planPts=[], realPts=[], gapBars=[], cumplPts=[];
-      days.forEach((d,i) => {
-        const o = d.ops[key];
-        cumPlan += o.plan;
-        planPts.push({y:cumPlan, label:d.fecha});
-        if (o.real!=null){ cum += o.real; realPts.push({y:cum, label:d.fecha}); }
-        else realPts.push({y:null, label:d.fecha});
-        gapBars.push({value: o.gap??0, label:d.fecha, xLabel:d.fecha.slice(8,10), color: d.status==='future'?'var(--border)':undefined});
-        cumplPts.push({y:o.cumpl_pct, label:d.fecha});
-      });
-      const rawPlanPts = days.map(d => ({y: d.ops[key].plan, label: d.fecha}));
-      const rawRealPts = days.map(d => ({y: d.ops[key].real, label: d.fecha}));
-      let projPts = null;
-      try { const sp = ProjCalc.serie(days.map(d => ({fecha:d.fecha, closed:d.status==='elapsed', rp:d.ops[key].plan, rr:d.ops[key].real})), 'rp', 'rr'); if (sp) projPts = sp.puntos.map((v,i) => ({y:v, label:days[i].fecha})); } catch(e){ console.warn('[Proyección]', e); }
-      lastSeries = {key, planPts, realPts, projPts, gapBars, cumplPts, rawPlanPts, rawRealPts, xLabels: days.map(d=>d.fecha.slice(8,10))};
-      $('#ctDailyRawChart').closest('.ct-card').querySelector('h3').textContent = `Revenue diario: Plan vs Real (${OP_META[key].label}, sin acumular)`;
-      renderLineChart($('#ctDailyRawChart'), [
-        {label:'Plan (día)', color:'var(--text-muted,#9a9a94)', points:rawPlanPts, dash:'4,3'},
-        {label:'Real (día)', color:OP_META[key].color, points:rawRealPts},
-      ], {legend:true, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels: lastSeries.xLabels});
-      renderLineChart($('#ctDailyCumChart'), [
-        {label:'Plan acumulado', color:'var(--text-muted,#9a9a94)', points:planPts, dash:'4,3'},
-        {label:'Real acumulado', color:OP_META[key].color, points:realPts},
-      ].concat(projPts ? [{label:'Proyección al ritmo actual', color:PJ_COLOR, points:projPts, dash:'2,4'}] : []), {legend:true, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels: lastSeries.xLabels});
-      renderBarChart($('#ctDailyGapChart'), gapBars, {yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels:true});
-      renderLineChart($('#ctDailyCumplChart'), [{label:'Cumplimiento %', color:OP_META[key].color, points:cumplPts}], {refLine:100, refLineLabel:'100% plan', legend:true, yFormat:v=>v.toFixed(0)+'%', tipFormat:v=>fmtPct1(v), xLabels: lastSeries.xLabels});
-      drawDayDetail();
-      renderUpsellExtra(key);
-    }
-
-    // Pequeños múltiplos: revenue diario (Plan vs Real, sin acumular) para cada
-    // operación a la vez, sin tener que ir cambiando el selector de arriba --
-    // el mismo tipo de comparativo día a día que ya usas fuera del tablero.
-    function renderDailyByOpGrid(){
-      const host = $('#ctDailyByOpGrid');
-      const keys = ['postventa_total','upsell','rec22','resurrection','bootcamp'];
-      const days = CT_DATA.daily;
-      host.innerHTML = keys.map(k => `
-        <div class="ct-card">
-          <div class="ct-card-head"><h3>${OP_META[k].label}</h3><button class="ct-expand-btn" data-expand="rawop" data-op="${k}">⤢ Expandir</button></div>
-          <div class="ct-chart-wrap" id="ctRawOp_${k}"></div>
-        </div>
-      `).join('');
-      keys.forEach(k => {
-        renderLineChart($('#ctRawOp_'+k), [
-          {label:'Plan (día)', color:'var(--text-muted,#9a9a94)', points: days.map(d=>({y:d.ops[k].plan, label:d.fecha})), dash:'4,3'},
-          {label:'Real (día)', color:OP_META[k].color, points: days.map(d=>({y:d.ops[k].real, label:d.fecha}))},
-        ], {legend:true, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels: days.map(d=>d.fecha.slice(8,10))});
-      });
-    }
-    renderDailyByOpGrid();
-
-    // Panel extra que solo aparece cuando la operación elegida es 2.1.-Upsell:
-    // la "Expansión Activación → Upsell" y el detalle de Ventas/ASP/CR vienen de
-    // columnas de la fuente que solo existen para Upsell (AH-AK y BJ-BQ).
-    function renderUpsellExtra(key){
-      const host = $('#ctUpsellExtra');
-      if (key !== 'upsell'){ host.innerHTML=''; return; }
-      const days = CT_DATA.daily;
-      const metaPts = days.map(d=>({y:d.upsell_expansion.meta_pct, label:d.fecha}));
-      const realPts2 = days.map(d=>({y:d.upsell_expansion.real_pct, label:d.fecha}));
-      host.innerHTML = `
-        <div class="ct-grid-2">
-          <div class="ct-card">
-            <div class="ct-card-head"><h3>Expansión Activación → Upsell</h3><button class="ct-expand-btn" data-expand="expansion">⤢ Expandir</button></div>
-            
-            <div class="ct-chart-wrap" id="ctUpsellExpansionChart"></div>
-          </div>
-          <div class="ct-card">
-            <h3>Ventas · ASP · CR de Upsell (MTD)</h3>
-            
-            <div id="ctUpsellRevTable"></div>
-          </div>
-        </div>
-        <div class="ct-grid-2">
-          <div class="ct-card">
-            <h3>ASP diario: Plan vs Real</h3>
-            
-            <div class="ct-chart-wrap" id="ctUpsellAspChart"></div>
-          </div>
-          <div class="ct-card">
-            <h3>CR diario: Plan vs Real</h3>
-            
-            <div class="ct-chart-wrap" id="ctUpsellCrChart"></div>
-          </div>
-        </div>
-      `;
-      renderLineChart($('#ctUpsellExpansionChart'), [
-        {label:'Expansión real', color:'var(--series-1)', points:realPts2},
-        {label:'Meta (26%)', color:'var(--text-muted,#9a9a94)', points:metaPts, dash:'4,3'},
-      ], {legend:true, yFormat:v=>v.toFixed(0)+'%', tipFormat:v=>fmtPct1(v), xLabels: days.map(d=>d.fecha.slice(8,10))});
-      renderLineChart($('#ctUpsellAspChart'), [
-        {label:'ASP Plan', color:'var(--text-muted,#9a9a94)', points: days.map(d=>({y:d.upsell_revenue.asp_plan, label:d.fecha})), dash:'4,3'},
-        {label:'ASP Real', color:'var(--series-1)', points: days.map(d=>({y:d.upsell_revenue.asp_real, label:d.fecha}))},
-      ], {legend:true, yFormat:v=>fmtMoney(v), tipFormat:v=>fmtMoney(v), xLabels: days.map(d=>d.fecha.slice(8,10))});
-      renderLineChart($('#ctUpsellCrChart'), [
-        {label:'CR Plan', color:'var(--text-muted,#9a9a94)', points: days.map(d=>({y:d.upsell_revenue.cr_plan, label:d.fecha})), dash:'4,3'},
-        {label:'CR Real', color:'var(--series-2)', points: days.map(d=>({y:d.upsell_revenue.cr_real, label:d.fecha}))},
-      ], {legend:true, yFormat:v=>v.toFixed(0)+'%', tipFormat:v=>fmtPct1(v), xLabels: days.map(d=>d.fecha.slice(8,10))});
-
-      const elapsed = days.filter(d=>d.status==='elapsed');
-      const sum = arr => arr.reduce((a,b)=>a+(b||0),0);
-      const ventasPlan = sum(elapsed.map(d=>d.upsell_revenue.ventas_plan_u));
-      const ventasReal = sum(elapsed.map(d=>d.upsell_revenue.ventas_real_u));
-      const aspPlanProm = sum(elapsed.map(d=>d.upsell_revenue.asp_plan))/elapsed.length;
-      const aspRealProm = sum(elapsed.map(d=>d.upsell_revenue.asp_real))/elapsed.length;
-      const crPlanProm = sum(elapsed.map(d=>d.upsell_revenue.cr_plan))/elapsed.length;
-      const crRealProm = sum(elapsed.map(d=>d.upsell_revenue.cr_real))/elapsed.length;
-      const rows = [
-        ['Ventas (unidades)', ventasPlan, ventasReal, v=>fmt0(v)],
-        ['ASP — precio prom. venta ($)', aspPlanProm, aspRealProm, v=>fmtMoney(v)],
-        ['CR — tasa de conversión (%)', crPlanProm, crRealProm, v=>v.toFixed(1)+'%'],
-      ];
-      $('#ctUpsellRevTable').innerHTML = `<table class="ct-table"><thead><tr><th>Indicador</th><th class="num">Plan (MTD)</th><th class="num">Real (MTD)</th><th class="num">Var%</th></tr></thead><tbody>
-        ${rows.map(([label,p,r,f])=>`<tr><td>${label}</td><td class="num">${f(p)}</td><td class="num">${f(r)}</td><td class="num">${p? fmtSignedPct1(100*(r-p)/p) : '—'}</td></tr>`).join('')}
-      </tbody></table>`;
-    }
-
-    // botones "Expandir": reabren el mismo gráfico, más grande, en el modal de drill-down
-    $$('.ct-expand-btn', el.closest('#ctSection')).forEach(()=>{}); // no-op placeholder, listeners se enlazan abajo vía delegación
-    el.closest('#ctSection').addEventListener('click', e => {
-      const btn = e.target.closest('.ct-expand-btn[data-expand]');
-      if (!btn || !lastSeries) return;
-      const which = btn.dataset.expand;
-      const tmpId = 'ctExpandTmp';
-      if (which==='rawsel'){
-        ctDrill(`Revenue diario: Plan vs Real (${OP_META[lastSeries.key].label})`, `<div id="${tmpId}" style="width:100%"></div>`, {wide:true});
-        renderLineChart($('#'+tmpId), [
-          {label:'Plan (día)', color:'var(--text-muted,#9a9a94)', points:lastSeries.rawPlanPts, dash:'4,3'},
-          {label:'Real (día)', color:OP_META[lastSeries.key].color, points:lastSeries.rawRealPts},
-        ], {legend:true, width:1100, height:420, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels:lastSeries.xLabels});
-      } else if (which==='rawop'){
-        const k = btn.dataset.op;
-        const days2 = CT_DATA.daily;
-        ctDrill(`Revenue diario: Plan vs Real (${OP_META[k].label})`, `<div id="${tmpId}" style="width:100%"></div>`, {wide:true});
-        renderLineChart($('#'+tmpId), [
-          {label:'Plan (día)', color:'var(--text-muted,#9a9a94)', points: days2.map(d=>({y:d.ops[k].plan, label:d.fecha})), dash:'4,3'},
-          {label:'Real (día)', color:OP_META[k].color, points: days2.map(d=>({y:d.ops[k].real, label:d.fecha}))},
-        ], {legend:true, width:1100, height:420, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels: days2.map(d=>d.fecha.slice(8,10))});
-      } else if (which==='cum'){
-        ctDrill('Plan vs Real acumulado', `<div id="${tmpId}" style="width:100%"></div>`, {wide:true});
-        renderLineChart($('#'+tmpId), [
-          {label:'Plan acumulado', color:'var(--text-muted,#9a9a94)', points:lastSeries.planPts, dash:'4,3'},
-          {label:'Real acumulado', color:OP_META[lastSeries.key].color, points:lastSeries.realPts},
-        ].concat(lastSeries.projPts ? [{label:'Proyección al ritmo actual', color:PJ_COLOR, points:lastSeries.projPts, dash:'2,4'}] : []), {legend:true, width:1100, height:420, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels:lastSeries.xLabels});
-      } else if (which==='gap'){
-        ctDrill('Gap $ diario', `<div id="${tmpId}" style="width:100%"></div>`, {wide:true});
-        renderBarChart($('#'+tmpId), lastSeries.gapBars, {width:1100, height:420, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels:true});
-      } else if (which==='cumpl'){
-        ctDrill('Cumplimiento % diario', `<div id="${tmpId}" style="width:100%"></div>`, {wide:true});
-        renderLineChart($('#'+tmpId), [{label:'Cumplimiento %', color:OP_META[lastSeries.key].color, points:lastSeries.cumplPts}], {refLine:100, refLineLabel:'100% plan', legend:true, width:1100, height:420, yFormat:v=>v.toFixed(0)+'%', tipFormat:v=>fmtPct1(v), xLabels:lastSeries.xLabels});
-      } else if (which==='expansion'){
-        const days = CT_DATA.daily;
-        ctDrill('Expansión Activación → Upsell', `<div id="${tmpId}" style="width:100%"></div>`, {wide:true});
-        renderLineChart($('#'+tmpId), [
-          {label:'Expansión real', color:'var(--series-1)', points: days.map(d=>({y:d.upsell_expansion.real_pct, label:d.fecha}))},
-          {label:'Meta (26%)', color:'var(--text-muted,#9a9a94)', points: days.map(d=>({y:d.upsell_expansion.meta_pct, label:d.fecha})), dash:'4,3'},
-        ], {legend:true, width:1100, height:420, yFormat:v=>v.toFixed(0)+'%', tipFormat:v=>fmtPct1(v), xLabels: days.map(d=>d.fecha.slice(8,10))});
-      }
-    });
-    function drawDayDetail(){
-      const fecha = dateSel.value;
-      const d = CT_DATA.daily.find(x=>x.fecha===fecha);
-      if (!d) return;
-      const rows = ['upsell','rec22','resurrection','bootcamp'].map(k => {
-        const o = d.ops[k];
-        return `<tr><td>${OP_META[k].label}</td><td class="num">${fmtMoney(o.plan)}</td><td class="num">${o.real==null?'—':fmtMoney(o.real)}</td><td class="num">${o.gap==null?'—':fmtSignedMoney(o.gap)}</td><td class="num">${fmtPct1(o.cumpl_pct)}</td></tr>`;
-      }).join('');
-      const pv = d.ops.postventa_total;
-      const best = ['upsell','rec22','resurrection','bootcamp'].map(k=>({k,g:d.ops[k].gap})).filter(x=>x.g!=null).sort((a,b)=>b.g-a.g);
-      el.querySelector('#ctDayDetailCard').innerHTML = `
-        <h3>Vista por día · ${fecha} (${d.dow_es}) ${d.status==='today_partial'?'· <span style="color:var(--series-2)">hoy, en curso</span>':d.status==='future'?'· <span style="color:var(--text-muted,#999)">aún no ocurre</span>':''}</h3>
-        <div class="ct-kpi-grid">
-          <div class="ct-kpi"><div class="lbl">Plan total</div><div class="val">${fmtMoney(pv.plan)}</div></div>
-          <div class="ct-kpi"><div class="lbl">Real total</div><div class="val">${pv.real==null?'—':fmtMoney(pv.real)}</div></div>
-          <div class="ct-kpi"><div class="lbl">Cumplimiento</div><div class="val">${fmtPct1(pv.cumpl_pct)}</div></div>
-          <div class="ct-kpi"><div class="lbl">Gap</div><div class="val">${pv.gap==null?'—':fmtSignedMoney(pv.gap)}</div></div>
-          <div class="ct-kpi"><div class="lbl">Plan ACQ</div><div class="val">${fmtMoney(d.plan_acq)}</div></div>
-          <div class="ct-kpi"><div class="lbl">Var Ups vs ACQ</div><div class="val">${d.var_ups_vs_acq_pct==null?'—':fmtSignedPct1(d.var_ups_vs_acq_pct*100)}</div></div>
-        </div>
-        ${best.length? `<p style="font-size:12.5px"><strong>Mejor resultado del día:</strong> ${OP_META[best[0].k].label} (${fmtSignedMoney(best[0].g)}) &nbsp;·&nbsp; <strong>Mayor impacto negativo:</strong> ${OP_META[best[best.length-1].k].label} (${fmtSignedMoney(best[best.length-1].g)})</p>`:''}
-        <table class="ct-table"><thead><tr><th>Operación</th><th class="num">Plan</th><th class="num">Real</th><th class="num">Gap</th><th class="num">Cumpl.%</th></tr></thead><tbody>${rows}</tbody></table>
-      `;
-    }
-    opSel.addEventListener('change', draw);
-    dateSel.addEventListener('change', drawDayDetail);
-    dateSel.value = CT_DATA.daily.filter(d=>d.status==='elapsed').slice(-1)[0].fecha;
-    draw();
-  }
-
-  /* ================= LUNES A DOMINGO POR OPERACIÓN (Vie–Dom agrupado) ================= */
+  /* ================= LUNES A DOMINGO POR OPERACIÓN (Vie–Dom agrupado) =================
+     Una gráfica de líneas por operación: Plan (punteado) vs Real (sólido) sumados por día de la
+     semana en el mes, con Lunes–Jueves y Viernes–Domingo agrupados arriba (cumplimiento %). */
   function renderLunDom(){
     const box = $('#ctLunDom'); if (!box) return;
     const days = (CT_DATA.daily || []).filter(d => d.status === 'elapsed');
     if (!days.length){ box.innerHTML = '<div class="ct-note" style="margin:0">Sin días cerrados todavía.</div>'; return; }
     const W = [['Lun',1],['Mar',2],['Mié',3],['Jue',4],['Vie',5],['Sáb',6],['Dom',0]];
-    const keys = ['postventa_total'].concat(OP_ORDER_7);
-    const cards = keys.map(k => {
+    const keys = ['postventa_total'].concat(OP_ORDER_7.filter(k => k !== 'recurrence'));
+    const data = keys.map(k => {
       const acc = W.map(() => ({plan:0, real:0, n:0}));
       days.forEach(d => {
         const o = d.ops[k]; if (!o) return;
         const i = W.findIndex(w => w[1] === new Date(d.fecha + 'T00:00:00Z').getUTCDay());
         acc[i].plan += o.plan || 0; acc[i].real += o.real || 0; acc[i].n++;
       });
-      if (!acc.some(a => a.plan > 0)) return '';
-      const grp = (ix) => { const p = ix.reduce((s, i) => s + acc[i].plan, 0), r = ix.reduce((s, i) => s + acc[i].real, 0); return {plan:p, real:r, c:p > 0 ? 100 * r / p : null}; };
-      const lj = grp([0,1,2,3]), fd = grp([4,5,6]);
-      const Wd = 380, H = 206, padL = 8, padT = 42, padB = 56, bw = 34, step = (Wd - padL * 2) / 7;
-      const mx = Math.max(120, Math.min(140, Math.max(...acc.map(a => a.plan > 0 ? 100 * a.real / a.plan : 0)) + 6));
-      const y = v => padT + (mx - v) / mx * (H - padT - padB);
-      let g = `<rect x="${padL + step * 4 + 2}" y="${padT - 32}" width="${step * 3 - 4}" height="${H - padT - padB + 32 + 40}" rx="8" fill="var(--series-2)" opacity=".10"/>`;
-      g += `<text x="${padL + step * 5.5}" y="${padT - 18}" text-anchor="middle" font-size="11" font-weight="800" fill="var(--text-secondary)">Vie–Dom ${fd.c == null ? '—' : fd.c.toFixed(0) + '%'}</text>`;
-      g += `<text x="${padL + step * 2}" y="${padT - 18}" text-anchor="middle" font-size="11" font-weight="800" fill="var(--text-secondary)">Lun–Jue ${lj.c == null ? '—' : lj.c.toFixed(0) + '%'}</text>`;
-      g += `<line x1="${padL}" x2="${Wd - padL}" y1="${y(100)}" y2="${y(100)}" stroke="var(--text-primary)" stroke-width="1" stroke-dasharray="4,3" opacity=".55"/>`;
-      acc.forEach((a, i) => {
-        const cx = padL + step * i + step / 2, c = a.plan > 0 ? 100 * a.real / a.plan : null, gap = a.real - a.plan;
-        if (c == null){
-          g += `<text x="${cx}" y="${y(0) - 4}" text-anchor="middle" font-size="10" fill="var(--text-muted)">no opera</text>`;
-        } else {
-          const col = SEV_COLOR[ctSeverity(c)], top = y(Math.min(c, mx));
-          g += `<rect x="${cx - bw / 2}" y="${top}" width="${bw}" height="${Math.max(2, y(0) - top)}" rx="4" fill="${col}"><title>${W[i][0]} · ${a.n} día${a.n === 1 ? '' : 's'} · Plan ${fmtMoney(a.plan)} · Real ${fmtMoney(a.real)} · Gap ${fmtSignedMoney(gap)}</title></rect>`;
-          g += `<text x="${cx}" y="${top - 4}" text-anchor="middle" font-size="11.5" font-weight="800" fill="var(--text-primary)">${c.toFixed(0)}%</text>`;
-          g += `<text x="${cx}" y="${H - padB + 28}" text-anchor="middle" font-size="10.5" font-weight="700" fill="${gap < 0 ? 'var(--bad)' : 'var(--series-3)'}">${(gap < 0 ? '-' : '+') + '$' + (Math.abs(gap) >= 10000 ? Math.round(Math.abs(gap) / 1000) + 'K' : (Math.abs(gap) >= 1000 ? (Math.abs(gap) / 1000).toFixed(1) + 'K' : Math.round(Math.abs(gap))))}</text>`;
-        }
-        g += `<text x="${cx}" y="${H - padB + 14}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text-secondary)">${W[i][0]}</text>`;
+      if (!acc.some(a => a.plan > 0)) return null;
+      const grp = ix => { const p = ix.reduce((s, i) => s + acc[i].plan, 0), r = ix.reduce((s, i) => s + acc[i].real, 0); return {plan:p, real:r, gap:r-p, c:p > 0 ? 100 * r / p : null}; };
+      return {k, acc, lj:grp([0,1,2,3]), fd:grp([4,5,6])};
+    }).filter(Boolean);
+    const pc = v => v == null ? '—' : v.toFixed(0) + '%';
+    box.innerHTML = `<h3 class="ld-h">Lunes a domingo por operación <span>Plan vs Real del mes, sumado por día de la semana · Vie–Dom agrupado</span></h3>
+      <div class="ld-grid">${data.map(o => `<div class="ct-card ld-card" data-k="${o.k}"><div class="ct-card-head"><h3>${esc(OP_META[o.k].label)}</h3></div>
+        <div class="ld-sum"><span>Lun–Jue <b class="${o.lj.gap<0?'neg':'pos'}">${pc(o.lj.c)}</b> (${fmtSignedMoney(o.lj.gap)})</span><span>Vie–Dom <b class="${o.fd.gap<0?'neg':'pos'}">${pc(o.fd.c)}</b> (${fmtSignedMoney(o.fd.gap)})</span></div>
+        <div class="ld-chart"></div></div>`).join('')}</div>
+      <div class="ct-legend" style="margin:-4px 0 12px"><span><svg width="20" height="8"><line x1="0" x2="20" y1="4" y2="4" stroke="var(--text-muted)" stroke-width="2" stroke-dasharray="5,4"/></svg> Plan</span><span><svg width="20" height="8"><line x1="0" x2="20" y1="4" y2="4" stroke="var(--series-1)" stroke-width="2.4"/></svg> Real (punto de color = cumplimiento del día de la semana)</span><span>Días sin plan = no opera</span></div>`;
+    data.forEach(o => {
+      const c = i => o.acc[i].plan > 0 ? 100 * o.acc[i].real / o.acc[i].plan : null;
+      renderPlanRealLines($(`.ld-card[data-k="${o.k}"] .ld-chart`, box), {
+        xLabels: W.map(w => w[0]), width: 380, height: 190, padLeft: 44,
+        bands: [{from:0, to:3, label:'Lun–Jue ' + pc(o.lj.c)}, {from:4, to:6, label:'Vie–Dom ' + pc(o.fd.c), shade:true}],
+        series: [
+          {name:'Plan', vals: o.acc.map(a => a.plan > 0 ? a.plan : null), color:'var(--text-muted)', dash:'5,4'},
+          {name:'Real', vals: o.acc.map(a => a.plan > 0 ? a.real : null), color:'var(--series-1)', dotColors: o.acc.map((a,i) => SEV_COLOR[ctSeverity(c(i))]), labels: o.acc.map((a,i) => c(i)==null ? null : Math.round(c(i)) + '%')},
+        ],
+        yFmt: v => fmtMoneyK(v),
+        tip: i => { const a = o.acc[i]; return a.plan > 0 ? `<strong>${W[i][0]} · ${a.n} día${a.n===1?'':'s'}</strong><br>Plan: ${fmtMoney(a.plan)}<br>Real: ${fmtMoney(a.real)}<br>Gap: ${fmtSignedMoney(a.real-a.plan)} · ${fmtPct1(c(i))}` : `${W[i][0]}: no opera`; },
       });
-      return `<div class="ct-card ld-card"><div class="ct-card-head"><h3>${OP_META[k].label}</h3></div><svg class="ct-chart" viewBox="0 0 ${Wd} ${H}" role="img" aria-label="Cumplimiento de lunes a domingo: ${OP_META[k].label}">${g}</svg></div>`;
-    }).join('');
-    box.innerHTML = `<h3 class="ld-h">Lunes a domingo por operación <span>cumplimiento y gap · Vie–Dom agrupado</span></h3><div class="ld-grid">${cards}</div>`;
+    });
   }
 
   /* ================= VISTA DÍA DE SEMANA ================= */
@@ -5038,17 +4226,16 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
   function renderDow(){
     const el = $('#ctViewDow');
     { const cur = document.getElementById('ctDowOpSel'); if (cur && cur.value) CT_DOW_SEL_KEEP = cur.value; }
-    const rows = ['postventa_total', ...OP_ORDER_7];
-    const matrix = rows.map(k => DOW_ORDER.map(dow => {
-      const c = CT_DATA.dow[k][dow];
-      return c ? c.cumpl_pct_promedio : null;
-    }));
     el.innerHTML = `
       <div class="ct-filter-row">
         <label style="font-size:12px;color:var(--text-secondary)">Operación</label>
         <select class="ct-select" id="ctDowOpSel"></select>
       </div>
       <div id="ctLunDom"></div>
+      <div class="ct-card" id="ctDowFdsCard">
+        <h3>🏁 Viernes a domingo · cómo movió el gap acumulado del mes</h3>
+        <div id="ctDowFds"></div>
+      </div>
       <div class="ct-card">
         <h3 id="ctCalendarHeatTitle">Calendario del mes: cumplimiento %, día por día</h3>
         
@@ -5059,10 +4246,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         
         <div id="ctWwVerdict"></div>
         <div class="ct-legend-row" style="display:flex;gap:16px;align-items:center;font-size:11px;color:var(--text-secondary);margin:2px 0 8px;flex-wrap:wrap">
-          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:var(--text-muted);border-radius:3px;display:inline-block"></span> Barra sólida = Lunes–Viernes</span>
-          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:var(--text-muted);opacity:.45;border-radius:3px;display:inline-block"></span> Barra clara = Sábado–Domingo</span>
-          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:18px;border-top:2px dashed var(--text-primary);display:inline-block"></span> Plan = 100%</span>
-          <span>Color = severidad (verde ≥95%, naranja 85–95%, rojo &lt;85%)</span>
+          <span>Color del punto = severidad (verde ≥95%, naranja 85–95%, rojo &lt;85%)</span>
         </div>
         <div id="ctWwChart"></div>
         <details style="margin-top:10px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--text-secondary)">Ver cifras por semana (Plan y Real en $)</summary><div class="ct-det-wrap" style="margin-top:8px"><table class="ct-table ct-wwtable" id="ctWwTable"></table></div></details>
@@ -5071,18 +4255,11 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         <h3 id="ctDowMoneyTitle">Últimos 4 lunes, martes, … — Plan vs Real y tendencia</h3>
         <div id="ctDowCrossNote"></div>
         <div class="ct-legend-row" style="display:flex;gap:16px;align-items:center;font-size:11px;color:var(--text-secondary);margin:2px 0 12px;flex-wrap:wrap">
-          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:3px;background:var(--text-primary);border-radius:2px;display:inline-block"></span> Línea = Meta (Plan)</span>
-          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:var(--series-3);border-radius:3px;display:inline-block"></span> Barra = Real, en línea o sobre el plan</span>
-          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:var(--series-2);border-radius:3px;display:inline-block"></span> Real en zona de atención</span>
-          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:var(--bad);border-radius:3px;display:inline-block"></span> Real crítico</span>
+          <span style="display:inline-flex;align-items:center;gap:6px"><svg width="20" height="8"><line x1="0" x2="20" y1="4" y2="4" stroke="var(--text-muted)" stroke-width="2" stroke-dasharray="5,4"/></svg> Plan</span>
+          <span style="display:inline-flex;align-items:center;gap:6px"><svg width="20" height="8"><line x1="0" x2="20" y1="4" y2="4" stroke="var(--series-1)" stroke-width="2.4"/></svg> Real</span>
+          <span>Color del punto = severidad (verde en línea o sobre el plan, naranja atención, rojo crítico)</span>
         </div>
         <div id="ctDowMoneyGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px"></div>
-      </div>
-      <div class="ct-card">
-        <h3>Heatmap: cumplimiento % promedio por día de semana × operación</h3>
-        
-        <div id="ctDowHeat"></div>
-        
       </div>
       <div class="ct-card">
         <h3>Detalle por día de semana</h3>
@@ -5210,7 +4387,6 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     opSel.addEventListener('change', drawByOp);
     drawByOp();
 
-    renderHeatmap($('#ctDowHeat'), rows.map(k=>OP_META[k].label), DOW_ORDER, matrix);
     const tbl = $('#ctDowTable');
     let html = `<thead><tr><th>Día</th><th class="num">Plan prom.</th><th class="num">Real prom.</th><th class="num">Gap prom.</th><th class="num">Cumpl.% prom.</th><th>Mejor día</th><th>Peor día</th></tr></thead><tbody>`;
     DOW_ORDER.forEach(dow => {
@@ -5220,111 +4396,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     });
     html += '</tbody>';
     tbl.innerHTML = html;
-  }
-
-  /* ================= VISTA SEMANAL ================= */
-  function renderWeekly(){
-    const el = $('#ctViewWeekly');
-    const weeks = Object.keys(CT_DATA.weekly).sort((a,b)=>a-b);
-    // Semanas sin ningún día transcurrido (ej. Semana 5 = 28-30 sep, aún no llega) no tienen
-    // cumpl_pct_a_la_fecha -- se excluyen del gráfico en vez de mostrarlas como "0%" (que se
-    // leería como una caída real a cumplimiento cero, y no es eso: es que todavía no hay datos).
-    // La tabla de detalle sí las lista, marcadas "SIN DATOS".
-    const bars = weeks.map(w => {
-      const o = CT_DATA.weekly[w].op.postventa_total;
-      return {value:o.cumpl_pct_a_la_fecha, label:`Semana ${w}`, xLabel:'S'+w};
-    }).filter(b => b.value != null);
-    el.innerHTML = `
-      <div class="ct-card"><h3>Revenue por semana: Plan vs Real a la fecha</h3><div id="ctWeeklyMoneyChart"></div></div>
-      <div class="ct-card"><h3>Cumplimiento % por semana (Post-Venta)</h3><div id="ctWeeklyChart"></div></div>
-      <div class="ct-card"><h3>Detalle semanal</h3><table class="ct-table" id="ctWeeklyTable"></table></div>
-    `;
-    const weeksWithData = weeks.filter(w => CT_DATA.weekly[w].op.postventa_total.real_a_la_fecha != null);
-    const moneyBars = weeksWithData.flatMap(w => {
-      const o = CT_DATA.weekly[w].op.postventa_total;
-      return [
-        {label:`Semana ${w} — Plan a la fecha`, value:o.plan_a_la_fecha, color:'var(--text-muted,#9a9a94)'},
-        {label:`Semana ${w} — Real a la fecha`, value:o.real_a_la_fecha, color: ctSeverity(o.cumpl_pct_a_la_fecha)==='critico'?'var(--bad)':ctSeverity(o.cumpl_pct_a_la_fecha)==='atencion'?'var(--series-2)':'var(--series-3)'},
-      ];
-    });
-    renderHBarChart($('#ctWeeklyMoneyChart'), moneyBars, {valFormat:fmtMoney, tipFormat:fmtMoney, padLeft:190});
-    renderBarChart($('#ctWeeklyChart'), bars.map(b=>({...b, value:b.value-100, color: b.value>=100?'var(--series-3)':b.value>=90?'var(--series-2)':'var(--bad)'})), {yFormat:v=>(v+100).toFixed(0)+'%', tipFormat:v=>fmtPct1(v+100), xLabels:true});
-    let html = `<thead><tr><th>Semana</th><th>Rango</th><th class="num">Plan a la fecha</th><th class="num">Real a la fecha</th><th class="num">Gap $</th><th class="num">Cumpl.%</th><th class="num">Plan ACQ</th><th class="num">Resultado ACQ</th><th>Estado</th></tr></thead><tbody>`;
-    weeks.forEach(w => {
-      const o = CT_DATA.weekly[w].op.postventa_total;
-      const acq = CT_DATA.weekly[w].acq;
-      const sev = ctSeverity(o.cumpl_pct_a_la_fecha);
-      html += `<tr><td>Semana ${w}</td><td>${CT_DATA.weekly[w].rango}</td><td class="num">${fmtMoney(o.plan_a_la_fecha)}</td><td class="num">${o.real_a_la_fecha==null?'—':fmtMoney(o.real_a_la_fecha)}</td><td class="num">${o.gap_a_la_fecha==null?'—':fmtSignedMoney(o.gap_a_la_fecha)}</td><td class="num">${fmtPct1(o.cumpl_pct_a_la_fecha)}</td><td class="num">${fmtMoney(acq.plan_acq_a_la_fecha)}</td><td class="num">${fmtMoney(acq.resultado_acq_a_la_fecha)}</td><td><span class="ct-alert ${sev}" style="padding:3px 8px">${SEV_LABEL[sev]}</span></td></tr>`;
-    });
-    html += '</tbody>';
-    $('#ctWeeklyTable').innerHTML = html;
-
-    // Cumplimiento % semanal, separado por cada una de las 7 operaciones (pedido explícito del usuario)
-    const opHtml = `<thead><tr><th>Operación</th>${weeks.map(w=>`<th class="num">Semana ${w}</th>`).join('')}</tr></thead><tbody>` +
-      OP_ORDER_7.map(k => {
-        const cells = weeks.map(w => {
-          const o = CT_DATA.weekly[w].op[k];
-          const v = o.cumpl_pct_a_la_fecha;
-          const txt = v==null ? '—' : fmtPct1(v);
-          return `<td class="num"><span class="ct-heat-cell" style="background:${heatColorFor(v)};display:inline-block;min-width:52px">${txt}</span></td>`;
-        }).join('');
-        return `<tr><td>${OP_META[k].label}${k==='recurrence'?' <small style="color:var(--text-secondary)">(= suma de las 3 filas siguientes)</small>':''}</td>${cells}</tr>`;
-      }).join('') + '</tbody>';
-    el.insertAdjacentHTML('beforeend', `<div class="ct-card"><h3>Cumplimiento % semanal por operación</h3><p class="ct-q">Las 7 operaciones, semana a semana — "Semana ${weeks[weeks.length-1]}" puede tener pocos días con datos todavía.</p><table class="ct-table">${opHtml}</table></div>`);
-  }
-
-  /* ================= VISTA POR OPERACIÓN (mensual) ================= */
-  function renderByOp(){
-    const el = $('#ctViewByOp');
-    // Orden fijo pedido por el usuario: 2.1-Upsell, Recurrence, 2.2-Recurrence, 2.4-Resurrection,
-    // 2.5-Bootcamp (no por impacto). 2.3-Sales Chat y 1.5-Bootcamp: excluidos de todo el tablero.
-    const ops = OP_ORDER_7.map(k=>({k,...CT_DATA.monthly[k]}));
-    el.innerHTML = `
-      <div class="ct-card"><h3>Plan vs Real por operación (MTD)</h3><div id="ctByOpChart"></div></div>
-      <div class="ct-card"><h3>Vista general por operación</h3><table class="ct-table" id="ctByOpTable"></table></div>
-    `;
-    const bars = ops.map(o => ({label:OP_META[o.k].label, value:o.gap_mtd, color: o.gap_mtd>=0?'var(--series-3)':'var(--bad)'}));
-    renderHBarChart($('#ctByOpChart'), bars, {valFormat:fmtSignedMoney, tipFormat:fmtSignedMoney});
-    let html = `<thead><tr><th>Operación</th><th class="num">Plan mes</th><th class="num">Real MTD</th><th class="num">Gap $</th><th class="num">Cumpl.%</th><th class="num">Prom. diario</th><th class="num">Proyección</th><th class="num">Gap proy.</th><th>Mejor día</th><th>Peor día</th><th>Mejor DOW</th><th>Peor DOW</th><th>Estado</th></tr></thead><tbody>`;
-    ops.forEach(o => {
-      const sev = ctSeverity(o.cumpl_pct_mtd);
-      const tag = o.k==='recurrence' ? ' <small style="color:var(--text-secondary)">(subtotal)</small>' : '';
-      html += `<tr><td>${OP_META[o.k].label}${tag}</td><td class="num">${fmtMoney(o.plan_total_mes)}</td><td class="num">${fmtMoney(o.real_mtd)}</td><td class="num">${fmtSignedMoney(o.gap_mtd)}</td><td class="num">${fmtPct1(o.cumpl_pct_mtd)}</td><td class="num">${fmtMoney(o.promedio_diario_real)}</td><td class="num">${fmtMoney(o.proyeccion_cierre_run_rate)}</td><td class="num">${fmtSignedMoney(o.gap_proyectado_vs_plan_mes)}</td><td>${o.mejor_dia.fecha}</td><td>${o.peor_dia.fecha}</td><td>${o.mejor_dia_semana.dow}</td><td>${o.peor_dia_semana.dow}</td><td><span class="ct-alert ${sev}" style="padding:3px 8px">${SEV_LABEL[sev]}</span></td></tr>`;
-    });
-    html += '</tbody>';
-    $('#ctByOpTable').innerHTML = html;
-  }
-
-  /* ================= VISTA ACQ ================= */
-  function renderAcq(){
-    const el = $('#ctViewAcq');
-    const days = CT_DATA.acq.dias;
-    el.innerHTML = `
-      <div class="ct-grid-2">
-        <div class="ct-card"><h3>Var Ups vs ACQ (columna Z)</h3><div id="ctAcqZChart"></div></div>
-        <div class="ct-card"><h3>Plan ACQ vs Resultado</h3><div id="ctAcqPlanChart"></div></div>
-      </div>
-      <div class="ct-card">
-        <h3>Dependencia Upsell → ACQ</h3>
-        
-        <div style="font-size:12.5px;line-height:1.9">
-          <div>Correlación (Pearson) entre Var% propio de Upsell y Var Ups vs ACQ (Z): <strong>${(CT_DATA.acq.correlacion_var_upsell_vs_Z_var_ups_vs_acq==null?'—':CT_DATA.acq.correlacion_var_upsell_vs_Z_var_ups_vs_acq.toFixed(2))}</strong></div>
-          <div>Correlación entre Var% propio de Upsell y Var ACQ general (AB): <strong>${(CT_DATA.acq.correlacion_var_upsell_vs_AB_var_acq_general==null?'—':CT_DATA.acq.correlacion_var_upsell_vs_AB_var_acq_general.toFixed(2))}</strong></div>
-        </div>
-        
-      </div>
-      <div class="ct-card">
-        <h3>Top 5 días con mayor desviación Upsell vs ACQ</h3>
-        <table class="ct-table"><thead><tr><th>Fecha</th><th>Día</th><th class="num">Upsell Real</th><th class="num">Var% Upsell</th><th class="num">Var Ups vs ACQ (Z)</th></tr></thead><tbody>
-          ${CT_DATA.acq.top5_mayor_desviacion_upsell_vs_acq.map(d=>`<tr><td>${d.fecha}</td><td>${d.dow}</td><td class="num">${fmtMoney(d.upsell_real)}</td><td class="num">${fmtSignedPct1(d.upsell_var_pct)}</td><td class="num">${fmtSignedPct1(d.var_ups_vs_acq_pct)}</td></tr>`).join('')}
-        </tbody></table>
-      </div>
-    `;
-    renderLineChart($('#ctAcqZChart'), [{label:'Var Ups vs ACQ (%)', color:'var(--series-4)', points: days.map(d=>({y:d.var_ups_vs_acq_pct, label:d.fecha}))}], {refLine:0, refLineLabel:'0% (paridad)', legend:true, yFormat:v=>v.toFixed(0)+'%', tipFormat:v=>fmtSignedPct1(v), xLabels: days.map(d=>d.fecha.slice(8,10))});
-    renderLineChart($('#ctAcqPlanChart'), [
-      {label:'Plan ACQ', color:'var(--text-muted,#9a9a94)', points: days.map(d=>({y:d.plan_acq,label:d.fecha})), dash:'4,3'},
-      {label:'Resultado ACQ', color:'var(--series-1)', points: days.map(d=>({y:d.resultado_acq,label:d.fecha}))},
-    ], {legend:true, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels: days.map(d=>d.fecha.slice(8,10))});
+    safe(renderWeekend, 'Vie–Dom');
   }
 
   /* ================= VISTA DÍAS CRÍTICOS ================= */
@@ -5432,95 +4504,6 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       </div>
       
     `;
-  }
-
-  /* ================= VISTA META $500K ================= */
-  function renderGoal(){
-    const el = $('#ctViewGoal');
-    const g = CT_DATA.goal_500k;
-    const contribSorted = Object.entries(g.contribucion).sort((a,b)=>b[1].real_mtd-a[1].real_mtd);
-    const sev = ctSeverity(100*g.proyeccion_cierre/g.meta);
-    el.innerHTML = `
-      <div class="ct-kpi-grid">
-        <div class="ct-kpi"><div class="lbl">Meta</div><div class="val">$500.000</div></div>
-        <div class="ct-kpi"><div class="lbl">Real acumulado (MTD)</div><div class="val">${fmtMoneyK(g.real_mtd)}</div></div>
-        <div class="ct-kpi sev-${sev}"><div class="lbl">% cumplimiento (prorrateado)</div><div class="val">${fmtPct1(g.cumpl_pct_vs_meta_prorrateada)}</div></div>
-        <div class="ct-kpi sev-${sev}"><div class="lbl">Gap vs meta prorrateada</div><div class="val">${fmtSignedMoney(g.gap_vs_meta_prorrateada)}</div></div>
-        <div class="ct-kpi sev-${sev}"><div class="lbl">Proyección de cierre</div><div class="val">${fmtMoneyK(g.proyeccion_cierre)}</div></div>
-        <div class="ct-kpi sev-${sev}"><div class="lbl">Gap proyectado vs $500K</div><div class="val">${fmtSignedMoney(g.gap_proyectado_vs_meta_500k)}</div></div>
-      </div>
-      <div class="ct-card">
-        <h3>Proyección de cierre vs. Plan interno vs. Meta $500K</h3>
-        <div id="ctGoalBullet"></div>
-      </div>
-      <div class="ct-card">
-        <h3>Proyección de cierre — banda mejor / promedio / peor caso</h3>
-        
-        <div id="ctGoalBandChart"></div>
-        <div class="ct-note" id="ctGoalBandNote"></div>
-      </div>
-      <div class="ct-card">
-        <h3>Descomposición por operación</h3>
-        
-        <table class="ct-table"><thead><tr><th>Operación</th><th class="num">Plan mes</th><th class="num">Real MTD</th><th class="num">Gap</th><th class="num">% del total</th></tr></thead><tbody>
-        ${contribSorted.map(([k,v])=>`<tr><td>${v.label}</td><td class="num">${fmtMoney(v.plan_mes_completo)}</td><td class="num">${fmtMoney(v.real_mtd)}</td><td class="num">${fmtSignedMoney(v.gap_mtd)}</td><td class="num">${v.pct_del_total.toFixed(1)}%</td></tr>`).join('')}
-        </tbody></table>
-        
-      </div>
-    `;
-    const bars = [
-      {label:'Plan interno (mes)', value: CT_DATA.monthly.postventa_total.plan_total_mes, color:'var(--text-muted,#9a9a94)'},
-      {label:'Meta $500K', value: 500000, color:'var(--series-4)'},
-      {label:'Proyección de cierre', value: g.proyeccion_cierre, color: g.proyeccion_cierre>=500000?'var(--series-3)':'var(--bad)'},
-      {label:'Real MTD (hoy)', value: g.real_mtd, color:'var(--series-1)'},
-    ];
-    renderHBarChart($('#ctGoalBullet'), bars, {valFormat:fmtMoney, tipFormat:fmtMoney, padLeft:150});
-
-    // Banda de proyección: continúa el acumulado Real de hoy a fin de mes con
-    // 3 ritmos (mejor día de semana / promedio actual / peor día de semana),
-    // para ver un rango de cierre en vez de un solo número puntual.
-    const days = CT_DATA.daily;
-    const pv = CT_DATA.monthly.postventa_total;
-    let cumPlan = 0, cumReal = 0;
-    const planPts = [], realPts = [];
-    let lastElapsedIdx = -1; // último día 'elapsed' (excluye hoy parcial) -- mismo corte que usa promedio_diario_real
-    days.forEach((d,i) => {
-      cumPlan += d.ops.postventa_total.plan;
-      planPts.push({y:cumPlan, label:d.fecha});
-      if (d.status !== 'future'){ cumReal += (d.ops.postventa_total.real||0); realPts.push({y:cumReal, label:d.fecha}); }
-      else realPts.push({y:null, label:d.fecha});
-      if (d.status === 'elapsed') lastElapsedIdx = i;
-    });
-    // Banda = promedio ± 1 desviación típica del Real diario ya observado este mes (días 'elapsed'
-    // solamente) -- más robusto que tomar "el mejor/peor día de semana", que puede tener un Plan
-    // chico y por eso no reflejar una variación real en dólares.
-    const rateAvg = pv.promedio_diario_real || 0;
-    const elapsedReals = days.filter(d=>d.status==='elapsed').map(d=>d.ops.postventa_total.real||0);
-    const variance = elapsedReals.length ? elapsedReals.reduce((s,v)=>s+(v-rateAvg)*(v-rateAvg),0)/elapsedReals.length : 0;
-    const stddev = Math.sqrt(variance);
-    const rateBest = rateAvg + stddev;
-    const rateWorst = Math.max(0, rateAvg - stddev);
-    // ancla = acumulado real SOLO de días 'elapsed' (= pv.real_mtd) -- así "promedio" reproduce
-    // exactamente pv.proyeccion_cierre_run_rate, y mejor/peor caso divergen desde la misma base.
-    const lastRealCum = lastElapsedIdx >= 0 ? realPts[lastElapsedIdx].y : 0;
-    function projSeries(rate){
-      return days.map((d,i) => {
-        if (i <= lastElapsedIdx) return {y: realPts[i].y, label:d.fecha};
-        return {y: lastRealCum + rate*(i-lastElapsedIdx), label:d.fecha};
-      });
-    }
-    const metaPts = days.map(d=>({y:500000, label:d.fecha}));
-    renderLineChart($('#ctGoalBandChart'), [
-      {label:'Plan acumulado', color:'var(--text-muted,#9a9a94)', points:planPts, dash:'4,3'},
-      {label:'Meta $500K', color:'var(--series-4)', points:metaPts, dash:'2,4'},
-      {label:'Real (hasta hoy)', color:'var(--series-1)', points:realPts},
-      {label:'Mejor caso (promedio + 1 desv.)', color:'var(--series-3)', points:projSeries(rateBest), dash:'4,3'},
-      {label:'Promedio (run-rate)', color:'var(--series-2)', points:projSeries(rateAvg), dash:'4,3'},
-      {label:'Peor caso (promedio − 1 desv.)', color:'var(--bad)', points:projSeries(rateWorst), dash:'4,3'},
-    ], {legend:true, yFormat:v=>fmtMoneyK(v), tipFormat:v=>fmtMoney(v), xLabels: days.map(d=>d.fecha.slice(8,10))});
-    const bestClose = lastRealCum + rateBest*(days.length-1-lastElapsedIdx);
-    const worstClose = lastRealCum + rateWorst*(days.length-1-lastElapsedIdx);
-    $('#ctGoalBandNote').textContent = `Rango de cierre estimado: entre ${fmtMoney(worstClose)} (peor caso) y ${fmtMoney(bestClose)} (mejor caso) — el run-rate actual (promedio) proyecta ${fmtMoney(g.proyeccion_cierre)}.`;
   }
 
   /* ================= MASTER-DETALLE (oct/2026) =================
@@ -5663,7 +4646,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
 
   function renderHeroChart(container, series, metric, mode, color){
     const W=900,H=300,PAD={l:58,r:18,t:20,b:30};
-    const vals = series.flatMap(p=>[p.plan,p.real,p.proj,p.req]).filter(v=>v!=null);
+    const vals = series.flatMap(p=>[p.plan,p.real,p.proj,p.req,p.best,p.worst,p.m5]).filter(v=>v!=null);
     if (!vals.length){ container.innerHTML = '<div class="ct-note">Sin datos para este mes todavía.</div>'; return; }
     let yMax = Math.max(...vals)*1.08, yMin = 0;
     if (metric==='asp'){ yMin = Math.max(0, Math.min(...vals)*0.8); }
@@ -5702,6 +4685,14 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       lbl.textContent = fmtByMetric(metric,lastVal).replace(/^\$(\d+)$/,'$$$1');
       root.appendChild(lbl);
     }
+    // escenarios (solo acumulado): mejor / peor caso (± 1 desviación del cumplimiento diario) y −5 pp
+    ESC_LINES.forEach(es => {
+      const pts = series.map((p,i)=>p[es.k]!=null?[x(i),y(p[es.k])]:null).filter(Boolean);
+      if (pts.length<2) return;
+      root.appendChild(svg('polyline',{points:pts.map(q=>q.join(',')).join(' '),fill:'none',stroke:es.color,'stroke-width':1.6,'stroke-dasharray':es.dash,'stroke-linecap':'round','stroke-linejoin':'round',opacity:.9}));
+      const e = pts[pts.length-1];
+      root.appendChild(svg('circle',{cx:e[0],cy:e[1],r:3,fill:es.color}));
+    });
     // proyección (amarillo punteado): acumulado = hacia dónde cierra el mes; diario = lo que hace falta por día
     const pjPts = series.map((p,i)=>p.proj!=null?[x(i),y(p.proj)]:null).filter(Boolean);
     if (pjPts.length>1){
@@ -5732,7 +4723,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       guide.setAttribute('x1',x(i)); guide.setAttribute('x2',x(i)); guide.setAttribute('opacity',1);
       const gap = (p.real!=null && p.plan!=null) ? p.real-p.plan : null;
       const pct = (p.real!=null && p.plan) ? 100*(p.real/p.plan-1) : null;
-      showTip(e.clientX, e.clientY-8, `<strong>${p.fecha}</strong>${mode==='acum'?' (acumulado)':''}<br>Plan: ${fmtByMetric(metric,p.plan)}<br>Real: ${fmtByMetric(metric,p.real)}` + (p.proj!=null&&!p.closed?`<br><span style="color:${PJ_COLOR}">●</span> Proyección: ${fmtByMetric(metric,p.proj)}`:'') + (p.req!=null?`<br><span style="color:${PJ_COLOR}">●</span> Necesario por día: ${fmtByMetric(metric,p.req)}`:'') + (gap!=null?`<br>Gap: ${metric==='vol'?(gap>=0?'+':'')+fmt0(gap):(gap>=0?'+':'-')+fmtByMetric(metric,Math.abs(gap))} (${fmtSignedPct1(pct)})`:''));
+      showTip(e.clientX, e.clientY-8, `<strong>${p.fecha}</strong>${mode==='acum'?' (acumulado)':''}<br>Plan: ${fmtByMetric(metric,p.plan)}<br>Real: ${fmtByMetric(metric,p.real)}` + (p.proj!=null&&!p.closed?`<br><span style="color:${PJ_COLOR}">●</span> Proyección: ${fmtByMetric(metric,p.proj)}`:'') + (!p.closed?ESC_LINES.filter(es=>p[es.k]!=null).map(es=>`<br><span style="color:${es.color}">●</span> ${es.label}: ${fmtByMetric(metric,p[es.k])}`).join(''):'') + (p.req!=null?`<br><span style="color:${PJ_COLOR}">●</span> Necesario por día: ${fmtByMetric(metric,p.req)}`:'') + (gap!=null?`<br>Gap: ${metric==='vol'?(gap>=0?'+':'')+fmt0(gap):(gap>=0?'+':'-')+fmtByMetric(metric,Math.abs(gap))} (${fmtSignedPct1(pct)})`:''));
     };
     hit.addEventListener('mousemove', move);
     hit.addEventListener('mouseleave', ()=>{ guide.setAttribute('opacity',0); hideTip(); });
@@ -5766,6 +4757,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     const series = heroSeries(key, metric, mode);
     const prs = projRows(key); let PJ = null;
     try { if (prs && prs.some(r=>r.closed)){ PJ = ProjCalc.proyectar(prs); PJ.rows = prs; projAttach(series, PJ, metric, mode); } } catch(e){ console.warn('[Proyección]', e); PJ = null; }
+    let ESC = null;
+    try { if (PJ && series && mode==='acum' && metric!=='asp') ESC = projEscenarios(series, prs, metric); } catch(e){ console.warn('[Escenarios]', e); ESC = null; }
     el.innerHTML = `${warnHtml}<div class="ct-hero">
       <div class="ct-hero-top">
         <div><h3>${label}</h3><div class="sub">${CT_DATA.meta.mes?mesLabel(CT_DATA.meta.mes):''} · ${CT_DATA.meta.dias_transcurridos_completos} días cerrados</div></div>
@@ -5776,9 +4769,10 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         <div class="ct-seg" id="ctHeroMode"><button data-v="acum" class="${mode==='acum'?'active':''}">Acumulado</button><button data-v="dia" class="${mode==='dia'?'active':''}">Diario</button></div>
         ${det ? `<div class="ct-seg" id="ctHeroMetric"><button data-v="rev" class="${metric==='rev'?'active':''}">Revenue</button><button data-v="vol" class="${metric==='vol'?'active':''}">Ventas</button><button data-v="asp" class="${metric==='asp'?'active':''}">ASP</button></div>` : ''}
         <span style="font-size:12px;color:var(--text-muted)"><svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="var(--text-muted)" stroke-width="2" stroke-dasharray="5,4"/></svg> Plan &nbsp; <svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="${col}" stroke-width="2"/></svg> Real</span>
-        ${projLegend(metric, mode)}
+        ${projLegend(metric, mode, ESC)}
       </div>
       <div class="ct-hero-chart" id="ctHeroChart"></div>
+      ${escHtml(ESC, metric)}
       <div class="ct-stats">${stats}</div>
       ${projHtml(PJ)}
     </div>`;
@@ -5846,7 +4840,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     $$('#ctDetMode button', el).forEach(b=>b.addEventListener('click',()=>{ CT_DET_MODE=b.dataset.v; renderDetalle(); }));
   }
 
-  const VIEW_OF = {renderRca:'ctViewRca',renderAlertStrip:'ctAlerts',renderExec:'ctViewExec',renderDaily:'ctViewDaily',renderDow:'ctViewDow',renderWeekly:'ctViewWeekly',renderByOp:'ctViewByOp',renderAcq:'ctViewAcq',renderCritical:'ctViewCritical',renderPatterns:'ctViewPatterns',renderGoal:'ctViewGoal',renderWeekend:'ctViewFds'};
+  const VIEW_OF = {renderRca:'ctViewRca',renderAlertStrip:'ctAlerts',renderExec:'ctViewExec',renderDow:'ctViewDow',renderCritical:'ctViewCritical',renderPatterns:'ctViewPatterns',renderWeekend:'ctDowFds'};
   function safe(fn, name){
     try { fn(); } catch(err){
       if (CT_DATA.meta.dias_transcurridos_completos) console.error('[Control Tower] '+name+':', err);
@@ -5857,9 +4851,9 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
   function initAll(){
     { const dd = CT_DATA.detalle && CT_DATA.detalle.postventa_total ? CT_DATA.detalle.postventa_total.dias.filter(d => d.status === 'elapsed') : [], ic = CT_DATA.meta.dia_incompleto;
       $('#ctAsOf').textContent = 'Cierre ' + (dd.length ? fechaDM(dd[dd.length-1].fecha) : CT_DATA.meta.hoy) + ' · ' + CT_DATA.meta.dias_transcurridos_completos + ' días' + (ic ? ' · ' + fechaDM(ic.fecha) + ' aún cargando' : ''); }
-    safe(renderExec,'Ejecutivo'); safe(renderDaily,'Plan vs Real'); safe(renderDow,'Día de semana'); safe(renderWeekly,'Semanal');
-    safe(renderByOp,'Por operación'); safe(renderAcq,'ACQ'); safe(renderCritical,'Días críticos'); safe(renderPatterns,'Patrones'); safe(renderGoal,'Meta $500K');
-    safe(renderDetalle,'Detalle'); safe(renderWeekend,'Vie–Dom'); safe(renderSide,'Sidebar'); safe(renderHero,'Hero');
+    safe(renderExec,'Ejecutivo'); safe(renderDow,'Día de semana');
+    safe(renderCritical,'Días críticos'); safe(renderPatterns,'Patrones');
+    safe(renderDetalle,'Detalle'); safe(renderSide,'Sidebar'); safe(renderHero,'Hero');
   }
   // Comparativos entre semanas/meses: pide también el mes anterior (mismo Web App, parámetro `mes`)
   // en segundo plano y vuelve a dibujar solo la vista "Día de semana". Si falla, todo sigue
@@ -6274,6 +5268,47 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     return `<div class="rca-days rca-days-g"><span class="rca-days-l">Días · cumplimiento vs plan</span>${html}</div>`;
   }
 
+  /* Tendencia diaria en Causa raíz: líneas por supervisor (de la operación elegida) y por
+     operación / grupo de agentes. Indicador: cumplimiento %, ventas u horas conectadas. */
+  const RCA_TREND_PAL = ['var(--series-1)','var(--series-2)','var(--series-3)','var(--series-4)','var(--bad)','#14b8b0','#8a5a8a'];
+  function drawRcaTrend(M, opKey){
+    const box = $('#rcaTrend'); if (!box) return;
+    const met = RCA.trend || 'cumpl';
+    const fmtV = v => met==='cumpl' ? Math.round(v)+'%' : (met==='h' ? Math.round(v)+' h' : fmt0(v));
+    const tipV = v => met==='cumpl' ? fmtPct1(v) : (met==='h' ? (Math.round(v*10)/10).toLocaleString('es-CO')+' h' : fmt0(v));
+    const o = M.ops[opKey];
+    const ss = AgentPerfRCA.serieSupervisores(M, opKey);
+    const dias = o.analizables;
+    const supSeries = o.sups.map((g, i) => ({label:g, color:RCA_TREND_PAL[i % RCA_TREND_PAL.length],
+      points: dias.map(f => { const x = (ss[g] && ss[g].serie || []).find(z => z.fecha===f); return {y: x ? (met==='cumpl' ? x.cumpl : x[met]) : null, label:fechaDM(f)}; })}));
+    // por operación: ventas y horas de las pestañas de agentes; cumplimiento = ventas ÷ plan de ventas de Planif_2026
+    const allDias = Array.from(new Set(M.orden.flatMap(k => M.ops[k].analizables))).sort();
+    const opSeries = M.orden.map((k, i) => {
+      const q = M.ops[k], det = CT_DATA.detalle && CT_DATA.detalle[q.ctKey];
+      return {label:q.label, color:RCA_TREND_PAL[i % RCA_TREND_PAL.length], points: allDias.map(f => {
+        if (q.analizables.indexOf(f) < 0) return {y:null, label:fechaDM(f)};
+        let v = 0, h = 0; q.agentes.forEach(a => { const d = a.d[f]; if (d && +d[0] > 0){ h += +d[0]; v += +d[1] || 0; } });
+        if (met==='v') return {y:v, label:fechaDM(f)};
+        if (met==='h') return {y:h, label:fechaDM(f)};
+        const pd = det && det.dias.find(x => x.fecha===f);
+        return {y: (pd && pd.ventas_plan > 0) ? 100*v/pd.ventas_plan : null, label:fechaDM(f)};
+      })};
+    });
+    const nota = met==='cumpl' ? 'Supervisores: ventas ÷ capacidad esperada del grupo (lo que suelen vender sus agentes conectados). Operaciones: ventas de la pestaña de agentes ÷ plan de ventas de Planif_2026.' :
+      (met==='v' ? 'Ventas por día (suma de los agentes que trabajaron).' : 'Horas conectadas por día (STAFF).');
+    box.innerHTML = `<div class="ct-card-head"><h3>📈 Tendencia diaria</h3>
+        <div class="ct-seg" id="rcaTrendMet"><button data-v="cumpl" class="${met==='cumpl'?'active':''}">Cumplimiento %</button><button data-v="v" class="${met==='v'?'active':''}">Ventas</button><button data-v="h" class="${met==='h'?'active':''}">Horas</button></div></div>
+      <div class="ct-grid-2">
+        <div><div class="ct-q" style="margin:6px 0 4px"><b>Por supervisor</b> · ${esc(o.label)}</div><div id="rcaTrendSup"></div></div>
+        <div><div class="ct-q" style="margin:6px 0 4px"><b>Por operación (grupo de agentes)</b></div><div id="rcaTrendOp"></div></div>
+      </div>
+      <div class="ct-note" style="margin:8px 0 0">${nota}</div>`;
+    const opts = xs => ({legend:true, width:520, height:230, padLeft:44, refLine: met==='cumpl' ? 100 : null, refLineLabel:'100%', yFormat:fmtV, tipFormat:tipV, xLabels:xs.map(fechaDM)});
+    if (dias.length) renderLineChart($('#rcaTrendSup'), supSeries, opts(dias)); else $('#rcaTrendSup').innerHTML = '<div class="ct-note">Sin días cerrados.</div>';
+    if (allDias.length) renderLineChart($('#rcaTrendOp'), opSeries, opts(allDias)); else $('#rcaTrendOp').innerHTML = '<div class="ct-note">Sin días cerrados.</div>';
+    $$('#rcaTrendMet button', box).forEach(b => b.addEventListener('click', () => { RCA.trend = b.dataset.v; drawRcaTrend(M, opKey); }));
+  }
+
   /* ---------- vista ---------- */
   function renderRca(){
     const el = $('#ctViewRca'); if (!el) return;
@@ -6336,6 +5371,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       ${AP_NOTA ? `<div class="ct-note" style="margin:0 0 10px">⚠️ ${esc(AP_NOTA)}</div>` : ''}
       ${diaStripHtml(o)}
       <div class="ct-kpi-grid">${cards}</div>
+      <div class="ct-card" id="rcaTrend"></div>
       <div class="ct-card" id="rcaPerf">
         <div class="ct-card-head"><h3>🧑‍💼 Desempeño por agente</h3><span class="ct-q" style="margin:0">${esc(R.label)} · ${esc(titulo)}${RCA.vista==='dow'?' · por día de la semana':''}</span></div>
         
@@ -6361,6 +5397,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         Fuente de agentes: pestañas espejo (IMPORTRANGE) con datos hasta ${esc(o.fechaActualizado||'—')}; "Formación" agrupa a personas nuevas a cargo de un formador (no es supervisor de la operación).${warns.length?`<br><b>Avisos de datos:</b> ${warns.map(esc).join(' · ')}`:''}</div></details>`;
 
     $('#rcaOp').addEventListener('change', e => { RCA.op = e.target.value; RCA.sup = null; RCA.per = null; renderRca(); });
+    safe(() => drawRcaTrend(M, RCA.op), 'Tendencia diaria');
     $('#rcaPer').addEventListener('change', e => { RCA.per = e.target.value; renderRca(); });
     $$('.rca-tabs button', el).forEach(b => b.addEventListener('click', () => { RCA.sup = b.dataset.sup || null; renderRca(); }));
     $$('.rca-suprow', el).forEach(r => r.addEventListener('click', () => { RCA.sup = r.dataset.sup; renderRca(); window.scrollTo({top: el.getBoundingClientRect().top + window.scrollY - 60, behavior:'smooth'}); }));
@@ -6458,7 +5495,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
   const wkPct = c => c==null ? '—' : c.toFixed(1).replace(/\.0$/, '') + '%';
 
   function renderWeekend(){
-    const el = $('#ctViewFds'); if (!el) return;
+    const el = $('#ctDowFds'); if (!el) return;
     if (typeof WeekendCalc === 'undefined'){ el.innerHTML = '<div class="ct-note">No se cargó el módulo de cálculo de fin de semana.</div>'; return; }
     const frs = WeekendCalc.viernes(CT_DATA);
     if (!frs.length){
@@ -6526,17 +5563,12 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         ${kpi('Ventas plan / real', `${fmt0(T.vplan)} / ${fmt0(T.vreal)}`, T.vplan? fmtSignedPct1(100*(T.vreal/T.vplan-1)) + ' vs plan' : '')}
         ${kpi('ASP plan / real', `${T.aspPlan?'$'+Math.round(T.aspPlan):'—'} / ${T.aspReal?'$'+Math.round(T.aspReal):'—'}`, T.aspPlan&&T.aspReal? fmtSignedPct1(100*(T.aspReal/T.aspPlan-1)) + ' vs plan' : '')}
       </div>
-      <div class="ct-grid-2">
-        <div class="ct-card"><div class="ct-card-head"><h3>Gap Vie–Dom por operación</h3></div><div id="wkGapBars"></div></div>
-        <div class="ct-card"><div class="ct-card-head"><h3>Gap acumulado del mes, lunes a domingo</h3></div><div id="wkSerie"></div></div>
-      </div>
+      <div class="ct-card"><div class="ct-card-head"><h3>Gap acumulado del mes, lunes a domingo</h3></div><div id="wkSerie"></div></div>
       <div class="ct-card"><div class="ct-card-head"><h3>Cumplimiento por día · Vie / Sáb / Dom</h3></div>
         <div class="ct-det-wrap"><table class="ct-det"><thead><tr><th class="l">Operación</th>${R.dias.map(f => `<th style="text-align:center">${fechaCorta(f)}</th>`).join('')}</tr></thead><tbody>${R.ops.map(heatRow).join('')}${heatRow(T)}</tbody></table></div></div>
       <div class="ct-card"><div class="ct-card-head"><h3>Detalle Vie–Dom por operación</h3></div>
         <div class="ct-det-wrap"><table class="ct-det"><thead><tr><th class="l">Operación</th><th>Plan</th><th>Real</th><th>Gap</th><th>Cumpl.</th><th class="grp">Ventas plan / real</th><th>ASP plan / real</th><th class="grp">Gap MTD jue</th><th>Gap MTD ${fechaCorta(last).split(' ')[0]}</th><th>Cumpl. MTD</th><th class="l">Efecto</th></tr></thead><tbody>${R.ops.map(rowT).join('')}<tr class="tot">${rowT(T).replace('<tr>','').replace('</tr>','')}</tr></tbody></table></div></div>`;
     // gráficas
-    const bars = R.ops.concat([T]).map(o => ({label:o.label.replace('2.4.- + 1.4.- ','2.4+1.4 '), value:o.gap, color:o.gap>=0?'var(--series-3)':'var(--bad)'}));
-    renderHBarChart($('#wkGapBars'), bars, {padLeft:150, valFormat:v=>fmtSignedMoney(v), tipFormat:v=>fmtSignedMoney(v)});
     const sr = R.serie || [];
     if (sr.length > 1){
       const defs = [['postventa_total','Post-Venta (total)','var(--text-primary)'],['upsell','2.1.- Upsell',OP_META.upsell.color],['rec22','2.2.- Recurrence',OP_META.rec22.color],['resurrection','Resurrection',OP_META.resurrection.color],['bootcamp','2.5.- Bootcamp',OP_META.bootcamp.color]];
@@ -6683,9 +5715,11 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     } catch(e){ console.warn('[Proyección]', e); }
     return null;
   }
-  function projLegend(metric, mode){
+  function projLegend(metric, mode, esc){
     if (metric==='asp') return '';
-    return `<span style="font-size:12px;color:var(--text-muted)"><svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="${PJ_COLOR}" stroke-width="2.4" stroke-dasharray="2,3"/></svg> ${mode==='acum'?'Proyección al ritmo actual':'Necesario por día'}</span>`;
+    const sw = (c, d) => `<svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="${c}" stroke-width="2.4" stroke-dasharray="${d}"/></svg>`;
+    return `<span style="font-size:12px;color:var(--text-muted)">${sw(PJ_COLOR,'2,3')} ${mode==='acum'?'Proyección al ritmo actual':'Necesario por día'}</span>` +
+      (mode==='acum' && esc ? ESC_LINES.map(es => `<span style="font-size:12px;color:var(--text-muted)">${sw(es.color,'6,4')} ${es.label}</span>`).join('') : '');
   }
   function projAttach(series, PJ, metric, mode){
     if (!PJ || !series || metric==='asp') return;
@@ -6697,6 +5731,48 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       const rs = PJ.rows;
       series.forEach((p, i) => { if (!p.closed && rs[i] && (metric==='rev' ? rs[i].rp : rs[i].vp) > 0) p.req = m.reqDia; });
     }
+  }
+  /* Escenarios de cierre (vista acumulada): mismo método que la proyección (ritmo de cumplimiento ×
+     plan que falta), cambiando solo el ritmo. Mejor/peor caso = ritmo ± 1 desviación típica del
+     cumplimiento diario de los días cerrados; −5 pp = si el cumplimiento baja 5 puntos porcentuales. */
+  const ESC_LINES = [
+    {k:'best',  label:'Mejor caso (+1 desv.)', color:'var(--series-3)', dash:'6,4'},
+    {k:'m5',    label:'Si bajamos 5 pp',       color:'var(--series-4)', dash:'6,4'},
+    {k:'worst', label:'Peor caso (−1 desv.)',  color:'var(--bad)',      dash:'6,4'},
+  ];
+  function projEscenarios(series, rs, metric){
+    const pk = metric==='rev' ? 'rp' : 'vp', rk = metric==='rev' ? 'rr' : 'vr';
+    if (!rs.some(r => !r.closed)) return null;                     // mes cerrado: no hay nada que proyectar
+    const m = ProjCalc.metrica(rs, pk, rk); if (!m || m.cumpl==null) return null;
+    const ratios = rs.filter(r => r.closed && (r[pk]||0) > 0).map(r => (r[rk]||0) / r[pk]);
+    if (ratios.length < 3) return null;
+    const avg = ratios.reduce((a,b)=>a+b,0) / ratios.length;
+    const sd = Math.sqrt(ratios.reduce((s,v)=>s+(v-avg)*(v-avg),0) / ratios.length);
+    const c = m.cumpl/100, rates = {best:c+sd, m5:Math.max(0,c-0.05), worst:Math.max(0,c-sd)};
+    let lastIdx = -1; rs.forEach((r,i) => { if (r.closed) lastIdx = i; });
+    const out = {sd:100*sd, c:100*c, planMes:m.planMes, proy:m.proy, cierre:{}};
+    Object.keys(rates).forEach(k => {
+      let cumPlan = 0;
+      rs.forEach((r,i) => {
+        cumPlan += r[pk] || 0;
+        if (i === lastIdx) series[i][k] = m.real;
+        else if (i > lastIdx) series[i][k] = m.real + rates[k] * (cumPlan - m.planMtd);
+      });
+      out.cierre[k] = series[series.length-1][k];
+    });
+    return out;
+  }
+  function escHtml(E, metric){
+    if (!E) return '';
+    const F = v => metric==='rev' ? fmtMoney(v) : fmt0(v);
+    const G = v => (v<0?'−':'+') + (metric==='rev' ? fmtMoney(Math.abs(v)) : fmt0(Math.abs(v)));
+    const item = (color, lbl, v, sub) => `<div class="esc-i"><i style="background:${color}"></i><span>${lbl}</span><b>${F(v)}</b><em class="${v-E.planMes<0?'neg':'pos'}">${G(v-E.planMes)} vs plan</em>${sub?`<small>${sub}</small>`:''}</div>`;
+    return `<div class="esc-strip"><div class="esc-h">Cierre estimado del mes · escenarios</div>
+      ${item('var(--bad)', 'Peor caso', E.cierre.worst, `ritmo ${Math.max(0,E.c-E.sd).toFixed(1)}%`)}
+      ${item('var(--series-4)', 'Si bajamos 5 pp', E.cierre.m5, `ritmo ${Math.max(0,E.c-5).toFixed(1)}%`)}
+      ${item(PJ_COLOR, 'Ritmo actual', E.proy, `ritmo ${E.c.toFixed(1)}%`)}
+      ${item('var(--series-3)', 'Mejor caso', E.cierre.best, `ritmo ${(E.c+E.sd).toFixed(1)}%`)}
+      <div class="esc-n">El ritmo es el cumplimiento acumulado (real ÷ plan). Mejor y peor caso suman o restan una desviación típica del cumplimiento diario (${E.sd.toFixed(1)} pp) a los días que faltan.</div></div>`;
   }
   function projHtml(PJ){
     if (!PJ || !PJ.rev) return '';
