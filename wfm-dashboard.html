@@ -2135,7 +2135,8 @@ let CT_DATA = {"meta":{"fuente":"Google Sheet 'Post-Sales-Operations Calls', pes
 
       // CR y Expansión de Upsell: columnas DU (CR) y DV (Expansión) de Planif_2026 (campos du_cr / dv_expansion
       // del Web App); si no vienen, se usan las columnas anteriores (BO / AI).
-      var expMetaFrac = num(r.ah_expan_meta_ups), expRealFrac = num(r.dv_expansion) !== null ? num(r.dv_expansion) : num(r.ai_expan_real_ups);
+      var asFrac = function (v) { return v !== null && Math.abs(v) > 1.5 ? v / 100 : v; };   // DU/DV pueden venir como 0,12 o como 12
+      var expMetaFrac = num(r.ah_expan_meta_ups), expRealFrac = num(r.dv_expansion) !== null ? asFrac(num(r.dv_expansion)) : num(r.ai_expan_real_ups);
       var expVarPctFrac = num(r.aj_expan_var_pct_ups), expVarPpFrac = num(r.ak_expan_var_pp_ups);
       var upsell_expansion = {
         meta_pct: expMetaFrac !== null ? expMetaFrac * 100 : null,
@@ -2145,7 +2146,7 @@ let CT_DATA = {"meta":{"fuente":"Google Sheet 'Post-Sales-Operations Calls', pes
       };
 
       var aspPlan = num(r.bl_asp_plan), aspReal = num(r.bn_asp_real);
-      var crPlanFrac = num(r.bk_cr_plan), crRealFrac = num(r.du_cr) !== null ? num(r.du_cr) : num(r.bo_cr_real);
+      var crPlanFrac = num(r.bk_cr_plan), crRealFrac = num(r.du_cr) !== null ? asFrac(num(r.du_cr)) : num(r.bo_cr_real);
       var varAspPct = (aspReal !== null && aspPlan) ? 100 * (aspReal - aspPlan) / aspPlan : null;
       var varCrPct = (crRealFrac !== null && crPlanFrac) ? 100 * (crRealFrac - crPlanFrac) / crPlanFrac : null;
       var upsell_revenue = {
@@ -5322,8 +5323,10 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
   ];
   const TREND_ADD = {revenue:1, ventas:1, staff:1, calls2:1};          // aditivos: total del día (o promedio por día en vista día de semana)
   const isFormacion = g => /^Formación/.test(g);
-  // TMO >2 min llega en segundos (o como fracción de día / "h:mm:ss"); se promedia ponderado por las llamadas ≥2 min.
-  const tmoIdx = () => (AP_PAYLOAD && AP_PAYLOAD.kpis || []).indexOf('tmo');
+  // TMO >2 min (columna O de las pestañas de agentes) llega en segundos: a.tmo = {fecha: seg} si la pestaña
+  // trae TMO por día, y a.res.tmo = TMO del período. Los promedios de grupo se ponderan por las llamadas ≥2 min.
+  const tmoDiario = M => Object.values(M.ops).some(o => o.agentes.some(a => a.tmo && Object.keys(a.tmo).length));
+  const tmoPeriodo = M => Object.values(M.ops).some(o => o.agentes.some(a => a.res && a.res.tmo != null));
   function tmoSeg(v){
     if (v==null || v==='') return null;
     if (typeof v === 'string'){ const p = v.split(':').map(Number); if (p.some(isNaN)) return null; return p.reduce((s,x) => s*60 + x, 0); }
@@ -5332,9 +5335,9 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
   }
   const fmtTmo = sg => sg==null ? '—' : Math.floor(sg/60) + ':' + String(Math.round(sg%60)).padStart(2,'0');
   function trendSum(agentes, dias){
-    const t = {ventas:0, revenue:0, staff:0, calls2:0, n:0, tmoW:0, tmoC:0}, ti = tmoIdx();
+    const t = {ventas:0, revenue:0, staff:0, calls2:0, n:0, tmoW:0, tmoC:0};
     agentes.forEach(a => dias.forEach(f => { const d = a.d[f]; if (!d) return; t.staff += +d[0]||0; t.ventas += +d[1]||0; t.revenue += +d[2]||0; t.calls2 += +d[6]||0; t.n++;
-      if (ti >= 0){ const sg = tmoSeg(d[ti]), c = +d[6]||0; if (sg!=null && sg>0){ const w = c || 1; t.tmoW += sg*w; t.tmoC += w; } } }));
+      const sg = a.tmo ? tmoSeg(a.tmo[f]) : null, c = +d[6]||0; if (sg!=null && sg>0){ const w = c || 1; t.tmoW += sg*w; t.tmoC += w; } }));
     return t;
   }
   function trendVal(m, t, div){
@@ -5360,7 +5363,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
   function trendAxisFmt(m, v){ return m==='tmo' ? fmtTmo(v) : m==='revenue' ? fmtMoneyK(v) : (m==='cr' ? Math.round(v)+'%' : (m==='sph' ? v.toFixed(1) : Math.round(v).toLocaleString('es-CO'))); }
   function drawRcaTrend(M, opKey){
     const box = $('#rcaTrend'); if (!box) return;
-    const hayTmo = tmoIdx() >= 0;
+    const hayTmo = tmoDiario(M) || tmoPeriodo(M), soloTmoPeriodo = !tmoDiario(M) && tmoPeriodo(M);
     const met = TREND_KPIS.some(k => k[0]===RCA.trend && (k[0]!=='tmo' || hayTmo)) ? RCA.trend : 'revenue';
     const eje = RCA.trendEje === 'dow' ? 'dow' : 'dia';
     const o = M.ops[opKey], dias = o.analizables.slice();
@@ -5411,6 +5414,19 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       ${RCA.sup ? '' : metaTabla}
       <div class="rca-tgrid">${cards.map((c,i) => `<div class="rca-tcard ${c.sup?'click':''}" ${c.sup?`data-sup="${esc(c.sup)}" title="Ver los agentes de ${esc(c.sup)}"`:''}><div class="rca-tt">${esc(c.t)}</div><div class="rca-tc" data-i="${i}"></div></div>`).join('')}</div>
       <div class="ct-note" style="margin:8px 0 0">${eje==='dia' ? 'Total de cada día.' : 'Promedio por día de cada día de la semana (en ASP, SPH, %CR y Rev./Calls: sobre las sumas).'} ${TREND_ADD[met] ? '' : 'Razón calculada sobre las sumas del grupo.'} Fuente: pestañas de agentes (Agent Performance)${conMeta ? '; meta: Planif_2026' : ''}.</div>`;
+    if (met==='tmo' && soloTmoPeriodo){
+      const ags = (RCA.sup ? agDe(RCA.sup) : o.agentes).filter(a => a.res && a.res.tmo != null && a.res.tmo > 0).sort((a,b) => b.res.tmo - a.res.tmo);
+      const llam = a => dias.reduce((s,f) => s + (a.d[f] ? (+a.d[f][6]||0) : 0), 0);
+      const prom = xs => { let w = 0, v = 0; xs.forEach(a => { const c = llam(a) || 1; v += a.res.tmo*c; w += c; }); return w ? v/w : null; };
+      const grupos2 = RCA.sup ? [RCA.sup] : grupos;
+      const mx = Math.max(1, ...ags.map(a => a.res.tmo));
+      $('.rca-tgrid', box).outerHTML = `<div class="ct-card" style="margin:0"><div class="ct-q" style="margin:0 0 8px">TMO >2 min del mes por agente (la pestaña trae un solo valor por agente, no uno por día). Promedio del grupo ponderado por llamadas ≥2 min.</div>
+        <div class="ex-kv" style="justify-content:flex-start;gap:18px">${grupos2.map(g => `<span>${esc(g)}: <b>${fmtTmo(prom(agDe(g).filter(a => a.res && a.res.tmo > 0)))}</b></span>`).join('')}</div>
+        <div class="ct-det-wrap"><table class="ct-table"><thead><tr><th>Agente</th><th>Supervisor</th><th class="num">TMO >2 min</th><th style="width:40%"></th></tr></thead><tbody>
+        ${ags.map(a => `<tr><td>${esc(a.n)}</td><td>${esc(a.formador ? 'Formación · ' + a.s : a.s)}</td><td class="num"><b>${fmtTmo(a.res.tmo)}</b></td><td><div style="height:8px;border-radius:4px;background:var(--series-1);opacity:.75;width:${(100*a.res.tmo/mx).toFixed(1)}%"></div></td></tr>`).join('') || '<tr><td colspan="4" class="rca-note-s">Sin TMO en el período.</td></tr>'}
+        </tbody></table></div></div>`;
+      bindTrend(); return;
+    }
     cards.forEach((c,i) => {
       const color = RCA_TREND_PAL[i % RCA_TREND_PAL.length];
       const series = [{label: TREND_KPIS.find(k => k[0]===met)[1], color: i===0 ? 'var(--text-primary)' : color, points: serieDe(c.ags)}];
@@ -5418,12 +5434,15 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       if (!series[0].points.some(p => p.y)){ $(`.rca-tc[data-i="${i}"]`, box).innerHTML = '<div class="ct-note" style="margin:0">Sin datos de este indicador en el período.</div>'; return; }
       renderLineChart($(`.rca-tc[data-i="${i}"]`, box), series, chartOpts(i===0 ? 190 : 160));
     });
-    $$('#rcaTrendMet button[data-v]', box).forEach(b => b.addEventListener('click', () => { RCA.trend = b.dataset.v; drawRcaTrend(M, opKey); }));
-    $$('#rcaTrendEje button', box).forEach(b => b.addEventListener('click', () => { RCA.trendEje = b.dataset.v; drawRcaTrend(M, opKey); }));
-    $$('[data-sup]', box).forEach(n => {
-      const go = () => { RCA.sup = n.dataset.sup; renderRca(); const t = $('#rcaTrend'); if (t) t.scrollIntoView({behavior:'smooth', block:'start'}); };
-      n.addEventListener('click', go); n.addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); go(); } });
-    });
+    bindTrend();
+    function bindTrend(){
+      $$('#rcaTrendMet button[data-v]', box).forEach(b => b.addEventListener('click', () => { RCA.trend = b.dataset.v; drawRcaTrend(M, opKey); }));
+      $$('#rcaTrendEje button', box).forEach(b => b.addEventListener('click', () => { RCA.trendEje = b.dataset.v; drawRcaTrend(M, opKey); }));
+      $$('[data-sup]', box).forEach(n => {
+        const go = () => { RCA.sup = n.dataset.sup; renderRca(); const t = $('#rcaTrend'); if (t) t.scrollIntoView({behavior:'smooth', block:'start'}); };
+        n.addEventListener('click', go); n.addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); go(); } });
+      });
+    }
   }
 
   /* ---------- vista ---------- */
