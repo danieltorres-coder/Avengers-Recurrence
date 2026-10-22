@@ -4153,7 +4153,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     if (C.real==null && E.real==null) return '<div class="ex-kv"><span>CR y Expansión: pendientes de Planif_2026 (DU/DV)</span></div>';
     const p = v => v==null ? '—' : v.toFixed(1) + '%';
     const c = (r, pl) => r==null || pl==null ? '' : (r>=pl ? 'ct-pill-good' : 'ct-pill-bad');
-    return `<div class="ex-kv"><span>CR <b class="${c(C.real, C.plan)}">${p(C.real)}</b> (plan ${p(C.plan)})</span><span>Expansión <b class="${c(E.real, E.plan)}">${p(E.real)}</b> (meta ${p(E.plan)})</span></div>`;
+    return `<div class="ex-kv"><span>CR <b class="${c(C.real, C.plan)}">${p(C.real)}</b>${C.plan!=null ? ` (plan ${p(C.plan)})` : ' promedio'}</span><span>Expansión <b class="${c(E.real, E.plan)}">${p(E.real)}</b>${E.plan!=null ? ` (meta ${p(E.plan)})` : ' promedio'}</span></div>`;
   }
   function renderExec(){
     const el = $('#ctViewExec');
@@ -4581,7 +4581,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     const R = UPS_RATE[metric], ds = (CT_DATA.daily || []).filter(d => d.status==='elapsed');
     const avg = xs => { const v = xs.filter(x => x!=null); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
     const last = ds.slice().reverse().find(d => R.real(d)!=null);
-    return {plan: avg(ds.map(R.plan)), real: avg(ds.map(R.real)), ultimo: last ? {fecha:last.fecha, v:R.real(last)} : null};
+    const rs = ds.map(R.real).filter(x => x!=null);
+    return {plan: avg(ds.map(R.plan)), real: avg(ds.map(R.real)), max: rs.length ? Math.max(...rs) : null, min: rs.length ? Math.min(...rs) : null, ultimo: last ? {fecha:last.fecha, v:R.real(last)} : null};
   }
   function heroSeries(key, metric, mode){
     if (UPS_RATE[metric]) return key==='upsell' ? upsRateSeries(metric, mode) : null;
@@ -5321,9 +5322,19 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
   ];
   const TREND_ADD = {revenue:1, ventas:1, staff:1, calls2:1};          // aditivos: total del día (o promedio por día en vista día de semana)
   const isFormacion = g => /^Formación/.test(g);
+  // TMO >2 min llega en segundos (o como fracción de día / "h:mm:ss"); se promedia ponderado por las llamadas ≥2 min.
+  const tmoIdx = () => (AP_PAYLOAD && AP_PAYLOAD.kpis || []).indexOf('tmo');
+  function tmoSeg(v){
+    if (v==null || v==='') return null;
+    if (typeof v === 'string'){ const p = v.split(':').map(Number); if (p.some(isNaN)) return null; return p.reduce((s,x) => s*60 + x, 0); }
+    v = +v; if (!isFinite(v)) return null;
+    return v < 1 ? v * 86400 : v;
+  }
+  const fmtTmo = sg => sg==null ? '—' : Math.floor(sg/60) + ':' + String(Math.round(sg%60)).padStart(2,'0');
   function trendSum(agentes, dias){
-    const t = {ventas:0, revenue:0, staff:0, calls2:0, n:0};
-    agentes.forEach(a => dias.forEach(f => { const d = a.d[f]; if (!d) return; t.staff += +d[0]||0; t.ventas += +d[1]||0; t.revenue += +d[2]||0; t.calls2 += +d[6]||0; t.n++; }));
+    const t = {ventas:0, revenue:0, staff:0, calls2:0, n:0, tmoW:0, tmoC:0}, ti = tmoIdx();
+    agentes.forEach(a => dias.forEach(f => { const d = a.d[f]; if (!d) return; t.staff += +d[0]||0; t.ventas += +d[1]||0; t.revenue += +d[2]||0; t.calls2 += +d[6]||0; t.n++;
+      if (ti >= 0){ const sg = tmoSeg(d[ti]), c = +d[6]||0; if (sg!=null && sg>0){ const w = c || 1; t.tmoW += sg*w; t.tmoC += w; } } }));
     return t;
   }
   function trendVal(m, t, div){
@@ -5333,10 +5344,12 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     if (m==='sph') return t.staff ? t.ventas / t.staff : null;
     if (m==='cr') return t.calls2 ? 100 * t.ventas / t.calls2 : null;
     if (m==='revCalls') return t.calls2 ? t.revenue / t.calls2 : null;
+    if (m==='tmo') return t.tmoC ? t.tmoW / t.tmoC : null;
     return null;
   }
   function trendFmt(m, v){
     if (v==null) return '—';
+    if (m==='tmo') return fmtTmo(v);
     if (m==='revenue') return fmtMoney(v);
     if (m==='asp' || m==='revCalls') return '$' + Math.round(v).toLocaleString('es-CO');
     if (m==='cr') return v.toFixed(1) + '%';
@@ -5344,10 +5357,11 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     if (m==='staff') return (Math.round(v*10)/10).toLocaleString('es-CO') + ' h';
     return (Math.round(v*10)/10).toLocaleString('es-CO');
   }
-  function trendAxisFmt(m, v){ return m==='revenue' ? fmtMoneyK(v) : (m==='cr' ? Math.round(v)+'%' : (m==='sph' ? v.toFixed(1) : Math.round(v).toLocaleString('es-CO'))); }
+  function trendAxisFmt(m, v){ return m==='tmo' ? fmtTmo(v) : m==='revenue' ? fmtMoneyK(v) : (m==='cr' ? Math.round(v)+'%' : (m==='sph' ? v.toFixed(1) : Math.round(v).toLocaleString('es-CO'))); }
   function drawRcaTrend(M, opKey){
     const box = $('#rcaTrend'); if (!box) return;
-    const met = TREND_KPIS.some(k => k[0]===RCA.trend && k[0]!=='tmo') ? RCA.trend : 'revenue';
+    const hayTmo = tmoIdx() >= 0;
+    const met = TREND_KPIS.some(k => k[0]===RCA.trend && (k[0]!=='tmo' || hayTmo)) ? RCA.trend : 'revenue';
     const eje = RCA.trendEje === 'dow' ? 'dow' : 'dia';
     const o = M.ops[opKey], dias = o.analizables.slice();
     const det = CT_DATA.detalle && CT_DATA.detalle[o.ctKey];
@@ -5388,8 +5402,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       cards = [{t:RCA.sup + ' · total del grupo', ags: agDe(RCA.sup), meta: conMeta && !isFormacion(RCA.sup) ? metaSerie(1/nSup) : null, metaLbl:'Meta del supervisor'}]
         .concat(ags.map(a => ({t:a.n, ags:[a]})));
     }
-    const kpiBtns = TREND_KPIS.map(([k,l]) => k==='tmo'
-      ? `<button disabled title="La pestaña de agentes todavía no envía TMO al tablero (hay que agregarlo en el Apps Script)">${l}</button>`
+    const kpiBtns = TREND_KPIS.map(([k,l]) => k==='tmo' && !hayTmo
+      ? `<button disabled title="Todavía no llega TMO >2 min (columna O de las pestañas de agentes): hay que agregarlo en el Apps Script">${l}</button>`
       : `<button data-v="${k}" class="${met===k?'active':''}">${l}</button>`).join('');
     box.innerHTML = `<div class="ct-card-head"><h3>📈 Seguimiento diario · ${esc(o.label)}${RCA.sup ? ' · ' + esc(RCA.sup) : ''}</h3>
         <div class="ct-seg" id="rcaTrendEje"><button data-v="dia" class="${eje==='dia'?'active':''}">Por día del mes</button><button data-v="dow" class="${eje==='dow'?'active':''}">Por día de la semana</button></div></div>
@@ -5885,8 +5899,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     const dif = (r, p) => (r==null || p==null) ? '—' : `${r-p>=0?'+':'−'}${Math.abs(r-p).toFixed(1).replace('.', ',')} pp`;
     const panel = (t, M, planLbl) => `<div class="ct-proj-p"><h4>${t}</h4>
         ${kv('Real · promedio de los días cerrados', pct(M.real))}
-        ${kv(planLbl, pct(M.plan))}
-        ${kv('Diferencia', dif(M.real, M.plan), M.real!=null && M.plan!=null ? (M.real>=M.plan?'pos':'neg') : '')}
+        ${M.plan!=null ? kv(planLbl, pct(M.plan)) + kv('Diferencia', dif(M.real, M.plan), M.real!=null ? (M.real>=M.plan?'pos':'neg') : '') : ''}
+        ${kv('Mejor / peor día', M.max!=null ? `${pct(M.max)} / ${pct(M.min)}` : '—')}
         ${kv('Último día con dato', M.ultimo ? `${fechaDM(M.ultimo.fecha)} · ${pct(M.ultimo.v)}` : '—')}
       </div>`;
     const sinDatos = C.real==null && E.real==null;
