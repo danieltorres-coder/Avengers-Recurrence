@@ -190,14 +190,6 @@
   .delta-pill.down{background:rgba(216,67,67,0.13);color:var(--bad);}
   .delta-pill.up{background:var(--series-3-soft);color:var(--series-3);}
   .delta-pill.flat{background:var(--surface);color:var(--text-muted);border:1px solid var(--border);}
-  td.trk-flag-down{background:rgba(216,67,67,0.13);color:var(--bad);font-weight:700;}
-  td.trk-flag-up{background:var(--series-3-soft);color:var(--series-3);font-weight:700;}
-  .trk-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:16px;}
-  .trk-summary-card{background:var(--surface-raised);border:1px solid var(--border);border-radius:12px;padding:13px 15px;}
-  .trk-summary-card h4{margin:0 0 8px;font-size:12.5px;font-weight:700;}
-  .trk-summary-line{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:6px;}
-  .trk-summary-line:last-child{margin-bottom:0;}
-  .trk-summary-line b{color:var(--text-primary);}
   .na{color:var(--text-muted);font-size:11px;}
 
   .heat{border-radius:4px;font-weight:600;}
@@ -619,7 +611,6 @@
     <button class="tab-btn" data-tab="validar">🔍 Validar cambios</button>
     <button class="tab-btn" data-tab="simulador">🧪 Simulador <span class="mes-actual">Septiembre</span></button>
     <button class="tab-btn" data-tab="detalle">📋 Segmentos y detalle</button>
-    <button class="tab-btn" data-tab="tracker">🗂️ 092026 - Tracker:MKTSales</button>
   </div>
 
   <div class="tab-panel" data-tab="resumen">
@@ -854,13 +845,6 @@
   </div>
   </div><!-- /tab-panel detalle -->
 
-  <div class="tab-panel" data-tab="tracker">
-  <div id="trackerLoadState" class="load-state">Cargando 092026 - Tracker:MKTSales…</div>
-  <div class="pill-row" id="trackerOpFilter" style="margin-bottom:14px;"></div>
-  <div id="trackerSummary"></div>
-  <div id="trackerContent"></div>
-  </div><!-- /tab-panel tracker -->
-
   <footer class="foot">Fuente: Google Sheet "Post-Sales-Operations Calls" · Five9 · leído el <span id="exportDate"></span></footer>
 
 </div>
@@ -1019,7 +1003,7 @@ function boot() {
     const b = document.createElement('button');
     b.className = 'pill month active' + (i===SEPT_IDX ? ' partial':'');
     b.textContent = m + (i===SEPT_IDX ? '*':'');
-    b.title = i===SEPT_IDX ? 'Septiembre es un mes parcial' : '';
+    b.title = i===SEPT_IDX ? MES_ACT + ' es un mes parcial (en curso)' : '';
     b.dataset.idx = i;
     b.addEventListener('click', () => {
       const idx = state.months.indexOf(i);
@@ -2241,181 +2225,6 @@ async function cargarYArrancar() {
 
 cargarYArrancar();
 
-// ================================================================
-//  092026 - Tracker:MKTSales — pestaña independiente, autocontenida
-//  No depende del Web App (WFM_ENDPOINT); lee sus propios JSON en
-//  data/tracker_manifest.json + data/tracker_YYYY-MM.json.
-//  Si falla, no rompe el resto del dashboard (try/catch propio).
-// ================================================================
-let TRACKER_DATA = null;
-const TRACKER_MONTHS_LARGO = {'2026-01':'Enero','2026-02':'Febrero','2026-03':'Marzo','2026-04':'Abril',
-  '2026-05':'Mayo','2026-06':'Junio','2026-07':'Julio','2026-08':'Agosto','2026-09':'Septiembre',
-  '2026-10':'Octubre','2026-11':'Noviembre','2026-12':'Diciembre'};
-
-function trkFmtUsd(n){ return n===null||n===undefined ? '—' : '$'+Math.round(n).toLocaleString('es-CO'); }
-function trkFmtNum(n){ return n===null||n===undefined ? '—' : Math.round(n).toLocaleString('es-CO'); }
-function trkFmtPct(n){ return n===null||n===undefined ? '—' : (Math.round(n*1000)/10).toLocaleString('es-CO')+'%'; }
-function trkFmtVal(kpi, v){ return kpi.unit==='pct' ? trkFmtPct(v) : (kpi.unit==='usd' ? trkFmtUsd(v) : trkFmtNum(v)); }
-function trkFmtDelta(v){
-  if (v===null||v===undefined) return '<span class="delta-pill flat">—</span>';
-  const pct = v*100, cls = pct>=0 ? 'up':'down', arrow = pct>=0 ? '▲':'▼';
-  return `<span class="delta-pill ${cls}">${arrow} ${pct>=0?'+':''}${pct.toFixed(1)}%</span>`;
-}
-
-// Umbral para marcar una semana como "desviada" (mismo criterio usado en el análisis
-// original: >=15% de desviación vs. la referencia propia del KPI).
-const TRK_FLAG_THRESHOLD = 0.15;
-// Referencia por semana: solo los KPIs que se ACUMULAN mes a mes (Revenue, Volumen)
-// prorratean el PLAN mensual por los días de esa semana ya transcurridos (comparación
-// justa en semanas parciales). Los promedios (ASP) y las tasas (%) no se prorratean —
-// se comparan directo contra el PLAN, igual que una tasa.
-function trkWeekRef(D, kpi, weekIdx){
-  if (kpi.plan===null || kpi.plan===undefined) return null;
-  if (!kpi.cumulative) return kpi.plan;
-  const elapsed = (D.weekDaysElapsed||[])[weekIdx] || 0;
-  if (!elapsed) return null;
-  return kpi.plan * (elapsed / (D.daysInMonth||30));
-}
-function trkWeekDev(D, kpi, weekIdx){
-  const v = kpi.weeks[weekIdx];
-  const ref = trkWeekRef(D, kpi, weekIdx);
-  if (v===null || v===undefined || !ref) return null;
-  return (v/ref) - 1;
-}
-
-const TRK_OP_ORDER = ['upsell','recurrence','bootcamp_ltv','resurrection'];
-let trkOpFilter = 'all';
-
-function trkOpLabel(D, key){ return (D.operations[key]||{}).label || key; }
-
-function renderTrackerOpFilter(D){
-  const el = document.getElementById('trackerOpFilter');
-  if (!el) return;
-  const opts = [{key:'all', label:'Todas las operaciones'}].concat(TRK_OP_ORDER.filter(k=>D.operations[k]).map(k=>({key:k, label:D.operations[k].label})));
-  el.innerHTML = opts.map(o => `<button class="pill${o.key===trkOpFilter?' active':''}" data-op="${o.key}">${o.label}</button>`).join('');
-  el.querySelectorAll('.pill').forEach(b => b.addEventListener('click', () => { trkOpFilter = b.dataset.op; renderTracker(); }));
-}
-
-// Resumen ejecutivo por operación: el KPI más afectado (mayor desviación negativa,
-// "meter lupa") y el que mejor amortigua (mayor desviación positiva) entre las semanas
-// que ya arrancaron — mismo criterio de "mayor desviación % vs. referencia propia",
-// aplicado automáticamente a cualquier mes que se cargue.
-function trkComputeStandouts(D, op){
-  let worst = null, best = null;
-  op.kpis.forEach(kpi => {
-    (D.weekLabels||[]).forEach((wl, i) => {
-      if (!(D.weekDaysElapsed||[])[i]) return; // semana sin arrancar, no se evalúa
-      const dev = trkWeekDev(D, kpi, i);
-      if (dev===null) return;
-      if (!worst || dev < worst.dev) worst = {kpi, dev, week:wl};
-      if (!best || dev > best.dev) best = {kpi, dev, week:wl};
-    });
-  });
-  return {worst, best};
-}
-function renderTrackerSummary(D){
-  const el = document.getElementById('trackerSummary');
-  if (!el) return;
-  const ops = TRK_OP_ORDER.filter(k => D.operations[k] && (trkOpFilter==='all' || trkOpFilter===k));
-  const cards = ops.map(opKey => {
-    const op = D.operations[opKey];
-    const {worst, best} = trkComputeStandouts(D, op);
-    const worstLine = worst
-      ? `<div class="trk-summary-line">🔎 <span><b>A vigilar:</b> ${worst.kpi.label} — semana del ${worst.week} (<span class="delta-pill down" style="padding:1px 6px;">${(worst.dev*100).toFixed(1)}%</span> vs. referencia)</span></div>`
-      : '';
-    const bestLine = best && best.dev > 0
-      ? `<div class="trk-summary-line">🟢 <span><b>Amortiguador:</b> ${best.kpi.label} — semana del ${best.week} (<span class="delta-pill up" style="padding:1px 6px;">+${(best.dev*100).toFixed(1)}%</span> vs. referencia)</span></div>`
-      : '';
-    return `<div class="trk-summary-card"><h4>${op.label}</h4>${worstLine}${bestLine}</div>`;
-  }).join('');
-  el.innerHTML = `<div class="trk-summary-grid">${cards}</div>`;
-}
-
-async function loadTrackerData(){
-  try{
-    const manResp = await fetch('./data/tracker_manifest.json');
-    if (!manResp.ok) throw new Error('No se encontró data/tracker_manifest.json');
-    const manifest = await manResp.json();
-    const months = manifest.months || [];
-    if (!months.length) throw new Error('El manifest no tiene meses cargados');
-    const currentMonth = months[months.length-1]; // el último cargado = el mes en curso (parcial)
-    const dataResp = await fetch(`./data/tracker_${currentMonth}.json`);
-    if (!dataResp.ok) throw new Error(`No se encontró data/tracker_${currentMonth}.json`);
-    TRACKER_DATA = await dataResp.json();
-    TRACKER_DATA._allMonths = months;
-    document.getElementById('trackerLoadState').hidden = true;
-    renderTracker();
-  } catch(err){
-    const el = document.getElementById('trackerLoadState');
-    if (el){ el.textContent = 'No se pudo cargar 092026 - Tracker:MKTSales: ' + err.message; el.className = 'load-state load-error'; el.hidden = false; }
-    console.error('[tracker]', err);
-  }
-}
-
-function trkKpiRow(D, kpi){
-  const weekCells = (D.weekLabels||[]).map((wl, i) => {
-    const elapsed = (D.weekDaysElapsed||[])[i] || 0;
-    const v = kpi.weeks[i];
-    if (!elapsed) return `<td class="num" title="Semana aún no inicia">—</td>`;
-    const dev = trkWeekDev(D, kpi, i);
-    let cls = 'num';
-    if (dev!==null && Math.abs(dev) >= TRK_FLAG_THRESHOLD) cls += dev < 0 ? ' trk-flag-down' : ' trk-flag-up';
-    const partial = elapsed < (D.weekDaysTotal||[])[i] ? ' (parcial)' : '';
-    return `<td class="${cls}" title="${dev===null?'':'vs. referencia'+partial+': '+(dev*100).toFixed(1)+'%'}">${trkFmtVal(kpi, v)}</td>`;
-  }).join('');
-  return `<tr>
-    <td>${kpi.label}</td>
-    ${weekCells}
-    <td class="num"><strong>${trkFmtVal(kpi, kpi.mtd)}</strong></td>
-    <td class="num">${kpi.plan===null||kpi.plan===undefined ? '—' : trkFmtVal(kpi, kpi.plan)}</td>
-    <td class="num">${kpi.proyeccion===null||kpi.proyeccion===undefined ? '—' : trkFmtVal(kpi, kpi.proyeccion)}</td>
-    <td class="num">${trkFmtDelta(kpi.diferencia)}</td>
-  </tr>`;
-}
-
-function trkTrendRow(D, kpi){
-  const m = kpi.monthly || {};
-  const cells = ['2025-09','2026-06','2026-07','2026-08'].map(mo => `<td class="num">${trkFmtVal(kpi, m[mo])}</td>`).join('');
-  return `<tr><td>${kpi.label}</td>${cells}<td class="num"><strong>${trkFmtVal(kpi, kpi.mtd)}</strong></td></tr>`;
-}
-
-function renderTracker(){
-  if (!TRACKER_DATA) return;
-  const D = TRACKER_DATA;
-  const weekHeaders = (D.weekLabels||[]).map((wl,i) => {
-    const elapsed = (D.weekDaysElapsed||[])[i] || 0;
-    const total = (D.weekDaysTotal||[])[i] || 7;
-    const tag = elapsed===0 ? ' — sin iniciar' : (elapsed<total ? ' — parcial' : '');
-    return `<th class="num">${wl}${tag}</th>`;
-  }).join('');
-
-  renderTrackerOpFilter(D);
-  renderTrackerSummary(D);
-
-  let html = `<div class="panel"><h2>${D.monthLabel||TRACKER_MONTHS_LARGO[D.month]||D.month} ${D.partial?'<small>mes en curso — parcial, '+(D.daysElapsed||'?')+' de '+(D.daysInMonth||'?')+' días</small>':''}</h2>
-    <div style="font-size:13px;color:var(--text-muted);">Fuente: pestaña <strong>${D.sourceTab}</strong> del Google Sheet "Post-Sales-Operations Calls" (datos y PLAN/PROYECCIÓN/DIFERENCIA tal como están calculados ahí — no estimados). ${D.note||''} Las celdas resaltadas marcan una semana con desviación de ${(TRK_FLAG_THRESHOLD*100).toFixed(0)}% o más contra la referencia propia de ese KPI. Las semanas que aún no arrancan se muestran en blanco.</div></div>`;
-
-  TRK_OP_ORDER.filter(k => trkOpFilter==='all' || trkOpFilter===k).forEach(opKey => {
-    const op = D.operations[opKey];
-    if (!op) return;
-    html += `<div class="panel">
-      <h2>${op.label} <small>detalle por semana ${D.monthLabel||D.month} + acumulado vs. PLAN</small></h2>
-      <div class="table-scroll"><table>
-        <thead><tr><th>KPI</th>${weekHeaders}<th class="num">Acumulado (MTD)</th><th class="num">PLAN</th><th class="num">PROYECCIÓN</th><th class="num">Diferencia</th></tr></thead>
-        <tbody>${op.kpis.map(k => trkKpiRow(D, k)).join('')}</tbody>
-      </table></div>
-      <h2 style="margin-top:18px;">${op.label} <small>tendencia mensual (acumulado por mes) — para ver caídas/subidas</small></h2>
-      <div class="table-scroll"><table>
-        <thead><tr><th>KPI</th><th class="num">Sep 2025</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Ago</th><th class="num">${D.monthLabel?D.monthLabel.slice(0,3):D.month} (MTD)</th></tr></thead>
-        <tbody>${op.kpis.map(k => trkTrendRow(D, k)).join('')}</tbody>
-      </table></div>
-    </div>`;
-  });
-
-  document.getElementById('trackerContent').innerHTML = html;
-}
-
-loadTrackerData();
 
 </script>
 
