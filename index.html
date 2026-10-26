@@ -4586,7 +4586,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
      En las vistas que suman operaciones, el CR excluye Upsell: su "contacto" es la primera venta del cliente, no una
      llamada de venta, y mezclarlos daría un número sin lectura. */
   let OPS = null, OPS_ESTADO = 'cargando', OPS_ERROR = '';
-  const OPS_SRC = { upsell:['upsell'], rec22:['recurrence'], bootcamp:['bootcamp'], resurrection:['resurrection'], res14:['resurrection'],
+  const OPS_SRC = { upsell:['upsell'], rec22:['recurrence'], bootcamp:['bootcamp'], resurrection:['resurrection'],
                     recurrence:['recurrence','bootcamp','resurrection'], postventa_total:['upsell','recurrence','bootcamp','resurrection'] };
   const OPS_KPI = {
     oncall: {lbl:'On Call',  corto:'% On Call',  tip:'Horas on-call ÷ horas staff'},
@@ -4594,8 +4594,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     cr2:    {lbl:'CR 2 min', corto:'CR 2 min',   tip:'Ventas ÷ contactos de 2 min o más'},
     mrg:    {lbl:'% Margen', corto:'% Margen',   tip:'Margen de la operación ÷ revenue (Reporte de Margen)'},
   };
-  const OPS_NOMBRE = {upsell:'Upsell', recurrence:'Recurrence 2.2', bootcamp:'Bootcamp Students 2.5', resurrection:'Resurrection 1.4'};
-  const OPS_CMP = {upsell:'upsell', rec22:'rec22', bootcamp:'bootcamp', resurrection:'res14', res14:'res14'};   // operación de Planif_2026 equivalente
+  const OPS_NOMBRE = {upsell:'Upsell', recurrence:'Recurrence 2.2', bootcamp:'Bootcamp Students 2.5', resurrection:'Resurrection (2.4 + 1.4)'};
+  const OPS_CMP = {upsell:'upsell', rec22:'rec22', bootcamp:'bootcamp', resurrection:'resurrection'};   // operación de Planif_2026 equivalente (el Reporte de Margen trae Resurrection 2.4 + 1.4)
   async function cargarOpsHist(){
     if (typeof WFM_ENDPOINT === 'undefined' || typeof WFM_TOKEN === 'undefined') { OPS_ESTADO = 'error'; OPS_ERROR = 'sin URL del Web App'; return; }
     try {
@@ -4746,7 +4746,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       <table class="ct-table"><thead><tr><th></th><th class="num">Planif_2026</th><th class="num">Reporte de Margen 1.a</th><th class="num">Dif.</th>${c.rep2V != null ? '<th class="num">Reporte 2 · Detalle</th><th class="num">Dif.</th>' : ''}</tr></thead><tbody>
       <tr><td>Revenue</td><td class="num">${fmtMoney(c.planifRev)}</td><td class="num">${fmtMoney(c.rmRev)}</td><td class="num">${cel(dr)}</td>${c.rep2V != null ? '<td></td><td></td>' : ''}</tr>
       <tr><td>Ventas</td><td class="num">${fmt0(c.planifV)}</td><td class="num">${fmt0(c.rmV)} <small>(leads únicos)</small></td><td class="num">${cel(dv)}</td>${c.rep2V != null ? `<td class="num">${fmt0(c.rep2V)} <small>(filas)</small></td><td class="num">${cel(d2)}</td>` : ''}</tr>
-      </tbody></table><div class="ct-note" style="margin:6px 0 0">Mismo dato en dos fuentes. Diferencias de 3% o más en revenue (10% en ventas) aparecen también en Alertas como "Chequear dato".${c.cmpKey === 'res14' ? ' El Reporte de Margen trae solo Resurrection 1.4: se compara contra la 1.4 de Planif.' : ''}</div></details>`;
+      </tbody></table><div class="ct-note" style="margin:6px 0 0">Mismo dato en dos fuentes. Diferencias de 3% o más en revenue (10% en ventas) aparecen también en Alertas como "Chequear dato".</div></details>`;
   }
 
   /* ---------- clic en un día del gráfico → qué pasó ---------- */
