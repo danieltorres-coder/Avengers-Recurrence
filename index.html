@@ -4617,7 +4617,10 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     sph:    {lbl:'SPH',      corto:'SPH',        tip:'Ventas ÷ horas staff'},
     cr2:    {lbl:'CR 2 min', corto:'CR 2 min',   tip:'Ventas ÷ contactos de 2 min o más'},
     mrg:    {lbl:'% Margen', corto:'% Margen',   tip:'Margen de la operación ÷ revenue (Reporte de Margen)'},
+    pvd:    {lbl:'Primeras ventas', corto:'Primeras ventas / día', tip:'Ventas same-day por día: leads que compraron el mismo día que entraron. En Upsell: primeras ventas del día, la base que alimenta Upsell'},
+    crl:    {lbl:'CR leads', corto:'CR leads (same-day)', tip:'Primeras ventas ÷ leads del día'},
   };
+  const OPS_KPI_NUM = {sph:2, pvd:1};   // indicadores que no son %: decimales; el resto se muestra en %
   const OPS_NOMBRE = {upsell:'Upsell', recurrence:'Recurrence 2.2', bootcamp:'Bootcamp Students 2.5', resurrection:'Resurrection (2.4 + 1.4)',
     bau_usa:'BAU USA', bau_latam:'BAU LATAM', bau_personal:'BAU Personal', bau_laboral:'BAU Laboral', bootcamp_acq:'Bootcamp adquisición 1.5',
     lastoffer:'Last Offer 1.3', saleschat:'Sales Chat (1.2 + 2.3)', membership:'Membership 2.6'};
@@ -4635,7 +4638,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       OPS_ESTADO = 'error'; OPS_ERROR = err.message;
       console.warn('[Operación] No se pudo cargar opshist:', err);
     }
-    safe(renderHero, 'Hero'); safe(renderAlertStrip, 'Alertas'); safe(renderDetalle, 'Detalle');
+    safe(renderSide, 'Sidebar'); safe(renderHero, 'Hero'); safe(renderAlertStrip, 'Alertas'); safe(renderDetalle, 'Detalle');
   }
   function opsVal(src, campo, f){
     const o = OPS && OPS.ops[src], i = OPS ? OPS.idx[f] : null;
@@ -4646,8 +4649,12 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     const srcs = opsSrc(key) || [], crSrc = srcs.length > 1 ? srcs.filter(s => OPS_CR_SOLO.indexOf(s) < 0) : srcs;
     const t = {n:{}};
     const add = (c, v) => { if (v == null) return; t[c] = (t[c] || 0) + v; t.n[c] = (t.n[c] || 0) + 1; };
+    t.dpv = 0;
     dias.forEach(f => {
-      srcs.forEach(s => ['staff','oncall','ventas','rev','ventasRM','costo','margen','hc'].forEach(c => add(c, opsVal(s, c, f))));
+      srcs.forEach(s => ['staff','oncall','ventas','rev','ventasRM','costo','margen','hc','pv','revPV'].forEach(c => add(c, opsVal(s, c, f))));
+      if (srcs.some(s => opsVal(s, 'pv', f) != null)) t.dpv++;
+      // CR leads: solo fuentes que traen leads y primeras ventas el mismo día
+      srcs.forEach(s => { const l = opsVal(s, 'leads', f), v = opsVal(s, 'pv', f); if (l != null && v != null){ add('leads', l); add('pvL', v); } });
       // SPH: solo ventas de operaciones con horas (Resurrection no las tiene en el reporte)
       crSrc.forEach(s => { const c2 = opsVal(s, 'c2', f), cv = opsVal(s, 'conv', f); if (c2 != null && cv != null){ add('c2', c2); add('conv', cv); } });
     });
@@ -4661,18 +4668,20 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     if (kpi === 'cr2')    return t.c2 >= 10 ? 100 * t.conv / t.c2 : null;   // con menos de 10 contactos el % es ruido
     if (kpi === 'mrg')    return t.rev > 0 && t.n.margen ? 100 * t.margen / t.rev : null;
     if (kpi === 'asp')    return t.conv > 0 && t.rev ? t.rev / t.conv : null;
+    if (kpi === 'pvd')    return t.dpv ? t.pv / t.dpv : null;
+    if (kpi === 'crl')    return t.leads >= 10 ? 100 * t.pvL / t.leads : null;
     return t[kpi] != null ? t[kpi] : null;
   }
   function opsTiene(key, kpi){
     const srcs = opsSrc(key); if (!OPS || !srcs) return false;
     // la operación tiene el indicador si alguna de sus fuentes trae esos campos en los últimos 120 días
-    const need = {oncall:['staff','oncall'], sph:['staff','ventas'], cr2:['c2','conv'], mrg:['margen','rev']}[kpi] || ['rev'];
+    const need = {oncall:['staff','oncall'], sph:['staff','ventas'], cr2:['c2','conv'], mrg:['margen','rev'], pvd:['pv'], crl:['leads','pv']}[kpi] || ['rev'];
     const cs = kpi === 'cr2' && srcs.length > 1 ? srcs.filter(s => OPS_CR_SOLO.indexOf(s) < 0) : srcs;
     return cs.some(s => need.every(c => { const a = OPS.ops[s] && OPS.ops[s][c]; return !!a && a.slice(-120).some(v => v != null && v !== 0); }));
   }
   const dec = (v, n) => v.toLocaleString('es-CO', {minimumFractionDigits:n, maximumFractionDigits:n});
-  const fmtOps = (kpi, v) => v == null ? '—' : (kpi === 'sph' ? dec(v, 2) : dec(v, 1) + '%');
-  const fmtOpsDelta = (kpi, a, b) => (a == null || b == null) ? '' : (kpi === 'sph' ? ((a - b) >= 0 ? '+' : '−') + Math.abs(100 * (a - b) / (b || 1)).toFixed(0) + '%' : ((a - b) >= 0 ? '+' : '−') + dec(Math.abs(a - b), 1) + ' pp');
+  const fmtOps = (kpi, v) => v == null ? '—' : (OPS_KPI_NUM[kpi] != null ? dec(v, OPS_KPI_NUM[kpi]) : dec(v, 1) + '%');
+  const fmtOpsDelta = (kpi, a, b) => (a == null || b == null) ? '' : (OPS_KPI_NUM[kpi] != null ? ((a - b) >= 0 ? '+' : '−') + Math.abs(100 * (a - b) / (b || 1)).toFixed(0) + '%' : ((a - b) >= 0 ? '+' : '−') + dec(Math.abs(a - b), 1) + ' pp');
   // Días cerrados del mes en pantalla que ya tienen dato en el Reporte de Margen
   function opsDiasMes(){
     const det = CT_DATA.detalle && CT_DATA.detalle.postventa_total;
@@ -4710,7 +4719,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     if (!opsSrc(key).some(s => OPS.ops[s])){ box.innerHTML = '<div class="ct-note" style="margin:0">Todavía no llegan los datos de esta operación: hay que actualizar el Apps Script (acción <b>opshist</b> con BAU, Last Offer, Sales Chat, Bootcamp 1.5 y Membership).</div>'; return; }
     const vista = CT_KPI_VISTA, mes = opsDiasMes(), prev = opsMesPrevio();
     const ultimo = OPS.fechas.filter(f => opsSrc(key).some(s => opsVal(s, 'rev', f) != null || opsVal(s, 'staff', f) != null)).pop();
-    const kpis = ['oncall','sph','cr2','mrg'].filter(k => opsTiene(key, k));
+    const kpis = ['oncall','sph','cr2','pvd','crl','mrg'].filter(k => opsTiene(key, k));
     let x = [], real = [], ref = [], refLbl = '', realLbl = '';
     const ejes = {};
     if (vista === 'dia'){
@@ -4731,7 +4740,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     }
     const cards = kpis.map(k => {
       const a = opsKpi(key, mes, k), b = opsKpi(key, prev, k), d = (a != null && b != null) ? a - b : null;
-      const peor = d != null && (k === 'mrg' || k === 'oncall' || k === 'cr2' || k === 'sph') && d < 0;
+      const peor = d != null && d < 0;
       return `<div class="ok-card"><div class="ok-h"><b title="${esc(OPS_KPI[k].tip)}">${kpiLbl(key, k, true)}</b><span class="ok-v">${fmtOps(k, a)}</span>
         <span class="ok-d ${d == null ? '' : (peor ? 'neg' : 'pos')}">${d == null ? '' : fmtOpsDelta(k, a, b) + ' vs mes ant.'}</span></div><div class="ok-c" data-k="${k}"></div></div>`;
     }).join('');
@@ -4741,18 +4750,38 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         <div class="ct-seg" id="okVista"><button data-v="dia" class="${vista==='dia'?'active':''}">Por día</button><button data-v="semana" class="${vista==='semana'?'active':''}">Por semana</button><button data-v="dow" class="${vista==='dow'?'active':''}">Día de la semana</button></div>
         <span class="ct-q" style="margin:0">${esc(srcTxt)} · Reporte de Margen al ${ultimo ? fechaDM(ultimo) : '—'}${opsSrc(key).length > 1 && opsSrc(key).some(s => OPS_CR_SOLO.indexOf(s) >= 0) ? ' · CR sin ' + opsSrc(key).filter(s => OPS_CR_SOLO.indexOf(s) >= 0).map(s => OPS_NOMBRE[s]).join(' ni ') : ''}</span></div>
       ${mes.length || vista !== 'dia' ? `<div class="ok-grid">${cards}</div>` : '<div class="ct-note">El Reporte de Margen todavía no tiene días cerrados de este mes.</div>'}
+      ${key === 'x11' && !CT_OPS_SUB.x11 ? bauTipoHtml(mes, prev) : ''}
       ${opsCmpHtml(key, mes)}`;
+    $$('[data-bausub]', box).forEach(r => r.addEventListener('click', () => { CT_OPS_SUB.x11 = r.dataset.bausub; renderSide(); renderHero(); }));
     kpis.forEach(k => {
       const e = ejes[k], c = $(`.ok-c[data-k="${k}"]`, box); if (!c || !e) return;
       if (!e.real.some(v => v != null)){ c.innerHTML = '<div class="ct-note" style="margin:0">Sin datos en este período.</div>'; return; }
       renderPlanRealLines(c, {xLabels: e.x, width: 360, height: 170, padLeft: 44, legend: true,
         series: [{name: realLbl, vals: e.real, color: 'var(--series-1)', labels: e.real.length <= 12 ? e.real.map(v => v == null ? null : fmtOps(k, v)) : null},
                  {name: refLbl, vals: e.ref, color: 'var(--text-muted)', dash: '5,4'}],
-        yFmt: v => k === 'sph' ? dec(v, 2) : Math.round(v) + '%',
+        yFmt: v => k === 'sph' ? dec(v, 2) : (k === 'pvd' ? dec(v, 0) : Math.round(v) + '%'),
         tip: i => `<strong>${e.x[i]}</strong><br>${realLbl}: ${fmtOps(k, e.real[i])}<br>${refLbl}: ${fmtOps(k, e.ref[i])}`});
     });
     $$('#okVista button', box).forEach(b => b.addEventListener('click', () => { CT_KPI_VISTA = b.dataset.v; renderOpsKpi(box, key); }));
-    $$('#okSub button', box).forEach(b => b.addEventListener('click', () => { if (b.dataset.v) CT_OPS_SUB[key] = b.dataset.v; else delete CT_OPS_SUB[key]; CT_HTAB = 'kpi'; renderHero(); }));
+    $$('#okSub button', box).forEach(b => b.addEventListener('click', () => { if (b.dataset.v) CT_OPS_SUB[key] = b.dataset.v; else delete CT_OPS_SUB[key]; CT_HTAB = 'kpi'; renderSide(); renderHero(); }));
+  }
+  // BAU por tipo (Personal / Laboral / LATAM): mes en pantalla vs mes anterior
+  function bauTipoHtml(mes, prev){
+    const subs = [['bau_personal','BAU Personal'], ['bau_laboral','BAU Laboral'], ['bau_usa','BAU USA (total)'], ['bau_latam','BAU LATAM']]
+      .filter(([s]) => OPS.ops[s] && opsKpi('x11|' + s, mes, 'cr2') != null);
+    if (!subs.length) return '';
+    const cols = ['oncall','sph','cr2','pvd','crl'];
+    const cel = (s, k) => {
+      const a = opsKpi('x11|' + s, mes, k), b = opsKpi('x11|' + s, prev, k);
+      if (a == null) return '<td class="num">—</td>';
+      const d = b == null ? '' : `<br><small class="${a - b < 0 ? 'ct-pill-bad' : 'ct-pill-good'}">${fmtOpsDelta(k, a, b)}</small>`;
+      return `<td class="num"><b>${fmtOps(k, a)}</b>${d}</td>`;
+    };
+    const rev = s => { const t = opsAgg('x11|' + s, mes); return t.rev != null ? fmtMoney(t.rev) : '—'; };
+    return `<div class="ct-note" style="margin:12px 0 6px"><b>BAU por tipo</b> · este mes vs mes anterior (Reporte de Margen). Clic en una fila para ver sus gráficas.</div>
+      <table class="ct-table"><thead><tr><th>Tipo</th>${cols.map(k => `<th class="num">${OPS_KPI[k].corto}</th>`).join('')}<th class="num">Revenue (reporte)</th></tr></thead><tbody>
+      ${subs.map(([s, l]) => `<tr class="ex-row" data-bausub="${s}" style="cursor:pointer"><td>${l}</td>${cols.map(k => cel(s, k)).join('')}<td class="num">${rev(s)}</td></tr>`).join('')}
+      </tbody></table>`;
   }
   // Mismo dato, dos fuentes: Planif_2026 (lo que usa este tablero) vs Reporte de Margen.
   function opsComparar(key, dias){
@@ -4804,13 +4833,14 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     // KPIs del día vs el mismo día de la semana típico (promedio de los 4 anteriores con dato)
     if (OPS && opsSrc(key) && OPS.idx[f] != null){
       const tip = OPS.fechas.filter(x => x < f && wdIso(x) === wdIso(f) && opsKpi(key, [x], 'cr2') != null).slice(-4);
-      const fila = (lbl, k, fmt) => { const a = opsKpi(key, [f], k), b = tip.length ? opsKpi(key, tip, k) : null, nb = tip.length ? (['oncall','sph','cr2','mrg','asp'].indexOf(k) >= 0 ? b : b / tip.length) : null;
+      const fila = (lbl, k, fmt) => { const a = opsKpi(key, [f], k), b = tip.length ? opsKpi(key, tip, k) : null, nb = tip.length ? (['oncall','sph','cr2','mrg','asp','crl','pvd'].indexOf(k) >= 0 ? b : b / tip.length) : null;
         const dv = (a != null && nb != null) ? a - nb : null;
-        return `<tr><td>${lbl}</td><td class="num"><b>${fmt(a)}</b></td><td class="num">${fmt(nb)}</td><td class="num ${dv == null ? '' : (dv < 0 ? 'ct-pill-bad' : 'ct-pill-good')}">${dv == null ? '—' : (['oncall','cr2','mrg'].indexOf(k) >= 0 ? (dv >= 0 ? '+' : '−') + dec(Math.abs(dv), 1) + ' pp' : ((dv >= 0 ? '+' : '−') + Math.abs(nb ? 100 * dv / nb : 0).toFixed(0) + '%'))}</td></tr>`; };
+        return `<tr><td>${lbl}</td><td class="num"><b>${fmt(a)}</b></td><td class="num">${fmt(nb)}</td><td class="num ${dv == null ? '' : (dv < 0 ? 'ct-pill-bad' : 'ct-pill-good')}">${dv == null ? '—' : (['oncall','cr2','mrg','crl'].indexOf(k) >= 0 ? (dv >= 0 ? '+' : '−') + dec(Math.abs(dv), 1) + ' pp' : ((dv >= 0 ? '+' : '−') + Math.abs(nb ? 100 * dv / nb : 0).toFixed(0) + '%'))}</td></tr>`; };
       const f0 = v => v == null ? '—' : fmt0(v), fM = v => v == null ? '—' : fmtMoney(v);
       html += `<table class="ct-table"><thead><tr><th>Indicador · Reporte de Margen</th><th class="num">${dowTxt} ${fechaDM(f)}</th><th class="num">${dowTxt} típico (${tip.length})</th><th class="num">Δ</th></tr></thead><tbody>
         ${opsTiene(key, 'oncall') ? fila('Horas staff', 'staff', v => v == null ? '—' : (Math.round(v * 10) / 10).toLocaleString('es-CO') + ' h') + fila('% On Call', 'oncall', v => fmtOps('oncall', v)) + fila('SPH', 'sph', v => fmtOps('sph', v)) : ''}
-        ${fila(contactoLbl(key), 'c2', f0)}${fila(kpiLbl(key, 'cr2'), 'cr2', v => fmtOps('cr2', v))}${fila('Revenue', 'rev', fM)}${fila('% Margen', 'mrg', v => fmtOps('mrg', v))}
+        ${opsTiene(key, 'crl') ? fila('Leads del día', 'leads', f0) : ''}${opsTiene(key, 'pvd') ? fila('Primeras ventas', 'pv', f0) + (opsTiene(key, 'crl') ? fila('CR leads (same-day)', 'crl', v => fmtOps('crl', v)) : '') : ''}
+        ${fila(contactoLbl(key), 'c2', f0)}${fila(kpiLbl(key, 'cr2'), 'cr2', v => fmtOps('cr2', v))}${fila('Revenue', 'rev', fM)}${opsTiene(key, 'mrg') ? fila('% Margen', 'mrg', v => fmtOps('mrg', v)) : ''}
       </tbody></table>`;
       // Descomposición: revenue = contactos × CR × ASP (una sola operación)
       if (opsSrc(key).length === 1 && tip.length >= 2){
@@ -4848,6 +4878,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       const dias = OPS.fechas.filter(f => (!corte || f <= corte) && opsKpi(key, [f], 'cr2') != null);
       if (dias.length < 14) return;
       const u7 = dias.slice(-7), p28 = dias.slice(-35, -7), last = u7[u7.length - 1];
+      if (corte && last < addDiasISO(corte, -7)) return;   // operación sin datos recientes (p. ej. BAU LATAM): no alertar con datos viejos
       const rango = `${fechaDM(u7[0])}–${fechaDM(last)}`;
       if (opsTiene(key, 'oncall')){
         const a = opsKpi(key, u7, 'oncall'), b = opsKpi(key, p28, 'oncall');
@@ -4857,6 +4888,12 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         const s1 = opsKpi(key, u7, 'sph'), s0 = opsKpi(key, p28, 'sph');
         if (s1 != null && s0 > 0 && (s1 - s0) / s0 <= -0.2) out.push({sev:'info', cat:'operación', op, fecha:last, badge: rango,
           titulo: `${nombre[key]}: SPH bajó a ${fmtOps('sph', s1)} (${fmtOpsDelta('sph', s1, s0)})`, texto: `Ventas por hora staff de los últimos 7 días frente a ${fmtOps('sph', s0)} de las 4 semanas previas.`, go});
+      }
+      if (opsTiene(key, 'pvd')){
+        const v1 = opsKpi(key, u7, 'pvd'), v0 = opsKpi(key, p28, 'pvd');
+        if (v1 != null && v0 > 0 && (v1 - v0) / v0 <= -0.2) out.push({sev: (v1 - v0) / v0 <= -0.35 ? 'critico' : 'atencion', cat:'operación', op, fecha:last, badge: rango,
+          titulo: `${nombre[key]}: ${key === 'upsell' ? 'la base de primeras ventas que alimenta Upsell' : 'las primeras ventas'} bajó a ${fmtOps('pvd', v1)} por día (${fmtOpsDelta('pvd', v1, v0)})`,
+          texto: `Promedio de los últimos 7 días frente a ${fmtOps('pvd', v0)} por día de las 4 semanas previas.${opsTiene(key, 'crl') ? ` CR leads ${fmtOps('crl', opsKpi(key, u7, 'crl'))} vs ${fmtOps('crl', opsKpi(key, p28, 'crl'))}.` : ''} Clic para ver la tendencia.`, go});
       }
       const c1 = opsKpi(key, u7, 'cr2'), c0 = opsKpi(key, p28, 'cr2');
       if (c1 != null && c0 > 0 && (c1 - c0) / c0 <= -0.15) out.push({sev: (c1 - c0) / c0 <= -0.3 ? 'critico' : 'atencion', cat:'operación', op, fecha:last, badge: rango,
@@ -4963,11 +5000,22 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     const dl = mt.cumpl==null ? '—' : fmtSignedPct1(mt.cumpl-100);
     const hasSplit = (r.split || SPLITS[r.k]) && SPLITS[r.k] && SPLITS[r.k].ok();
     const chev = hasSplit ? `<button class="ct-chev" data-chev="${r.k}" title="${SPLITS[r.k].tip}" aria-label="${SPLITS[r.k].tip}">${CT_OPEN[r.k]?'▾':'▸'}</button>` : '';
-    return `<div class="ct-row lvl${r.lvl} ${CT_SEL===r.k?'sel':''}" data-op="${r.k}" role="button" tabindex="0" title="${titleTxt||SIDE_FULL[r.k]||SIDE_NAMES[r.k]}">
+    return `<div class="ct-row lvl${r.lvl} ${CT_SEL===r.k && !CT_OPS_SUB[r.k]?'sel':''}" data-op="${r.k}" role="button" tabindex="0" title="${titleTxt||SIDE_FULL[r.k]||SIDE_NAMES[r.k]}">
       <div><div class="nm"><span class="t">${SIDE_NAMES[r.k]}</span>${chev}</div><div class="sb">${SIDE_SUBS[r.k] ? SIDE_SUBS[r.k]+' · ' : ''}Plan ${fmtMoneyK(mt.planMtd)}</div></div>
       ${sparkSVG(r.k)}
       <div class="vl"><div class="v">${fmtMoneyK(mt.real)}</div><span class="ct-pill ${sev}">${dl}</span></div>
     </div>`;
+  }
+  // BAU Personal / Laboral: no están en Planif_2026 (sin plan); se muestran con lo que trae el Reporte de Margen
+  function bauSubRowsHtml(){
+    if (!OPS) return '';
+    const mes = opsDiasMes();
+    return [['bau_personal','BAU Personal'], ['bau_laboral','BAU Laboral']].filter(([s]) => OPS.ops[s]).map(([s, l]) => {
+      const t = opsAgg('x11|' + s, mes), oc = opsKpi('x11|' + s, mes, 'oncall'), pv = opsKpi('x11|' + s, mes, 'pvd');
+      return `<div class="ct-row lvl1 ${CT_SEL === 'x11' && CT_OPS_SUB.x11 === s ? 'sel' : ''}" data-op="x11" data-sub="${s}" role="button" tabindex="0" title="${l}: Reporte de Margen (Planif_2026 no lo separa: sin plan)">
+        <div><div class="nm"><span class="t">${l}</span></div><div class="sb">On Call ${fmtOps('oncall', oc)} · ${fmtOps('pvd', pv)} primeras ventas/día</div></div><div></div>
+        <div class="vl"><div class="v">${t.rev != null ? fmtMoneyK(t.rev) : '—'}</div></div></div>`;
+    }).join('');
   }
   function renderSide(){
     const el = $('#ctSide'); if (!el) return;
@@ -4982,12 +5030,16 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     SIDE_ROWS.filter(visible).forEach(r => { html += sideRowHtml(r); });
     if (CT_DATA.detalle && CT_DATA.detalle.x11){
       html += `<div class="ct-side-sec">Referencia · no suma a Post-Venta</div>`;
-      REF_ROWS.filter(visible).forEach(r => { html += sideRowHtml(r); });
+      REF_ROWS.filter(visible).forEach(r => { html += sideRowHtml(r); if (r.k === 'x11') html += bauSubRowsHtml(); });
     }
     if (CT_DATA.meta.resurrection_combinada) html += ``;
     el.innerHTML = html;
     $$('.ct-row', el).forEach(row => {
-      const go = () => selectOp(row.dataset.op);
+      const go = () => {
+        if (row.dataset.sub){ CT_OPS_SUB[row.dataset.op] = row.dataset.sub; CT_HTAB = 'kpi'; }
+        else if (OPS_SUBS[row.dataset.op]) delete CT_OPS_SUB[row.dataset.op];
+        selectOp(row.dataset.op); renderSide(); renderHero();
+      };
       row.addEventListener('click', e => { if (e.target.closest('[data-chev]')) return; go(); });
       row.addEventListener('keydown', e => { if (e.key==='Enter' || e.key===' '){ e.preventDefault(); go(); } });
     });
@@ -5019,7 +5071,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       const v = yMin + (yMax-yMin)*g/4, yy = y(v);
       root.appendChild(svg('line',{x1:PAD.l,x2:W-PAD.r,y1:yy,y2:yy,stroke:'var(--border)','stroke-width':1}));
       const t = svg('text',{x:PAD.l-8,y:yy+3.5,'text-anchor':'end','font-size':10.5,fill:'var(--text-muted)'});
-      t.textContent = metric==='rev' ? fmtMoneyK(v) : (metric==='asp' ? '$'+Math.round(v) : (metric==='sph' ? v.toFixed(2) : ((UPS_RATE[metric] || OPS_KPI[metric]) ? v.toFixed(1)+'%' : fmt0(v))));
+      t.textContent = metric==='rev' ? fmtMoneyK(v) : (metric==='asp' ? '$'+Math.round(v) : (metric==='sph' ? v.toFixed(2) : (metric==='pvd' ? v.toFixed(0) : ((UPS_RATE[metric] || OPS_KPI[metric]) ? v.toFixed(1)+'%' : fmt0(v)))));
       root.appendChild(t);
     }
     series.forEach((p,i)=>{
@@ -5131,13 +5183,13 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     const proyTab = escHtml(ESC, metric) + projHtml(PJ, key);
     el.innerHTML = `${warnHtml}<div class="ct-hero">
       <div class="ct-hero-top">
-        <div><h3>${label}</h3><div class="sub">${CT_DATA.meta.mes?mesLabel(CT_DATA.meta.mes):''} · ${CT_DATA.meta.dias_transcurridos_completos} días cerrados</div></div>
+        <div><h3>${label}${CT_OPS_SUB[key] ? ` · <span style="color:var(--series-1)">${esc(OPS_NOMBRE[CT_OPS_SUB[key]] || '')}</span>` : ''}</h3><div class="sub">${CT_DATA.meta.mes?mesLabel(CT_DATA.meta.mes):''} · ${CT_DATA.meta.dias_transcurridos_completos} días cerrados${CT_OPS_SUB[key] ? ` · Revenue, Ventas y ASP son del total (Planif_2026); On Call, SPH, CR y primeras ventas son de ${esc(OPS_NOMBRE[CT_OPS_SUB[key]] || '')}` : ''}</div></div>
         ${resSel}
       </div>
       <div class="ct-hero-val"><span class="big">${fmtMoney(rev.real)}</span><span class="dl ${cls}">${fmtSignedMoney(rev.gap)} · ${rev.cumpl==null?'—':fmtSignedPct1(rev.cumpl-100)} vs plan a la fecha</span><span class="ct-pill ${sev}">${SEV_LABEL[sev]}</span></div>
       <div class="ct-hero-ctrl">
         <div class="ct-seg" id="ctHeroMode"><button data-v="acum" class="${mode==='acum'?'active':''}">Acumulado</button><button data-v="dia" class="${mode==='dia'?'active':''}">Diario</button></div>
-        ${det ? `<div class="ct-seg" id="ctHeroMetric"><button data-v="rev" class="${metric==='rev'?'active':''}">Revenue</button><button data-v="vol" class="${metric==='vol'?'active':''}">Ventas</button><button data-v="asp" class="${metric==='asp'?'active':''}">ASP</button>${key==='upsell' ? `<button data-v="cr" class="${metric==='cr'?'active':''}">CR</button><button data-v="exp" class="${metric==='exp'?'active':''}">Expansión</button>` : ''}${['oncall','sph','cr2'].filter(k => opsTiene(key, k)).map(k => `<button data-v="${k}" class="${metric===k?'active':''}" title="${OPS_KPI[k].tip}">${kpiLbl(key, k)}</button>`).join('')}</div>` : ''}
+        ${det ? `<div class="ct-seg" id="ctHeroMetric"><button data-v="rev" class="${metric==='rev'?'active':''}">Revenue</button><button data-v="vol" class="${metric==='vol'?'active':''}">Ventas</button><button data-v="asp" class="${metric==='asp'?'active':''}">ASP</button>${key==='upsell' ? `<button data-v="cr" class="${metric==='cr'?'active':''}">CR</button><button data-v="exp" class="${metric==='exp'?'active':''}">Expansión</button>` : ''}${['oncall','sph','cr2','pvd'].filter(k => opsTiene(key, k)).map(k => `<button data-v="${k}" class="${metric===k?'active':''}" title="${OPS_KPI[k].tip}">${kpiLbl(key, k)}</button>`).join('')}</div>` : ''}
         <span style="font-size:12px;color:var(--text-muted)"><svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="var(--text-muted)" stroke-width="2" stroke-dasharray="5,4"/></svg>${OPS_KPI[metric] ? ' Promedio mes anterior' : ' Plan'} &nbsp; <svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="${col}" stroke-width="2"/></svg> Real</span>
         ${projLegend(metric, mode, ESC)}
       </div>
