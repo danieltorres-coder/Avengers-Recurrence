@@ -327,6 +327,17 @@
   .rca-tcard.click{cursor:pointer;} .rca-tcard.click:hover{border-color:var(--border-strong);}
   .rca-tt{font-size:12.5px;font-weight:700;margin-bottom:4px;}
   .rca-meta tr.ex-row td{cursor:pointer;}
+  .ct-htabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0 8px;border-bottom:1px solid var(--border);padding-bottom:8px;}
+  .ct-htabs button{appearance:none;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);font:inherit;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:999px;cursor:pointer;}
+  .ct-htabs button.active{background:var(--series-1);border-color:var(--series-1);color:#fff;}
+  .ct-htabs-hint{font-size:11px;color:var(--text-muted);margin-left:auto;}
+  .ok-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
+  .ok-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;}
+  .ok-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px;}
+  .ok-h b{font-size:12.5px;} .ok-v{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .ok-d{font-size:11.5px;font-weight:700;} .ok-d.neg{color:var(--bad);} .ok-d.pos{color:var(--series-3);}
+  .ok-cmp{margin-top:10px;font-size:12.5px;} .ok-cmp summary{cursor:pointer;font-weight:700;color:var(--text-secondary);}
+  .ct-note b.neg{color:var(--bad);} .ct-note b.pos{color:var(--series-3);}
   .ex-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;}
   .ex-card{cursor:pointer;margin-bottom:0;}
   .ex-card:hover{border-color:var(--border-strong);}
@@ -4533,6 +4544,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
   let CT_MES = null;                 // 'YYYY-MM' elegido en el selector (null = mes actual del Web App)
   let CT_HERO_METRIC = 'rev';        // rev | vol | asp
   let CT_HERO_MODE = 'acum';         // acum | dia
+  let CT_HTAB = 'kpi';               // pestaña abierta bajo el gráfico: kpi | proy | dia | null (cerradas)
   const CT_OPEN = {resurrection:false, otras:false};   // desplegables del sidebar (Resurrection 2.4/1.4 y 1.2+1.3+1.5+2.3)
   const SIDE_ROWS = [
     {k:'postventa_total', lvl:0},
@@ -4566,6 +4578,269 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     return {rev, a};
   }
 
+  /* ================= HISTÓRICO DE OPERACIÓN (Reportes de Margen en Drive · action=opshist) =================
+     On Call, SPH y CR 2 min por operación, más revenue / costo / margen del Reporte de Margen.
+     Fuentes: "2 - Reporte de Margen - Detalle" (HC, horas staff y on-call, contactos de 2 min, ventas) y
+     "1.a - Reporte de Margen" (revenue, ventas en leads únicos, costo de OPS y margen; Resurrection solo ahí).
+     · % On Call = horas on-call ÷ horas staff.   · SPH = ventas ÷ horas staff.   · CR 2 min = ventas ÷ contactos de 2 min.
+     En las vistas que suman operaciones, el CR excluye Upsell: su "contacto" es la primera venta del cliente, no una
+     llamada de venta, y mezclarlos daría un número sin lectura. */
+  let OPS = null, OPS_ESTADO = 'cargando', OPS_ERROR = '';
+  const OPS_SRC = { upsell:['upsell'], rec22:['recurrence'], bootcamp:['bootcamp'], resurrection:['resurrection'], res14:['resurrection'],
+                    recurrence:['recurrence','bootcamp','resurrection'], postventa_total:['upsell','recurrence','bootcamp','resurrection'] };
+  const OPS_KPI = {
+    oncall: {lbl:'On Call',  corto:'% On Call',  tip:'Horas on-call ÷ horas staff'},
+    sph:    {lbl:'SPH',      corto:'SPH',        tip:'Ventas ÷ horas staff'},
+    cr2:    {lbl:'CR 2 min', corto:'CR 2 min',   tip:'Ventas ÷ contactos de 2 min o más'},
+    mrg:    {lbl:'% Margen', corto:'% Margen',   tip:'Margen de la operación ÷ revenue (Reporte de Margen)'},
+  };
+  const OPS_NOMBRE = {upsell:'Upsell', recurrence:'Recurrence 2.2', bootcamp:'Bootcamp Students 2.5', resurrection:'Resurrection 1.4'};
+  const OPS_CMP = {upsell:'upsell', rec22:'rec22', bootcamp:'bootcamp', resurrection:'res14', res14:'res14'};   // operación de Planif_2026 equivalente
+  async function cargarOpsHist(){
+    if (typeof WFM_ENDPOINT === 'undefined' || typeof WFM_TOKEN === 'undefined') { OPS_ESTADO = 'error'; OPS_ERROR = 'sin URL del Web App'; return; }
+    try {
+      const resp = await fetch(WFM_ENDPOINT + '?token=' + encodeURIComponent(WFM_TOKEN) + '&action=opshist', {method:'GET', redirect:'follow'});
+      if (!resp.ok) throw new Error('El servidor respondió ' + resp.status);
+      const p = await resp.json();
+      if (!p.ok || !p.fechas || !p.ops) throw new Error(p.error || 'el Apps Script todavía no tiene la acción opshist');
+      const idx = {}; p.fechas.forEach((f, i) => { idx[f] = i; });
+      OPS = Object.assign({}, p, {idx}); OPS_ESTADO = 'ok';
+    } catch (err) {
+      OPS_ESTADO = 'error'; OPS_ERROR = err.message;
+      console.warn('[Operación] No se pudo cargar opshist:', err);
+    }
+    safe(renderHero, 'Hero'); safe(renderAlertStrip, 'Alertas'); safe(renderDetalle, 'Detalle');
+  }
+  function opsVal(src, campo, f){
+    const o = OPS && OPS.ops[src], i = OPS ? OPS.idx[f] : null;
+    if (!o || i == null || !o[campo]) return null;
+    const v = o[campo][i]; return (v === null || v === undefined || v === '') ? null : +v;
+  }
+  function opsAgg(key, dias){
+    const srcs = OPS_SRC[key] || [], crSrc = srcs.length > 1 ? srcs.filter(s => s !== 'upsell') : srcs;
+    const t = {n:{}};
+    const add = (c, v) => { if (v == null) return; t[c] = (t[c] || 0) + v; t.n[c] = (t.n[c] || 0) + 1; };
+    dias.forEach(f => {
+      srcs.forEach(s => ['staff','oncall','ventas','rev','ventasRM','costo','margen','hc'].forEach(c => add(c, opsVal(s, c, f))));
+      // SPH: solo ventas de operaciones con horas (Resurrection no las tiene en el reporte)
+      crSrc.forEach(s => { const c2 = opsVal(s, 'c2', f), cv = opsVal(s, 'conv', f); if (c2 != null && cv != null){ add('c2', c2); add('conv', cv); } });
+    });
+    return t;
+  }
+  function opsKpi(key, dias, kpi){
+    if (!OPS || !dias.length) return null;
+    const t = opsAgg(key, dias);
+    if (kpi === 'oncall') return t.staff > 0 && t.n.oncall ? 100 * t.oncall / t.staff : null;
+    if (kpi === 'sph')    return t.staff > 0 && t.n.ventas ? t.ventas / t.staff : null;
+    if (kpi === 'cr2')    return t.c2 > 0 ? 100 * t.conv / t.c2 : null;
+    if (kpi === 'mrg')    return t.rev > 0 && t.n.margen ? 100 * t.margen / t.rev : null;
+    if (kpi === 'asp')    return t.conv > 0 && t.rev ? t.rev / t.conv : null;
+    return t[kpi] != null ? t[kpi] : null;
+  }
+  function opsTiene(key, kpi){
+    if (!OPS || !OPS_SRC[key]) return false;
+    if (kpi === 'oncall' || kpi === 'sph') return OPS_SRC[key].some(s => s !== 'resurrection');
+    return true;
+  }
+  const dec = (v, n) => v.toLocaleString('es-CO', {minimumFractionDigits:n, maximumFractionDigits:n});
+  const fmtOps = (kpi, v) => v == null ? '—' : (kpi === 'sph' ? dec(v, 2) : dec(v, 1) + '%');
+  const fmtOpsDelta = (kpi, a, b) => (a == null || b == null) ? '' : (kpi === 'sph' ? ((a - b) >= 0 ? '+' : '−') + Math.abs(100 * (a - b) / (b || 1)).toFixed(0) + '%' : ((a - b) >= 0 ? '+' : '−') + dec(Math.abs(a - b), 1) + ' pp');
+  // Días cerrados del mes en pantalla que ya tienen dato en el Reporte de Margen
+  function opsDiasMes(){
+    const det = CT_DATA.detalle && CT_DATA.detalle.postventa_total;
+    return det ? det.dias.filter(d => d.status === 'elapsed' && OPS && OPS.idx[d.fecha] != null).map(d => d.fecha) : [];
+  }
+  function opsMesPrevio(){
+    const ym = CT_DATA.meta.mes; if (!ym || !OPS) return [];
+    const p = ym.split('-'), d = new Date(Date.UTC(+p[0], +p[1] - 2, 1)), prev = d.toISOString().slice(0, 7);
+    return OPS.fechas.filter(f => f.slice(0, 7) === prev);
+  }
+  function opsHeroSeries(key, metric, mode){
+    const det = CT_DATA.detalle && CT_DATA.detalle.postventa_total; if (!det || !OPS) return null;
+    const ref = opsKpi(key, opsMesPrevio(), metric), acc = [];
+    return det.dias.map(d => {
+      const tiene = d.status === 'elapsed' && OPS.idx[d.fecha] != null;
+      if (tiene) acc.push(d.fecha);
+      const real = tiene ? opsKpi(key, mode === 'acum' ? acc.slice() : [d.fecha], metric) : null;
+      return {fecha:d.fecha, plan:ref, real, closed:d.status === 'elapsed'};
+    });
+  }
+
+  /* ---------- panel: On Call · SPH · CR 2 min (por día · por semana · día de la semana) ---------- */
+  let CT_KPI_VISTA = 'dia';
+  const WD_ORD = [1,2,3,4,5,6,0], WD_TXT = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const wdIso = f => new Date(f + 'T00:00:00Z').getUTCDay();
+  function lunesDe(f){ const w = wdIso(f); return addDiasISO(f, -((w + 6) % 7)); }
+  function renderOpsKpi(box, key){
+    if (!box) return;
+    if (!OPS){
+      box.innerHTML = OPS_ESTADO === 'cargando' ? '<div class="ct-note" style="margin:0">Cargando On Call, SPH y CR 2 min desde los Reportes de Margen…</div>'
+        : `<div class="ct-note" style="margin:0">Todavía no llegan On Call, SPH y CR 2 min (${esc(OPS_ERROR)}). Hay que instalar la acción <b>opshist</b> en el Apps Script.</div>`;
+      return;
+    }
+    if (!OPS_SRC[key]){ box.innerHTML = '<div class="ct-note" style="margin:0">Esta operación no está en los Reportes de Margen.</div>'; return; }
+    const vista = CT_KPI_VISTA, mes = opsDiasMes(), prev = opsMesPrevio();
+    const ultimo = OPS.fechas.filter(f => OPS_SRC[key].some(s => opsVal(s, 'rev', f) != null || opsVal(s, 'staff', f) != null)).pop();
+    const kpis = ['oncall','sph','cr2','mrg'].filter(k => opsTiene(key, k));
+    let x = [], real = [], ref = [], refLbl = '', realLbl = '';
+    const ejes = {};
+    if (vista === 'dia'){
+      realLbl = 'Este mes (día)'; refLbl = 'Promedio mes anterior';
+      kpis.forEach(k => { const r = opsKpi(key, prev, k); ejes[k] = {x: mes.map(f => String(+f.slice(8))), real: mes.map(f => opsKpi(key, [f], k)), ref: mes.map(() => r)}; });
+    } else if (vista === 'semana'){
+      realLbl = 'Semana (lun–dom)'; refLbl = 'Promedio de las semanas';
+      const fin = mes.length ? mes[mes.length - 1] : (ultimo || OPS.fechas[OPS.fechas.length - 1]);
+      const semanas = [];
+      for (let w = 11; w >= 0; w--){ const ini = addDiasISO(lunesDe(fin), -7 * w); semanas.push({ini, dias: OPS.fechas.filter(f => f >= ini && f <= addDiasISO(ini, 6) && f <= fin)}); }
+      kpis.forEach(k => { const v = semanas.map(s => opsKpi(key, s.dias, k)); const ok = v.filter(z => z != null); const m = ok.length ? ok.reduce((a, b) => a + b, 0) / ok.length : null;
+        ejes[k] = {x: semanas.map(s => s.ini.slice(8) + '/' + s.ini.slice(5, 7)), real: v, ref: v.map(() => m)}; });
+    } else {
+      realLbl = 'Este mes'; refLbl = 'Histórico (90 días previos)';
+      const ini = mes.length ? mes[0] : (CT_DATA.meta.mes ? CT_DATA.meta.mes + '-01' : OPS.fechas[0]);
+      const hist = OPS.fechas.filter(f => f < ini && f >= addDiasISO(ini, -90));
+      kpis.forEach(k => { ejes[k] = {x: WD_TXT, real: WD_ORD.map(w => opsKpi(key, mes.filter(f => wdIso(f) === w), k)), ref: WD_ORD.map(w => opsKpi(key, hist.filter(f => wdIso(f) === w), k))}; });
+    }
+    const cards = kpis.map(k => {
+      const a = opsKpi(key, mes, k), b = opsKpi(key, prev, k), d = (a != null && b != null) ? a - b : null;
+      const peor = d != null && (k === 'mrg' || k === 'oncall' || k === 'cr2' || k === 'sph') && d < 0;
+      return `<div class="ok-card"><div class="ok-h"><b title="${esc(OPS_KPI[k].tip)}">${OPS_KPI[k].corto}</b><span class="ok-v">${fmtOps(k, a)}</span>
+        <span class="ok-d ${d == null ? '' : (peor ? 'neg' : 'pos')}">${d == null ? '' : fmtOpsDelta(k, a, b) + ' vs mes ant.'}</span></div><div class="ok-c" data-k="${k}"></div></div>`;
+    }).join('');
+    const srcTxt = (OPS_SRC[key] || []).map(s => OPS_NOMBRE[s]).join(' + ');
+    box.innerHTML = `<div class="ct-filter-row" style="margin:0 0 8px">
+        <div class="ct-seg" id="okVista"><button data-v="dia" class="${vista==='dia'?'active':''}">Por día</button><button data-v="semana" class="${vista==='semana'?'active':''}">Por semana</button><button data-v="dow" class="${vista==='dow'?'active':''}">Día de la semana</button></div>
+        <span class="ct-q" style="margin:0">${esc(srcTxt)} · Reporte de Margen al ${ultimo ? fechaDM(ultimo) : '—'}${OPS_SRC[key].length > 1 ? ' · CR sin Upsell' : ''}</span></div>
+      ${mes.length || vista !== 'dia' ? `<div class="ok-grid">${cards}</div>` : '<div class="ct-note">El Reporte de Margen todavía no tiene días cerrados de este mes.</div>'}
+      ${opsCmpHtml(key, mes)}`;
+    kpis.forEach(k => {
+      const e = ejes[k], c = $(`.ok-c[data-k="${k}"]`, box); if (!c || !e) return;
+      if (!e.real.some(v => v != null)){ c.innerHTML = '<div class="ct-note" style="margin:0">Sin datos en este período.</div>'; return; }
+      renderPlanRealLines(c, {xLabels: e.x, width: 360, height: 170, padLeft: 44, legend: true,
+        series: [{name: realLbl, vals: e.real, color: 'var(--series-1)', labels: e.real.length <= 12 ? e.real.map(v => v == null ? null : fmtOps(k, v)) : null},
+                 {name: refLbl, vals: e.ref, color: 'var(--text-muted)', dash: '5,4'}],
+        yFmt: v => k === 'sph' ? dec(v, 2) : Math.round(v) + '%',
+        tip: i => `<strong>${e.x[i]}</strong><br>${realLbl}: ${fmtOps(k, e.real[i])}<br>${refLbl}: ${fmtOps(k, e.ref[i])}`});
+    });
+    $$('#okVista button', box).forEach(b => b.addEventListener('click', () => { CT_KPI_VISTA = b.dataset.v; renderOpsKpi(box, key); }));
+  }
+  // Mismo dato, dos fuentes: Planif_2026 (lo que usa este tablero) vs Reporte de Margen.
+  function opsComparar(key, dias){
+    const cmpKey = OPS_CMP[key], src = (OPS_SRC[key] || [])[0], det = CT_DATA.detalle && CT_DATA.detalle[cmpKey];
+    if (!cmpKey || !det || OPS_SRC[key].length !== 1) return null;
+    let rp = 0, rr = 0, vp = 0, vRM = 0, v2 = 0, n = 0, n2 = 0;
+    dias.forEach(f => {
+      const d = det.dias.find(z => z.fecha === f), r = opsVal(src, 'rev', f), v = opsVal(src, 'ventasRM', f), w = opsVal(src, 'ventas', f);
+      if (!d || d.rev_real == null || r == null) return;
+      rp += d.rev_real; rr += r; vp += d.ventas_real || 0; vRM += v || 0; n++;
+      if (w != null && src !== 'upsell'){ v2 += w; n2++; }
+    });
+    if (!n) return null;
+    return {n, planifRev: rp, rmRev: rr, planifV: vp, rmV: vRM, rep2V: n2 === n ? v2 : null, src, cmpKey};
+  }
+  function opsCmpHtml(key, dias){
+    const c = opsComparar(key, dias); if (!c) return '';
+    const dif = (a, b) => b ? 100 * (a - b) / b : null;
+    const dr = dif(c.rmRev, c.planifRev), dv = dif(c.rmV, c.planifV), d2 = c.rep2V != null ? dif(c.rep2V, c.planifV) : null;
+    const cel = d => d == null ? '—' : `<span class="${Math.abs(d) >= 3 ? 'ct-pill-bad' : ''}">${d >= 0 ? '+' : ''}${d.toFixed(1)}%</span>`;
+    return `<details class="ok-cmp"${(Math.abs(dr || 0) >= 3 || Math.abs(dv || 0) >= 10) ? ' open' : ''}><summary>Comparativo de fuentes · ${c.n} días del mes ${(Math.abs(dr || 0) >= 3 || Math.abs(dv || 0) >= 10) ? '· ⚠️ hay diferencias para chequear' : '· cuadran'}</summary>
+      <table class="ct-table"><thead><tr><th></th><th class="num">Planif_2026</th><th class="num">Reporte de Margen 1.a</th><th class="num">Dif.</th>${c.rep2V != null ? '<th class="num">Reporte 2 · Detalle</th><th class="num">Dif.</th>' : ''}</tr></thead><tbody>
+      <tr><td>Revenue</td><td class="num">${fmtMoney(c.planifRev)}</td><td class="num">${fmtMoney(c.rmRev)}</td><td class="num">${cel(dr)}</td>${c.rep2V != null ? '<td></td><td></td>' : ''}</tr>
+      <tr><td>Ventas</td><td class="num">${fmt0(c.planifV)}</td><td class="num">${fmt0(c.rmV)} <small>(leads únicos)</small></td><td class="num">${cel(dv)}</td>${c.rep2V != null ? `<td class="num">${fmt0(c.rep2V)} <small>(filas)</small></td><td class="num">${cel(d2)}</td>` : ''}</tr>
+      </tbody></table><div class="ct-note" style="margin:6px 0 0">Mismo dato en dos fuentes. Diferencias de 3% o más en revenue (10% en ventas) aparecen también en Alertas como "Chequear dato".${c.cmpKey === 'res14' ? ' El Reporte de Margen trae solo Resurrection 1.4: se compara contra la 1.4 de Planif.' : ''}</div></details>`;
+  }
+
+  /* ---------- clic en un día del gráfico → qué pasó ---------- */
+  let CT_DIA = null;
+  function onHeroDia(f){ CT_DIA = f; CT_HTAB = 'dia'; renderHero(); const b = $('#ctDiaBox'); if (b) b.scrollIntoView({behavior:'smooth', block:'nearest'}); }
+  function renderDia(box, key, f){
+    if (!box || !f) return;
+    const det = CT_DATA.detalle && CT_DATA.detalle[key], d = det && det.dias.find(x => x.fecha === f);
+    const dowTxt = DOW_ORDER[(wdIso(f) + 6) % 7];
+    if (!d || d.status !== 'elapsed'){ box.innerHTML = `<div class="ct-note" style="margin:0">${dowTxt} ${fechaDM(f)}: el día todavía no cierra.</div>`; return; }
+    const gap = (d.rev_real || 0) - (d.rev_plan || 0), cu = d.rev_plan ? 100 * d.rev_real / d.rev_plan : null;
+    let html = `<div class="ct-verdict ${gap < 0 ? 'down' : 'up'}"><div class="main">${dowTxt} ${fechaDM(f)} · Real ${fmtMoney(d.rev_real)} vs plan ${fmtMoney(d.rev_plan)} · gap <b>${fmtSignedMoney(gap)}</b> (${cu == null ? '—' : fmtPct1(cu)} del plan)</div>`;
+    // operaciones que suman: cuál pesó más
+    const hijos = key === 'postventa_total' ? ['upsell','rec22','resurrection','bootcamp'] : (key === 'recurrence' ? ['rec22','resurrection','bootcamp'] : null);
+    const dd = CT_DATA.daily.find(x => x.fecha === f);
+    if (hijos && dd){
+      const rows = hijos.map(k => ({k, o: dd.ops[k]})).filter(x => x.o).sort((a, b) => (a.o.gap || 0) - (b.o.gap || 0));
+      html += `<div class="det">Lo que más pesó: ${rows.slice(0, 2).map(x => `<b>${esc(OP_META[x.k].label)}</b> ${fmtSignedMoney(x.o.gap)}`).join(' · ')}</div></div>
+        <table class="ct-table" style="margin-bottom:10px"><thead><tr><th>Operación</th><th class="num">Plan</th><th class="num">Real</th><th class="num">Gap</th><th class="num">Cumpl.</th></tr></thead><tbody>${rows.map(x =>
+        `<tr class="ex-row" data-op="${x.k}"><td>${esc(OP_META[x.k].label)}</td><td class="num">${fmtMoney(x.o.plan)}</td><td class="num">${fmtMoney(x.o.real)}</td><td class="num ${x.o.gap < 0 ? 'ct-pill-bad' : 'ct-pill-good'}">${fmtSignedMoney(x.o.gap)}</td><td class="num">${fmtPct1(x.o.cumpl_pct)}</td></tr>`).join('')}</tbody></table>`;
+    } else html += '</div>';
+    // KPIs del día vs el mismo día de la semana típico (promedio de los 4 anteriores con dato)
+    if (OPS && OPS_SRC[key] && OPS.idx[f] != null){
+      const tip = OPS.fechas.filter(x => x < f && wdIso(x) === wdIso(f) && opsKpi(key, [x], 'cr2') != null).slice(-4);
+      const fila = (lbl, k, fmt) => { const a = opsKpi(key, [f], k), b = tip.length ? opsKpi(key, tip, k) : null, nb = tip.length ? (['oncall','sph','cr2','mrg','asp'].indexOf(k) >= 0 ? b : b / tip.length) : null;
+        const dv = (a != null && nb != null) ? a - nb : null;
+        return `<tr><td>${lbl}</td><td class="num"><b>${fmt(a)}</b></td><td class="num">${fmt(nb)}</td><td class="num ${dv == null ? '' : (dv < 0 ? 'ct-pill-bad' : 'ct-pill-good')}">${dv == null ? '—' : (['oncall','cr2','mrg'].indexOf(k) >= 0 ? (dv >= 0 ? '+' : '−') + dec(Math.abs(dv), 1) + ' pp' : ((dv >= 0 ? '+' : '−') + Math.abs(nb ? 100 * dv / nb : 0).toFixed(0) + '%'))}</td></tr>`; };
+      const f0 = v => v == null ? '—' : fmt0(v), fM = v => v == null ? '—' : fmtMoney(v);
+      html += `<table class="ct-table"><thead><tr><th>Indicador · Reporte de Margen</th><th class="num">${dowTxt} ${fechaDM(f)}</th><th class="num">${dowTxt} típico (${tip.length})</th><th class="num">Δ</th></tr></thead><tbody>
+        ${opsTiene(key, 'oncall') ? fila('Horas staff', 'staff', v => v == null ? '—' : (Math.round(v * 10) / 10).toLocaleString('es-CO') + ' h') + fila('% On Call', 'oncall', v => fmtOps('oncall', v)) + fila('SPH', 'sph', v => fmtOps('sph', v)) : ''}
+        ${fila('Contactos 2 min', 'c2', f0)}${fila('CR 2 min', 'cr2', v => fmtOps('cr2', v))}${fila('Revenue', 'rev', fM)}${fila('% Margen', 'mrg', v => fmtOps('mrg', v))}
+      </tbody></table>`;
+      // Descomposición: revenue = contactos × CR × ASP (una sola operación)
+      if (OPS_SRC[key].length === 1 && tip.length >= 2){
+        const s = OPS_SRC[key][0], c2 = opsVal(s, 'c2', f), cv = opsVal(s, 'conv', f), rv = opsVal(s, 'rev', f);
+        const T = opsAgg(key, tip), n = tip.length, c2r = (T.c2 || 0) / n, crr = T.c2 ? T.conv / T.c2 : null, aspr = T.conv ? T.rev / T.conv : null;
+        if (c2 > 0 && cv > 0 && rv > 0 && c2r > 0 && crr > 0 && aspr > 0){
+          const cr = cv / c2, asp = rv / cv, revr = c2r * crr * aspr, tot = rv - revr, L = Math.log(rv / revr);
+          const parte = x => Math.abs(L) > 1e-9 ? tot * Math.log(x) / L : 0;
+          const pc = parte(c2 / c2r), pr = parte(cr / crr), pa = parte(asp / aspr);
+          const t = (n, v) => `${n} <b class="${v < 0 ? 'neg' : 'pos'}">${fmtSignedMoney(v)}</b>`;
+          html += `<div class="ct-note" style="margin:8px 0 0"><b>¿De dónde salió la diferencia frente a un ${dowTxt.toLowerCase()} típico (${fmtSignedMoney(tot)})?</b> ${t('Contactos', pc)} · ${t('CR 2 min', pr)} · ${t('Ticket (ASP)', pa)}. Revenue = contactos × CR × ASP${s === 'upsell' ? ' (en Upsell el revenue incluye el pool, así que el ASP es aproximado)' : ''}.</div>`;
+        }
+      }
+    } else if (OPS) html += `<div class="ct-note" style="margin:0">El Reporte de Margen todavía no tiene el ${fechaDM(f)}.</div>`;
+    box.innerHTML = html;
+    $$('.ex-row[data-op]', box).forEach(r => r.addEventListener('click', () => { selectOp(r.dataset.op); }));
+  }
+
+  /* ---------- alertas de operación y de datos ---------- */
+  function opsAlertas(){
+    if (!OPS) return [];
+    const out = [], det = CT_DATA.detalle && CT_DATA.detalle.postventa_total;
+    const corte = det ? (det.dias.filter(d => d.status === 'elapsed').pop() || {}).fecha : null;
+    const nombre = {upsell:'2.1 Upsell', rec22:'2.2 Recurrence', bootcamp:'2.5 Bootcamp', resurrection:'Resurrection'};
+    ['upsell','rec22','bootcamp','resurrection'].forEach(key => {
+      const dias = OPS.fechas.filter(f => (!corte || f <= corte) && opsKpi(key, [f], 'cr2') != null);
+      if (dias.length < 14) return;
+      const u7 = dias.slice(-7), p28 = dias.slice(-35, -7), last = u7[u7.length - 1];
+      const rango = `${fechaDM(u7[0])}–${fechaDM(last)}`;
+      if (opsTiene(key, 'oncall')){
+        const a = opsKpi(key, u7, 'oncall'), b = opsKpi(key, p28, 'oncall');
+        if (a != null && b != null && a - b <= -5) out.push({sev: a - b <= -10 ? 'critico' : 'atencion', cat:'operación', op:key, fecha:last, badge: rango,
+          titulo: `${nombre[key]}: On Call bajó a ${fmtOps('oncall', a)} (${fmtOpsDelta('oncall', a, b)})`,
+          texto: `Últimos 7 días ${fmtOps('oncall', a)} de las horas staff en llamada, frente a ${fmtOps('oncall', b)} de las 4 semanas previas. Clic para ver la tendencia.`, go:{kpi:true, op:key}});
+        const s1 = opsKpi(key, u7, 'sph'), s0 = opsKpi(key, p28, 'sph');
+        if (s1 != null && s0 > 0 && (s1 - s0) / s0 <= -0.2) out.push({sev:'info', cat:'operación', op:key, fecha:last, badge: rango,
+          titulo: `${nombre[key]}: SPH bajó a ${fmtOps('sph', s1)} (${fmtOpsDelta('sph', s1, s0)})`, texto: `Ventas por hora staff de los últimos 7 días frente a ${fmtOps('sph', s0)} de las 4 semanas previas.`, go:{kpi:true, op:key}});
+      }
+      const c1 = opsKpi(key, u7, 'cr2'), c0 = opsKpi(key, p28, 'cr2');
+      if (c1 != null && c0 > 0 && (c1 - c0) / c0 <= -0.15) out.push({sev: (c1 - c0) / c0 <= -0.3 ? 'critico' : 'atencion', cat:'operación', op:key, fecha:last, badge: rango,
+        titulo: `${nombre[key]}: CR 2 min bajó a ${fmtOps('cr2', c1)} (${fmtOpsDelta('cr2', c1, c0)})`,
+        texto: `Ventas por contacto de 2 min en los últimos 7 días, frente a ${fmtOps('cr2', c0)} de las 4 semanas previas (${Math.round(100 * (c1 - c0) / c0)}%). Clic para ver la tendencia.`, go:{kpi:true, op:key}});
+      // mismo dato, dos fuentes (mes en pantalla)
+      const c = opsComparar(key, opsDiasMes());
+      if (c){
+        const dr = c.planifRev ? 100 * (c.rmRev - c.planifRev) / c.planifRev : 0, dv = c.planifV ? 100 * (c.rmV - c.planifV) / c.planifV : 0;
+        if (Math.abs(dr) >= 3) out.push({sev:'sistema', cat:'datos', op:key, fecha:corte, badge:'chequear dato',
+          titulo: `Chequear dato · ${nombre[key]}: revenue no cuadra entre fuentes`,
+          texto: `Planif_2026 ${fmtMoney(c.planifRev)} vs Reporte de Margen 1.a ${fmtMoney(c.rmRev)} (${dr >= 0 ? '+' : ''}${dr.toFixed(1)}%) en ${c.n} días del mes.`, go:{kpi:true, op:key}});
+        if (Math.abs(dv) >= 10) out.push({sev:'sistema', cat:'datos', op:key, fecha:corte, badge:'chequear dato',
+          titulo: `Chequear dato · ${nombre[key]}: ventas no cuadran entre fuentes`,
+          texto: `Planif_2026 ${fmt0(c.planifV)} vs Reporte de Margen 1.a ${fmt0(c.rmV)} leads únicos (${dv >= 0 ? '+' : ''}${dv.toFixed(0)}%)${c.rep2V != null ? ` y Reporte 2 · Detalle ${fmt0(c.rep2V)} (cuenta filas)` : ''}. Revisar cómo cuenta cada fuente antes de usar el CR o el ASP.`, go:{kpi:true, op:key}});
+      }
+    });
+    (OPS.avisos || []).forEach(a => out.push({sev:'sistema', cat:'datos', titulo:'Reporte de Margen: lectura incompleta', texto:a}));
+    return out;
+  }
+  function abrirKpi(go){
+    if (!go) return;
+    selectOp(go.op); CT_HTAB = 'kpi'; renderHero();
+    const h = $('#ctHero'); if (h) h.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
   // CR y Expansión de Upsell (diario: valor del día; acumulado: promedio de los días hasta la fecha)
   const UPS_RATE = {
     cr:  {lbl:'CR',        plan: d => d.upsell_revenue && d.upsell_revenue.cr_plan,     real: d => d.upsell_revenue && d.upsell_revenue.cr_real},
@@ -4588,6 +4863,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
   }
   function heroSeries(key, metric, mode){
     if (UPS_RATE[metric]) return key==='upsell' ? upsRateSeries(metric, mode) : null;
+    if (OPS_KPI[metric]) return opsHeroSeries(key, metric, mode);
     const det = CT_DATA.detalle && CT_DATA.detalle[key];
     let rows;
     if (det) rows = det.dias.map(d=>({fecha:d.fecha, closed:d.status==='elapsed', rp:d.rev_plan, rr:d.rev_real, vp:d.ventas_plan, vr:d.ventas_real}));
@@ -4683,14 +4959,14 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     if (ms) ms.addEventListener('change', () => { CT_MES = ms.value; bootCT(true); });
   }
 
-  function fmtByMetric(metric, v){ return v==null ? '—' : UPS_RATE[metric] ? v.toFixed(1)+'%' : (metric==='vol' ? fmt0(v) : (metric==='asp' ? '$'+v.toFixed(0) : fmtMoney(v))); }
+  function fmtByMetric(metric, v){ return v==null ? '—' : OPS_KPI[metric] ? fmtOps(metric, v) : UPS_RATE[metric] ? v.toFixed(1)+'%' : (metric==='vol' ? fmt0(v) : (metric==='asp' ? '$'+v.toFixed(0) : fmtMoney(v))); }
 
   function renderHeroChart(container, series, metric, mode, color){
     const W=900,H=300,PAD={l:58,r:18,t:20,b:30};
     const vals = series.flatMap(p=>[p.plan,p.real,p.proj,p.req,p.best,p.worst,p.m5]).filter(v=>v!=null);
     if (!vals.length){ container.innerHTML = '<div class="ct-note">Sin datos para este mes todavía.</div>'; return; }
     let yMax = Math.max(...vals)*1.08, yMin = 0;
-    if (metric==='asp' || UPS_RATE[metric]){ yMin = Math.max(0, Math.min(...vals)*0.8); }
+    if (metric==='asp' || UPS_RATE[metric] || OPS_KPI[metric]){ yMin = Math.max(0, Math.min(...vals)*0.8); }
     if (yMax<=yMin) yMax = yMin+1;
     const n = series.length;
     const x = i => PAD.l + i/(Math.max(n-1,1))*(W-PAD.l-PAD.r);
@@ -4700,7 +4976,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       const v = yMin + (yMax-yMin)*g/4, yy = y(v);
       root.appendChild(svg('line',{x1:PAD.l,x2:W-PAD.r,y1:yy,y2:yy,stroke:'var(--border)','stroke-width':1}));
       const t = svg('text',{x:PAD.l-8,y:yy+3.5,'text-anchor':'end','font-size':10.5,fill:'var(--text-muted)'});
-      t.textContent = metric==='rev' ? fmtMoneyK(v) : (metric==='asp' ? '$'+Math.round(v) : (UPS_RATE[metric] ? v.toFixed(1)+'%' : fmt0(v)));
+      t.textContent = metric==='rev' ? fmtMoneyK(v) : (metric==='asp' ? '$'+Math.round(v) : (metric==='sph' ? v.toFixed(2) : ((UPS_RATE[metric] || OPS_KPI[metric]) ? v.toFixed(1)+'%' : fmt0(v))));
       root.appendChild(t);
     }
     series.forEach((p,i)=>{
@@ -4764,10 +5040,16 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       guide.setAttribute('x1',x(i)); guide.setAttribute('x2',x(i)); guide.setAttribute('opacity',1);
       const gap = (p.real!=null && p.plan!=null) ? p.real-p.plan : null;
       const pct = (p.real!=null && p.plan) ? 100*(p.real/p.plan-1) : null;
-      showTip(e.clientX, e.clientY-8, `<strong>${p.fecha}</strong>${mode==='acum'?' (acumulado)':''}<br>Plan: ${fmtByMetric(metric,p.plan)}<br>Real: ${fmtByMetric(metric,p.real)}` + (p.proj!=null&&!p.closed?`<br><span style="color:${PJ_COLOR}">●</span> Proyección: ${fmtByMetric(metric,p.proj)}`:'') + (!p.closed?ESC_LINES.filter(es=>p[es.k]!=null).map(es=>`<br><span style="color:${es.color}">●</span> ${es.label}: ${fmtByMetric(metric,p[es.k])}`).join(''):'') + (p.req!=null?`<br><span style="color:${PJ_COLOR}">●</span> Necesario por día: ${fmtByMetric(metric,p.req)}`:'') + (gap!=null?`<br>Gap: ${metric==='vol'?(gap>=0?'+':'')+fmt0(gap):(gap>=0?'+':'-')+fmtByMetric(metric,Math.abs(gap))} (${fmtSignedPct1(pct)})`:''));
+      showTip(e.clientX, e.clientY-8, `<strong>${p.fecha}</strong>${mode==='acum'?' (acumulado)':''}<br>${OPS_KPI[metric] ? 'Prom. mes anterior' : 'Plan'}: ${fmtByMetric(metric,p.plan)}<br>Real: ${fmtByMetric(metric,p.real)}` + (p.closed ? '<br><span style="color:var(--text-muted)">Clic: qué pasó este día</span>' : '') + (p.proj!=null&&!p.closed?`<br><span style="color:${PJ_COLOR}">●</span> Proyección: ${fmtByMetric(metric,p.proj)}`:'') + (!p.closed?ESC_LINES.filter(es=>p[es.k]!=null).map(es=>`<br><span style="color:${es.color}">●</span> ${es.label}: ${fmtByMetric(metric,p[es.k])}`).join(''):'') + (p.req!=null?`<br><span style="color:${PJ_COLOR}">●</span> Necesario por día: ${fmtByMetric(metric,p.req)}`:'') + (gap!=null?`<br>Gap: ${metric==='vol'?(gap>=0?'+':'')+fmt0(gap):(gap>=0?'+':'-')+fmtByMetric(metric,Math.abs(gap))} (${fmtSignedPct1(pct)})`:''));
     };
     hit.addEventListener('mousemove', move);
     hit.addEventListener('mouseleave', ()=>{ guide.setAttribute('opacity',0); hideTip(); });
+    hit.style.cursor = 'pointer';
+    hit.addEventListener('click', e => {
+      const r = root.getBoundingClientRect(), px = (e.clientX - r.left)/r.width*W;
+      const i = Math.max(0, Math.min(n-1, Math.round((px-PAD.l)/(W-PAD.l-PAD.r)*(n-1))));
+      if (series[i] && series[i].closed) { hideTip(); onHeroDia(series[i].fecha); }
+    });
     root.appendChild(hit);
     container.innerHTML=''; container.appendChild(root);
   }
@@ -4780,6 +5062,8 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     const det = !!(CT_DATA.detalle && CT_DATA.detalle[key]);
     if (!det && CT_HERO_METRIC!=='rev') CT_HERO_METRIC = 'rev';
     if (UPS_RATE[CT_HERO_METRIC] && key!=='upsell') CT_HERO_METRIC = 'rev';
+    if (OPS_KPI[CT_HERO_METRIC] && !opsTiene(key, CT_HERO_METRIC)) CT_HERO_METRIC = 'rev';
+    if (CT_DIA && !(CT_DATA.detalle && CT_DATA.detalle[key] && CT_DATA.detalle[key].dias.some(d => d.fecha === CT_DIA))) { CT_DIA = null; if (CT_HTAB === 'dia') CT_HTAB = 'kpi'; }
     const metric = CT_HERO_METRIC, mode = CT_HERO_MODE;
     const sev = sevTxt(rev.cumpl), col = SEV_COLOR[sev];
     const label = (SIDE_FULL[key] && !CT_DATA.monthly[key]) ? SIDE_FULL[key] : (key==='resurrection' && !hasRes14()) ? '2.4.- Resurrection' : ((CT_DATA.monthly[key] ? CT_DATA.monthly[key].label : (CT_DATA.detalle[key]||{}).label) || key);
@@ -4801,6 +5085,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     try { if (prs && prs.some(r=>r.closed)){ PJ = ProjCalc.proyectar(prs); PJ.rows = prs; projAttach(series, PJ, metric, mode); } } catch(e){ console.warn('[Proyección]', e); PJ = null; }
     let ESC = null;
     try { if (PJ && series && mode==='acum' && (metric==='rev' || metric==='vol')) ESC = projEscenarios(series, prs, metric); } catch(e){ console.warn('[Escenarios]', e); ESC = null; }
+    const proyTab = escHtml(ESC, metric) + projHtml(PJ, key);
     el.innerHTML = `${warnHtml}<div class="ct-hero">
       <div class="ct-hero-top">
         <div><h3>${label}</h3><div class="sub">${CT_DATA.meta.mes?mesLabel(CT_DATA.meta.mes):''} · ${CT_DATA.meta.dias_transcurridos_completos} días cerrados</div></div>
@@ -4809,17 +5094,28 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       <div class="ct-hero-val"><span class="big">${fmtMoney(rev.real)}</span><span class="dl ${cls}">${fmtSignedMoney(rev.gap)} · ${rev.cumpl==null?'—':fmtSignedPct1(rev.cumpl-100)} vs plan a la fecha</span><span class="ct-pill ${sev}">${SEV_LABEL[sev]}</span></div>
       <div class="ct-hero-ctrl">
         <div class="ct-seg" id="ctHeroMode"><button data-v="acum" class="${mode==='acum'?'active':''}">Acumulado</button><button data-v="dia" class="${mode==='dia'?'active':''}">Diario</button></div>
-        ${det ? `<div class="ct-seg" id="ctHeroMetric"><button data-v="rev" class="${metric==='rev'?'active':''}">Revenue</button><button data-v="vol" class="${metric==='vol'?'active':''}">Ventas</button><button data-v="asp" class="${metric==='asp'?'active':''}">ASP</button>${key==='upsell' ? `<button data-v="cr" class="${metric==='cr'?'active':''}">CR</button><button data-v="exp" class="${metric==='exp'?'active':''}">Expansión</button>` : ''}</div>` : ''}
-        <span style="font-size:12px;color:var(--text-muted)"><svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="var(--text-muted)" stroke-width="2" stroke-dasharray="5,4"/></svg> Plan &nbsp; <svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="${col}" stroke-width="2"/></svg> Real</span>
+        ${det ? `<div class="ct-seg" id="ctHeroMetric"><button data-v="rev" class="${metric==='rev'?'active':''}">Revenue</button><button data-v="vol" class="${metric==='vol'?'active':''}">Ventas</button><button data-v="asp" class="${metric==='asp'?'active':''}">ASP</button>${key==='upsell' ? `<button data-v="cr" class="${metric==='cr'?'active':''}">CR</button><button data-v="exp" class="${metric==='exp'?'active':''}">Expansión</button>` : ''}${['oncall','sph','cr2'].filter(k => opsTiene(key, k)).map(k => `<button data-v="${k}" class="${metric===k?'active':''}" title="${OPS_KPI[k].tip}">${OPS_KPI[k].lbl}</button>`).join('')}</div>` : ''}
+        <span style="font-size:12px;color:var(--text-muted)"><svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="var(--text-muted)" stroke-width="2" stroke-dasharray="5,4"/></svg>${OPS_KPI[metric] ? ' Promedio mes anterior' : ' Plan'} &nbsp; <svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="${col}" stroke-width="2"/></svg> Real</span>
         ${projLegend(metric, mode, ESC)}
       </div>
       <div class="ct-hero-chart" id="ctHeroChart"></div>
-      ${escHtml(ESC, metric)}
       <div class="ct-stats">${stats}</div>
-      ${projHtml(PJ, key)}
+      <div class="ct-htabs" id="ctHtabs">
+        <button data-t="kpi" class="${CT_HTAB==='kpi'?'active':''}">📞 On Call · SPH · CR 2 min</button>
+        ${proyTab ? `<button data-t="proy" class="${CT_HTAB==='proy'?'active':''}">🟡 Proyección y escenarios</button>` : ''}
+        ${CT_DIA ? `<button data-t="dia" class="${CT_HTAB==='dia'?'active':''}">🔎 Qué pasó · ${fechaDM(CT_DIA)}</button>` : ''}
+        <span class="ct-htabs-hint">Clic en un día del gráfico para ver qué pasó · clic en la pestaña abierta para cerrarla</span>
+      </div>
+      <div class="ct-htab" data-t="kpi" ${CT_HTAB==='kpi'?'':'hidden'}><div id="ctOpsKpi"></div></div>
+      ${proyTab ? `<div class="ct-htab" data-t="proy" ${CT_HTAB==='proy'?'':'hidden'}>${proyTab}</div>` : ''}
+      ${CT_DIA ? `<div class="ct-htab" data-t="dia" ${CT_HTAB==='dia'?'':'hidden'}><div id="ctDiaBox"></div></div>` : ''}
     </div>`;
     if (series && UPS_RATE[metric] && !series.some(p => p.real!=null || p.plan!=null)) $('#ctHeroChart').innerHTML = `<div class="ct-note">Todavía no llega ${UPS_RATE[metric].lbl} desde Planif_2026 (columna ${metric==='cr'?'DU':'DV'}): hay que agregarla en el Apps Script para verla aquí.</div>`;
+    else if (series && OPS_KPI[metric] && !series.some(p => p.real!=null)) $('#ctHeroChart').innerHTML = `<div class="ct-note">El Reporte de Margen todavía no tiene ${OPS_KPI[metric].lbl} de días cerrados de este mes.</div>`;
     else if (series) renderHeroChart($('#ctHeroChart'), series, metric, mode, col);
+    if (CT_HTAB === 'kpi') renderOpsKpi($('#ctOpsKpi'), key);
+    if (CT_HTAB === 'dia' && CT_DIA) renderDia($('#ctDiaBox'), key, CT_DIA);
+    $$('#ctHtabs button', el).forEach(b => b.addEventListener('click', () => { CT_HTAB = CT_HTAB === b.dataset.t ? null : b.dataset.t; renderHero(); }));
     $$('#ctHeroMode button', el).forEach(b=>b.addEventListener('click',()=>{ CT_HERO_MODE=b.dataset.v; renderHero(); }));
     $$('#ctHeroMetric button', el).forEach(b=>b.addEventListener('click',()=>{ CT_HERO_METRIC=b.dataset.v; renderHero(); }));
     const rs = $('#ctResSel', el);
@@ -4850,12 +5146,13 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     el.innerHTML = `<div class="ct-filter-row">
         <label style="font-size:12px;color:var(--text-secondary)">Operación</label>
         <select class="ct-select" id="ctDetOpSel">${Object.keys(D).map(k=>`<option value="${k}" ${k===cur?'selected':''}>${D[k].label}</option>`).join('')}</select>
-        <div class="ct-seg" id="ctDetMode"><button data-v="dia" class="${CT_DET_MODE==='dia'?'active':''}">Diario</button><button data-v="acum" class="${CT_DET_MODE==='acum'?'active':''}">Acumulado</button></div>
+        <div class="ct-seg" id="ctDetMode"><button data-v="dia" class="${CT_DET_MODE==='dia'?'active':''}">Diario</button><button data-v="acum" class="${CT_DET_MODE==='acum'?'active':''}">Acumulado</button><button data-v="dow" class="${CT_DET_MODE==='dow'?'active':''}">Día de la semana</button></div>
       </div>
       <div class="ct-det-wrap"><table class="ct-det" id="ctDetTable"></table></div>
       `;
     const draw = () => {
       const k = $('#ctDetOpSel').value, g = D[k], acum = CT_DET_MODE==='acum';
+      if (CT_DET_MODE === 'dow'){ $('#ctDetTable').innerHTML = detalleDowHtml(k, g); return; }
       const td = (inner, cls) => `<td${cls?` class="${cls}"`:''}>${inner}</td>`;
       const pct = (v, cls) => v==null ? td('—',cls) : td(fmtSignedPct1(v), ((v<-0.05)?'neg':(v>0.05?'pos':'')) + (cls?' '+cls:''));
       const gap = (v, cls) => v==null ? td('—',cls) : td(fmtSignedMoney(v), ((v<0)?'neg':(v>0?'pos':'')) + (cls?' '+cls:''));
@@ -4881,6 +5178,33 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     draw();
     $('#ctDetOpSel').addEventListener('change', draw);
     $$('#ctDetMode button', el).forEach(b=>b.addEventListener('click',()=>{ CT_DET_MODE=b.dataset.v; renderDetalle(); }));
+  }
+
+  // Detalle por día de la semana: promedio por día del mes en pantalla (Planif_2026) frente al histórico de los
+  // 90 días previos del Reporte de Margen, más On Call, CR 2 min y SPH del mes vs. ese mismo histórico.
+  function detalleDowHtml(k, g){
+    const cerr = g.dias.filter(d => d.status === 'elapsed');
+    const ini = g.dias.length ? g.dias[0].fecha : null;
+    const hist = (OPS && ini) ? OPS.fechas.filter(f => f < ini && f >= addDiasISO(ini, -90)) : [];
+    const tieneOps = !!(OPS && OPS_SRC[k]);
+    const td = (inner, cls) => `<td${cls ? ` class="${cls}"` : ''}>${inner}</td>`;
+    const dif = (a, b, pp) => (a == null || b == null) ? td('—') : td((pp ? ((a - b) >= 0 ? '+' : '−') + dec(Math.abs(a - b), 1) + ' pp' : fmtSignedPct1(b ? 100 * (a / b - 1) : 0)), (a - b) < 0 ? 'neg' : ((a - b) > 0 ? 'pos' : ''));
+    let body = '';
+    WD_ORD.forEach((w, i) => {
+      const ds = cerr.filter(d => wdIso(d.fecha) === w), n = ds.length;
+      const rp = n ? ds.reduce((s, d) => s + (d.rev_plan || 0), 0) / n : null, rr = n ? ds.reduce((s, d) => s + (d.rev_real || 0), 0) / n : null;
+      const vr = n ? ds.reduce((s, d) => s + (d.ventas_real || 0), 0) / n : null;
+      const hd = hist.filter(f => wdIso(f) === w), hr = (tieneOps && hd.length) ? opsKpi(k, hd, 'rev') / hd.length : null;
+      const md = ds.map(d => d.fecha).filter(f => OPS && OPS.idx[f] != null);
+      const kp = kk => tieneOps && opsTiene(k, kk) ? [opsKpi(k, md, kk), opsKpi(k, hd, kk)] : [null, null];
+      const [oc, ocH] = kp('oncall'), [cr, crH] = kp('cr2'), [sp, spH] = kp('sph');
+      body += `<tr>${td(DOW_ORDER[i] + ` <small>(${n})</small>`, 'l')}${td(rp == null ? '—' : fmtMoney(rp), 'grp')}${td(rr == null ? '—' : fmtMoney(rr))}${rp ? dif(rr, rp) : td('—')}
+        ${td(vr == null ? '—' : (Math.round(vr * 10) / 10).toLocaleString('es-CO'))}${td(hr == null ? '—' : fmtMoney(hr), 'grp')}${hr ? dif(rr, hr) : td('—')}
+        ${td(fmtOps('oncall', oc), 'grp')}${td(fmtOps('oncall', ocH))}${td(fmtOps('cr2', cr), 'grp')}${td(fmtOps('cr2', crH))}${td(fmtOps('sph', sp), 'grp')}${td(fmtOps('sph', spH))}</tr>`;
+    });
+    return `<thead><tr><th class="l">Día</th><th class="grp">Plan prom.</th><th>Real prom.</th><th>Var. vs plan</th><th>Ventas prom.</th><th class="grp">Histórico prom.<br><small>Rep. Margen · 90 días</small></th><th>Real vs histórico</th>
+      <th class="grp">% On Call<br><small>mes</small></th><th><small>histórico</small></th><th class="grp">CR 2 min<br><small>mes</small></th><th><small>histórico</small></th><th class="grp">SPH<br><small>mes</small></th><th><small>histórico</small></th></tr></thead><tbody>${body}</tbody>` +
+      (tieneOps ? '' : `<caption style="caption-side:bottom;text-align:left;font-size:11.5px;color:var(--text-muted);padding-top:6px">${OPS ? 'Esta operación no está en los Reportes de Margen: solo se muestra Planif_2026.' : 'Cargando el histórico de los Reportes de Margen…'}</caption>`);
   }
 
   const VIEW_OF = {renderRca:'ctViewRca',renderAlertStrip:'ctAlerts',renderExec:'ctViewExec',renderDow:'ctViewDow',renderCritical:'ctViewCritical',renderPatterns:'ctViewPatterns',renderWeekend:'ctDowFds'};
@@ -5048,9 +5372,10 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
         apHasta:AP_PAYLOAD && AP_PAYLOAD.hasta, corte:dias.length ? dias[dias.length - 1].fecha : null, excluirFecha:ic ? ic.fecha : null});
     } catch (err){ console.error('[Alertas] resultados:', err); }
     try { all = all.concat(apAlertasPanel()); } catch (err){ console.error('[Alertas] causa raíz:', err); }
+    try { all = all.concat(opsAlertas()); } catch (err){ console.error('[Alertas] operación:', err); }
     const rank = {sistema:0, critico:1, atencion:2, info:3};
     all.sort((a, b) => (rank[a.sev] - rank[b.sev]) || ((b.fecha || '') > (a.fecha || '') ? 1 : ((b.fecha || '') < (a.fecha || '') ? -1 : 0)));
-    AlertPanel.render(el, all, {id:'ctAlertPanel', title:'Alertas de Post-Venta', subtitle:CT_DATA.meta.mes ? mesLabel(CT_DATA.meta.mes) : '', max:6, onOpen:a => abrirCausaRaiz(a.go)});
+    AlertPanel.render(el, all, {id:'ctAlertPanel', title:'Alertas de Post-Venta', subtitle:CT_DATA.meta.mes ? mesLabel(CT_DATA.meta.mes) : '', max:6, onOpen:a => (a.go && a.go.kpi) ? abrirKpi(a.go) : abrirCausaRaiz(a.go)});
   }
 
   /* ---------- períodos ---------- */
@@ -5853,13 +6178,13 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     return null;
   }
   function projLegend(metric, mode, esc){
-    if (metric==='asp' || UPS_RATE[metric]) return '';
+    if (metric==='asp' || UPS_RATE[metric] || OPS_KPI[metric]) return '';
     const sw = (c, d) => `<svg width="22" height="8" style="vertical-align:middle"><line x1="0" x2="22" y1="4" y2="4" stroke="${c}" stroke-width="2.4" stroke-dasharray="${d}"/></svg>`;
     return `<span style="font-size:12px;color:var(--text-muted)">${sw(PJ_COLOR,'2,3')} ${mode==='acum'?'Proyección al ritmo actual':'Necesario por día'}</span>` +
       (mode==='acum' && esc ? ESC_LINES.map(es => `<span style="font-size:12px;color:var(--text-muted)">${sw(es.color,'6,4')} ${es.label}</span>`).join('') : '');
   }
   function projAttach(series, PJ, metric, mode){
-    if (!PJ || !series || metric==='asp' || UPS_RATE[metric]) return;
+    if (!PJ || !series || metric==='asp' || UPS_RATE[metric] || OPS_KPI[metric]) return;
     if (mode==='acum'){
       const s = metric==='rev' ? PJ.serieRev : PJ.serieVol; if (!s) return;
       series.forEach((p, i) => { p.proj = s.puntos[i]; });
@@ -5978,6 +6303,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
     initAll();
     cargarMesPrevio();
     if (AP_PAYLOAD) rebuildAP(); else cargarAgentPerf();
+    if (!OPS) cargarOpsHist();
   }
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', bootCT); else bootCT();
 })();
