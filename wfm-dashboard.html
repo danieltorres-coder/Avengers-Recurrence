@@ -5572,7 +5572,7 @@ const AP_DATA_FALLBACK = {"ok":true,"action":"agentperf","generatedAt":"2026-10-
       
       <div style="overflow:auto"><table class="ct-table"><thead><tr><th>#</th><th>Agente</th><th>Grupo</th><th>Estado</th><th class="num" title="Ventas esperadas por día trabajado (promedio histórico suavizado)">Prom. esperado/día</th><th class="num">Real</th><th class="num">Horas</th><th class="num">Impacto</th><th class="num" title="Acumulado del total de caída">Acum.</th><th>Días</th></tr></thead><tbody>`;
     show.forEach((a, i) => {
-      h += `<tr><td>${i+1}</td><td><b>${esc(a.n)}</b>${a.formador?' <span class="rca-note-s">formador</span>':''}</td><td>${esc(a.grupo)}</td><td>${chip(a.estado)}</td><td class="num">${f1(a.E)}</td><td class="num">${a.real}</td><td class="num">${f1(a.hrs)}</td>
+      h += `<tr><td>${i+1}</td><td><b>${esc(a.n)}</b>${a.formador?' <span class="rca-note-s">formador</span>':''} <a class="rca-note-s" href="calidad-llamadas.html#agente=${encodeURIComponent(a.n)}" target="_blank" rel="noopener" title="Ver sus llamadas en Calidad Post-Sales · QA: condicionamiento, cobros y trato (pide la clave del QA)">QA ↗</a></td><td>${esc(a.grupo)}</td><td>${chip(a.estado)}</td><td class="num">${f1(a.E)}</td><td class="num">${a.real}</td><td class="num">${f1(a.hrs)}</td>
         <td class="num"><b class="${a.imp<-0.4?'ct-pill-bad':(a.imp>0.4?'ct-pill-good':'')}">${sg1(a.imp)}</b></td><td class="num">${a.acumPct==null?'—':a.acumPct.toFixed(0)+'%'}</td>
         <td>${a.dias.map(d => `<i class="rca-dot" style="--cc:${(RCA_EST[d.estado]||{}).c||'var(--border)'}" title="${esc(fechaCorta(d.fecha)+' · '+((RCA_EST[d.estado]||{}).t||d.estado)+' · '+d.v+' ventas · '+d.staff+' h')}"></i>`).join('')}</td></tr>`;
     });
