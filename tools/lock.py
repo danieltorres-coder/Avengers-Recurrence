@@ -26,17 +26,23 @@ h1{{font-size:20px;margin:0}}p{{margin:0;color:var(--muted);font-size:13.5px}}
 input{{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}}
 button{{font:600 15px system-ui;padding:10px;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}}
 #e{{color:var(--bad);min-height:1.2em}}
+.row{{display:flex;gap:8px}}.row input{{flex:1;min-width:0}}
+button.sec{{background:transparent;color:var(--accent);border:1px solid var(--line);font-weight:500}}
+.hint{{font-size:12px}}
 </style></head><body>
 <form class="g" id="f"><h1>{t}</h1><p>Contenido interno de Aprende Institute. Ingresa la clave.</p>
-<input type="password" id="p" autocomplete="current-password" aria-label="Clave" autofocus>
-<button type="submit">Entrar</button><p id="e" role="alert"></p></form>
+<div class="row"><input type="password" id="p" name="clave_tablero_ltv" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Clave" autofocus><button type="button" id="ver" class="sec">Mostrar</button></div>
+<button type="submit">Entrar</button><p id="e" role="alert"></p>
+<p class="hint">Si el navegador rellenó otra clave guardada (por ejemplo, la del QA), bórrala y escribe la de este tablero.</p></form>
 <script>
 (()=>{{
 const D="{blob}",I=150000;
 const norm=s=>s.toLowerCase().replace(/\\s+/g,'');
 async function dec(pw){{const b=Uint8Array.from(atob(D),c=>c.charCodeAt(0));const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);const k=await crypto.subtle.deriveKey({{name:'PBKDF2',salt:b.slice(0,16),iterations:I,hash:'SHA-256'}},km,{{name:'AES-GCM',length:256}},false,['decrypt']);return new TextDecoder().decode(await crypto.subtle.decrypt({{name:'AES-GCM',iv:b.slice(16,28)}},k,b.slice(28)))}}
 async function go(pw,auto){{try{{const h=await dec(pw);try{{sessionStorage.setItem('sp_pw',pw)}}catch(_){{}}document.open();document.write(h);document.close()}}catch(_){{if(!auto){{try{{sessionStorage.removeItem('sp_pw')}}catch(__){{}}document.getElementById('e').textContent='Clave incorrecta.'}}}}}}
-document.getElementById('f').addEventListener('submit',e=>{{e.preventDefault();document.getElementById('e').textContent='Abriendo…';go(norm(document.getElementById('p').value))}});
+const P=document.getElementById('p'),E=document.getElementById('e');
+document.getElementById('ver').addEventListener('click',()=>{{const v=P.type==='password';P.type=v?'text':'password';document.getElementById('ver').textContent=v?'Ocultar':'Mostrar';P.focus()}});
+document.getElementById('f').addEventListener('submit',e=>{{e.preventDefault();const v=norm(P.value);if(!v){{E.textContent='Escribe la clave.';P.focus();return}}if(!(window.crypto&&crypto.subtle)){{E.textContent='Este navegador no permite abrir la página. Ábrela en Chrome, Edge o Safari actualizados.';return}}E.textContent='Abriendo…';go(v)}});
 try{{const s=sessionStorage.getItem('sp_pw');if(s)go(s,true)}}catch(_){{}}
 }})();
 </script></body></html>'''
