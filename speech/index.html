@@ -1,19 +1,26 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
 <title>Speech de ventas · Post-Sales</title>
 <style>
-:root{--bg:#f3f5f6;--surface:#fff;--ink:#15212c;--muted:#5b6873;--line:#dde3e7;--accent:#0d6b78}
-@media (prefers-color-scheme:dark){:root{--bg:#0f161c;--surface:#17212a;--ink:#e4ebef;--muted:#9aa8b2;--line:#2a3742;--accent:#4fb3c0}}
+:root{--bg:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--muted:#52514e;--line:#e1e0d9;--accent:#2a78d6;--bad:#c93a3a}
+@media (prefers-color-scheme:dark){:root{--bg:#0d0d0d;--surface:#1a1a19;--ink:#fff;--muted:#c3c2b7;--line:#2c2c2a;--accent:#3987e5;--bad:#e0605f}}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
-.w{max-width:900px;margin:0 auto;padding:32px max(16px,env(safe-area-inset-left,0px)) 64px;display:flex;flex-direction:column;gap:18px}
-h1{margin:0;font-size:clamp(26px,5vw,38px)} p{margin:0;color:var(--muted);max-width:65ch}
-.top{display:flex;gap:18px;font-weight:600;font-size:13px} .top a{color:var(--accent);text-decoration:none}
-.cs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
-.c{display:flex;flex-direction:column;gap:6px;padding:18px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);text-decoration:none}
-.c:hover,.c:focus-visible{border-color:var(--accent);outline:none} .c b{font-size:18px} .c span{color:var(--muted);font-size:13.5px}
-</style></head><body><div class="w">
-<div class="top"><a href="../index.html">← Tablero LTV</a><a href="../calidad-llamadas.html">Calidad Post-Sales · QA</a></div>
-<h1>Speech de ventas por operación</h1>
-<p>Cada speech tiene dos pestañas: el speech en 13 etapas y las llamadas que funcionan, que se actualizan cada mes. Se abren con la clave del equipo.</p>
-<div class="cs"><a class="c" href="./upsell.html"><b>Upsell (Activaciones)</b><span>Activación del programa recién comprado y oferta de complementos. Turnos AM, INT y PM.</span></a><a class="c" href="./recurrence.html"><b>Recurrence</b><span>Seguimiento a estudiantes activos: avance, extensiones, membresía y programas adicionales.</span></a><a class="c" href="./bootcamp.html"><b>Bootcamp</b><span>Bootcamps y proyectos empresariales para estudiantes con más de 6 meses.</span></a><a class="c" href="./resurrection.html"><b>Resurrection</b><span>Recuperación de estudiantes que no terminaron o se les venció el acceso.</span></a></div>
-</div></body></html>
+.g{max-width:380px;margin:12vh auto;padding:28px 24px;background:var(--surface);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;gap:12px}
+h1{font-size:20px;margin:0}p{margin:0;color:var(--muted);font-size:13.5px}
+input{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+button{font:600 15px system-ui;padding:10px;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
+#e{color:var(--bad);min-height:1.2em}
+</style></head><body>
+<form class="g" id="f"><h1>Speech de ventas · Post-Sales</h1><p>Contenido interno de Aprende Institute. Ingresa la clave.</p>
+<input type="password" id="p" autocomplete="current-password" aria-label="Clave" autofocus>
+<button type="submit">Entrar</button><p id="e" role="alert"></p></form>
+<script>
+(()=>{
+const D="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",I=150000;
+const norm=s=>s.toLowerCase().replace(/\s+/g,'');
+async function dec(pw){const b=Uint8Array.from(atob(D),c=>c.charCodeAt(0));const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b.slice(0,16),iterations:I,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:b.slice(16,28)},k,b.slice(28)))}
+async function go(pw,auto){try{const h=await dec(pw);try{sessionStorage.setItem('sp_pw',pw)}catch(_){}document.open();document.write(h);document.close()}catch(_){if(!auto){try{sessionStorage.removeItem('sp_pw')}catch(__){}document.getElementById('e').textContent='Clave incorrecta.'}}}
+document.getElementById('f').addEventListener('submit',e=>{e.preventDefault();document.getElementById('e').textContent='Abriendo…';go(norm(document.getElementById('p').value))});
+try{const s=sessionStorage.getItem('sp_pw');if(s)go(s,true)}catch(_){}
+})();
+</script></body></html>
