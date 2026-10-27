@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calidad Post-Sales · QA</title>
+<style>
+:root{--page:#f9f9f7;--surface:#fcfcfb;--raised:#fff;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--grid:#e1e0d9;--base:#c3c2b7;--line:rgba(11,11,11,.10);--line2:rgba(11,11,11,.16);
+--s1:#2a78d6;--s1s:rgba(42,120,214,.14);--s2:#eb6834;--s2s:rgba(235,104,52,.14);--s3:#1baf7a;--s4:#7c5cff;--good:#006300;--bad:#d84343;--warn:#b26b00;--shadow:0 1px 2px rgba(11,11,11,.04),0 8px 24px -12px rgba(11,11,11,.10)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--page:#0d0d0d;--surface:#1a1a19;--raised:#212120;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--base:#383835;--line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.18);
+--s1:#3987e5;--s1s:rgba(57,135,229,.18);--s2:#d95926;--s2s:rgba(217,89,38,.18);--s3:#199e70;--s4:#8f74ff;--good:#0ca30c;--bad:#e0605f;--warn:#e0a030}}
+:root[data-theme="dark"]{--page:#0d0d0d;--surface:#1a1a19;--raised:#212120;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--base:#383835;--line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.18);
+--s1:#3987e5;--s1s:rgba(57,135,229,.18);--s2:#d95926;--s2s:rgba(217,89,38,.18);--s3:#199e70;--s4:#8f74ff;--good:#0ca30c;--bad:#e0605f;--warn:#e0a030}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--page);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding:20px 16px 60px}
+a{color:var(--s1)}
+h1{font-size:28px;line-height:1.15;margin:6px 0 8px}h2{font-size:19px;margin:0 0 4px}h3{font-size:15px;margin:0 0 6px}
+.eyebrow{font:600 11px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--s1)}
+.muted{color:var(--ink2)}.small{font-size:12.5px}.tiny{font-size:11.5px;color:var(--muted)}
+.links{display:flex;gap:16px;flex-wrap:wrap;font-size:13px}
+.lead{max-width:860px;color:var(--ink2);margin:0 0 6px}
+.fbar{position:sticky;top:0;z-index:5;background:var(--page);border-bottom:1px solid var(--line);padding:10px 0;margin:14px 0 0;display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.fbar label{display:flex;flex-direction:column;gap:2px;font-size:11.5px;color:var(--ink2)}
+select,input[type=search]{font:inherit;font-size:13.5px;padding:6px 8px;border:1px solid var(--line2);border-radius:8px;background:var(--raised);color:var(--ink);min-width:0;max-width:220px}
+.fbar .info{font-size:12.5px;color:var(--ink2);margin-left:auto}
+.btn{font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--raised);color:var(--ink);cursor:pointer}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:12px 0 18px;overflow-x:auto}
+.tabs button{font:inherit;font-size:14px;padding:10px 14px;border:0;border-bottom:2px solid transparent;background:none;color:var(--ink2);cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--s1);font-weight:600}
+section{margin:0 0 26px}
+.grid{display:grid;gap:14px}.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow);min-width:0}
+.card>p.small{margin:0 0 10px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.kpi{padding:14px 14px 12px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}
+.kpi b{display:block;font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi span{font-size:12px;color:var(--ink2)}
+.d{font-size:11.5px;font-variant-numeric:tabular-nums;margin-top:2px}.d.up{color:var(--good)}.d.dn{color:var(--bad)}.d.eq{color:var(--muted)}
+.hb{display:grid;grid-template-columns:minmax(110px,190px) 1fr auto;gap:4px 10px;align-items:center;font-size:12.5px}
+.hb .l{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .v{font-variant-numeric:tabular-nums;text-align:right;min-width:64px}
+.bars{display:flex;flex-direction:column;gap:2px}
+.bar{height:9px;border-radius:0 4px 4px 0;background:var(--s1);min-width:1px}
+.bar.b2{background:var(--s2)}.bar.bg{background:var(--base)}
+.track{position:relative;height:14px;background:transparent}
+.track .bar{position:absolute;left:0;top:2px;height:10px}
+.track .seg{position:absolute;top:2px;height:10px;background:var(--s1)}
+.track .tot{position:absolute;left:0;top:2px;height:10px;border-radius:0 4px 4px 0;background:var(--s1s)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin:0 0 8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.cols{display:flex;align-items:flex-end;gap:2px;height:170px;border-bottom:1px solid var(--base);padding-top:8px}
+.cols .c{flex:1;display:flex;flex-direction:column-reverse;min-width:3px;height:100%;cursor:default}
+.cols .c i{display:block;width:100%}
+.cols .c .a{background:var(--s1s);border-radius:3px 3px 0 0}.cols .c .s{background:var(--s1)}
+.cols .c:hover .a,.cols .c:focus .a{outline:1px solid var(--s1)}
+.xl{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top;font-variant-numeric:tabular-nums}
+th{font-weight:600;color:var(--ink2);background:var(--surface);position:sticky;top:0;z-index:1}
+th:first-child,td:first-child,td.l,th.l{text-align:left}
+th button{font:inherit;font-weight:600;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:inherit}
+.tw{overflow:auto;max-height:640px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.lnk{font:inherit;color:var(--s1);background:none;border:0;padding:0;cursor:pointer;text-align:left;text-decoration:underline;text-decoration-color:var(--line2)}
+.hm{font-weight:600}
+.pill{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line2);color:var(--ink2);margin:1px 2px 1px 0;white-space:nowrap}
+.pill.ok{border-color:var(--good);color:var(--good)}.pill.no{border-color:var(--bad);color:var(--bad)}.pill.na{opacity:.55}
+.lo{color:var(--bad);font-weight:600}.hi{color:var(--good);font-weight:600}
+.q{border-left:3px solid var(--s1);padding:6px 10px;margin:8px 0;background:var(--raised);border-radius:0 8px 8px 0;font-size:13px}
+.q.bad{border-left-color:var(--bad)}
+.q .src{display:block;font-size:11.5px;color:var(--muted);margin-top:3px}
+.find{margin:0;padding-left:18px}.find li{margin:4px 0}
+.st-box{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--raised);margin-top:10px}
+.tx{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--raised);font-size:13px}
+.tx p{margin:4px 0}.tx .a b{color:var(--s1)}.tx .c b{color:var(--s2)}
+.tip{position:fixed;z-index:20;pointer-events:none;background:var(--raised);color:var(--ink);border:1px solid var(--line2);border-radius:8px;padding:6px 9px;font-size:12px;box-shadow:var(--shadow);max-width:280px;display:none}
+.tip b{font-size:13px}
+.note{font-size:12.5px;color:var(--ink2);background:var(--surface);border:1px dashed var(--line2);border-radius:10px;padding:10px 12px}
+[hidden]{display:none!important}
+@media (max-width:640px){h1{font-size:23px}.fbar{position:static}.fbar .info{margin-left:0}.hb{grid-template-columns:minmax(90px,120px) 1fr auto}.kpi b{font-size:20px}}
+</style></head><body>
+<div class="wrap">
+<div class="links"><a href="./index.html">← Volver al tablero LTV</a><a href="./speech/index.html">🎙️ Speech de ventas por operación</a><a href="./calidad-llamadas-2026-09.html">Informe detallado de septiembre (versión anterior)</a></div>
+<p class="eyebrow" style="margin-top:14px">Post-Sales Operations · Aprende Institute · Banco de llamadas</p>
+<h1>Calidad Post-Sales · QA</h1>
+<p class="lead" id="lead"></p>
+<p class="tiny" id="metodo"></p>
+
+<div class="fbar" id="fbar">
+ <label>Mes<select id="f_mes"></select></label>
+ <label>Operación<select id="f_op"></select></label>
+ <label>Turno (Upsell)<select id="f_t"></select></label>
+ <label>Supervisor<select id="f_sup"></select></label>
+ <label>Asesor<input type="search" id="f_ag" placeholder="Nombre" list="dl_ag"></label><datalist id="dl_ag"></datalist>
+ <button class="btn" id="f_clr" type="button">Limpiar filtros</button>
+ <span class="info" id="f_info"></span>
+</div>
+<div class="tabs" role="tablist" id="tabs">
+ <button role="tab" data-v="res" aria-selected="true">Resumen</button>
+ <button role="tab" data-v="ops">Diagnóstico por operación</button>
+ <button role="tab" data-v="gui">Guion vs llamadas</button>
+ <button role="tab" data-v="ag">Asesores</button>
+ <button role="tab" data-v="mal">Riesgo y experiencia</button>
+ <button role="tab" data-v="of">Guion oficial por operación</button>
+</div>
+
+<div id="v_res" class="view">
+ <section><span class="eyebrow">Resumen para la directiva</span><h2 id="r_tit"></h2><p class="small muted" id="r_sub"></p><div class="kpis" id="r_k"></div></section>
+ <section class="card"><h3>Lo principal</h3><ul class="find" id="r_find"></ul></section>
+ <section class="grid g2">
+  <div class="card"><h3>Mes a mes por operación</h3><p class="small muted">% de llamadas que terminan en venta confirmada. Cada mes nuevo aparece aquí.</p><div class="legend" id="mm_leg"></div><div id="mm"></div></div>
+  <div class="card"><h3>Llamadas y ventas por día</h3><p class="small muted">Barra clara = llamadas del día; tramo oscuro = ventas confirmadas. Pasa el cursor por un día para ver el detalle.</p><div class="cols" id="dd"></div><div class="xl" id="dd_x"></div></div>
+ </section>
+ <section class="grid g2">
+  <div class="card"><h3>Cumplimiento del speech por etapa</h3><p class="small muted">% de llamadas donde aplica la etapa y el asesor la hace. Ventas contra no ventas.</p><div class="legend"><span><i style="background:var(--s1)"></i>Ventas</span><span><i style="background:var(--s2)"></i>No ventas</span></div><div id="stg"></div></div>
+  <div class="card"><h3>Qué se ofrece y cuánto se vende</h3><p class="small muted">Barra = ofertas del producto; tramo oscuro = ventas. A la derecha, la venta sobre oferta.</p><div id="prd"></div>
+   <h3 style="margin-top:18px">Objeciones del estudiante</h3><p class="small muted">% de llamadas con oferta donde aparece la objeción, y cuántas de esas terminan en venta.</p><div id="obj"></div></div>
+ </section>
+</div>
+
+<div id="v_ops" class="view" hidden><section><span class="eyebrow">Diagnóstico por operación</span><h2>Cómo va cada operación</h2><p class="small muted">Usa el mismo mes, turno, supervisor y asesor de los filtros de arriba. Para comparar operaciones, deja «Operación» en «Todas».</p></section><div class="grid g2" id="ops"></div></div>
+
+<div id="v_gui" class="view" hidden>
+ <section><span class="eyebrow">Guion vs llamadas</span><h2>Las 13 etapas del speech oficial en las llamadas reales</h2><p class="small muted">% de cumplimiento de cada etapa por operación en el periodo filtrado. Entre paréntesis, el cambio contra el mes anterior. «Impacto» = puntos de venta de más cuando la etapa se hace. Haz clic en una etapa para ver el guion oficial y frases reales de ventas.</p>
+ <div class="tw"><table id="gtab"></table></div><div id="gdet"></div></section>
+ <section class="card"><h3>Buenas prácticas en la oferta</h3><p class="small muted">Sobre las llamadas con oferta. «Opcional» o «complemento» = el asesor deja claro que lo adicional se decide aparte.</p><div class="tw"><table id="btab"></table></div></section>
+</div>
+
+<div id="v_ag" class="view" hidden>
+ <section><span class="eyebrow">Asesores</span><h2>Desempeño de calidad por asesor</h2><p class="small muted">Haz clic en un encabezado para ordenar, y en un asesor para ver sus llamadas, sus etapas débiles y sus señales de riesgo.</p>
+ <div class="tw"><table id="atab"></table></div></section>
+ <section id="adet"></section>
+</div>
+
+<div id="v_mal" class="view" hidden>
+ <section><span class="eyebrow">Riesgo y experiencia · condicionamiento o malos tratos</span><h2>No negociables del speech en las llamadas</h2><p id="m_txt"></p><div class="kpis" id="m_k"></div></section>
+ <section class="grid g2"><div class="card"><h3>Señales por tipo</h3><p class="small muted">Número de llamadas con la señal en el periodo filtrado.</p><div id="m_sig"></div></div>
+ <div class="card"><h3>«Opcional» y «complemento» en la oferta</h3><p class="small muted" id="m_opc_t"></p><div id="m_opc"></div></div></section>
+ <section><h3>Por asesor</h3><p class="small muted">Llamadas con cada señal. Haz clic en un asesor para leer las citas (con el ID de la llamada para escucharla).</p><div class="tw"><table id="mtab"></table></div><div id="mdet"></div></section>
+ <section class="note" id="m_ancla"></section>
+</div>
+
+<div id="v_of" class="view" hidden><section><span class="eyebrow">Guion oficial por operación</span><h2 id="of_t"></h2><p class="small muted" id="of_c"></p><div class="legend" id="of_sel"></div><div id="of_b"></div></section></div>
+
+<div id="v_call" class="view" hidden><section><button class="btn" id="back" type="button">← Volver</button><h2 style="margin-top:10px" id="cl_t"></h2><div id="cl_m" class="small muted"></div><div id="cl_s"></div><h3 style="margin-top:14px">Transcripción</h3><div class="tx" id="cl_x">Cargando…</div></section></div>
+
+<p class="tiny" id="foot" style="margin-top:30px"></p>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+<script>
+/*__DATA__*/
+(()=>{
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MN=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const mname=m=>{const s=MN[+m.slice(5)-1];return s[0].toUpperCase()+s.slice(1)+' '+m.slice(0,4)};
+const fd=f=>+f.slice(8)+' '+MN[+f.slice(5,7)-1].slice(0,3);
+const nf=(v,d=0)=>v==null||isNaN(v)?'—':v.toLocaleString('es-CO',{minimumFractionDigits:d,maximumFractionDigits:d});
+const pc=(a,b)=>b?100*a/b:null;
+const pf=(v,d=0)=>v==null?'—':nf(v,d)+' %';
+const OPS=META.ops,ST=['saludo','conexion','sondeo','beneficio','integracion','ejemplos','precio','cierre1','objeciones','cierre2','desp_v','desp_nv','seguimiento'];
+const STN=GUIONES.Upsell.stages.map(s=>s.name);
+const OPC=['var(--s1)','var(--s2)','var(--s3)','var(--s4)'];
+const RK={apelativo:['Trato','Apelativos («mi amor», «mi reina», «mija», «corazón»)'],maltrato:['Trato','Trato brusco o descalificador'],tarjeta:['Pagos seguros','Pide datos de la tarjeta o el código por teléfono'],terceros:['Pagos seguros','Sugiere préstamo o tarjeta de un familiar'],nada_mas:['Cobros claros','«No vas a pagar nada más» (omite membresía o cuotas)'],promesa:['Sin promesas','Promete empleo, ingresos o validez oficial'],urgencia:['Sin presión','Urgencia ligada al precio («solo por hoy»)'],caducidad:['Sin presión','El beneficio «se pierde» si no paga hoy o al colgar'],supervisor:['Sin presión','«Me autorizó mi supervisor» un precio'],descuento:['Sin presión','Descuento o precio especial del asesor'],regalo:['Sin presión','«Te regalamos» clases a cambio de pagar hoy'],presion:['Sin presión','Venta después de 4 o más negativas del estudiante'],condicion:['Tú decides','Presenta lo adicional como obligatorio o «que le corresponde»'],cond_impl:['Tú decides','Ofrece el complemento como «material académico/de apoyo» sin decir que es opcional ni complemento (Upsell)']};
+const RKK=Object.keys(RK);
+const RKS={apelativo:'Apelativos',maltrato:'Trato brusco',tarjeta:'Datos de tarjeta',terceros:'Préstamo / tarjeta de otro',nada_mas:'«Nada más»',promesa:'Promesas',urgencia:'Urgencia',caducidad:'Beneficio se pierde',supervisor:'«Autorizó mi supervisor»',descuento:'Descuento del asesor',regalo:'«Te regalamos»',presion:'Venta tras 4+ negativas',condicion:'Obligatorio',cond_impl:'Material sin opcional'};
+const CAT=['Trato','Pagos seguros','Cobros claros','Sin presión','Sin promesas','Tú decides'];
+const CL=CALLS.map(r=>({id:r[0],f:r[1],m:r[1].slice(0,7),op:OPS[r[2]],t:r[3],sup:r[4],ag:r[5],res:r[6],of:r[7],pr:r[8]<0?null:META.prods[r[8]],pre:r[9],dur:r[10],st:r[11],ob:r[12],rk:r[13],ch:r[14],sorp:r[15],q:r[16],s60:r[17]}));
+CL.forEach(c=>{c.rq=c.rk.filter(k=>k!=='ancla');c.anc=c.rk.includes('ancla')});
+const BYID=Object.fromEntries(CL.map(c=>[c.id,c]));
+const MS=Object.keys(META.meses).sort();
+const chk=(c,k)=>{const v=c.ch[META.ch.indexOf(k)];return v==='-'?null:+v};
+const stv=(c,i)=>{const v=c.st[i];return v==='-'?null:+v};
+// ---------- filtros
+const F={mes:MS[MS.length-1],op:'',t:'',sup:'',ag:''};
+const opt=(sel,arr,lab0)=>{sel.innerHTML=(lab0?`<option value="">${esc(lab0)}</option>`:'')+arr.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')};
+opt($('f_mes'),[...MS.slice().reverse().map(m=>[m,mname(m)+' ('+fd(META.meses[m].desde)+' – '+fd(META.meses[m].hasta)+')']),['','Todos los meses']]);
+opt($('f_op'),OPS.map(o=>[o,o]),'Todas');
+function fillDeps(){
+ const L=CL.filter(c=>(!F.mes||c.m===F.mes)&&(!F.op||c.op===F.op));
+ opt($('f_t'),[...new Set(L.filter(c=>c.op==='Upsell').map(c=>c.t))].sort().map(t=>[t,t]),'Todos');$('f_t').value=F.t;$('f_t').disabled=F.op&&F.op!=='Upsell';
+ opt($('f_sup'),[...new Set(L.map(c=>c.sup))].sort().map(s=>[s,s]),'Todos');$('f_sup').value=F.sup;
+ $('dl_ag').innerHTML=[...new Set(L.filter(c=>!F.sup||c.sup===F.sup).map(c=>c.ag))].sort().map(a=>`<option value="${esc(a)}">`).join('');
+}
+const nrm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+function sel(over={},L=CL){const f={...F,...over};const q=nrm(f.ag);return L.filter(c=>(!f.mes||c.m===f.mes)&&(!f.op||c.op===f.op)&&(!f.t||c.t===f.t)&&(!f.sup||c.sup===f.sup)&&(!q||nrm(c.ag).includes(q)))}
+const prevMes=()=>{const i=MS.indexOf(F.mes);return i>0?MS[i-1]:null};
+// ---------- métricas
+function M(L){
+ const n=L.length,ok=L.filter(c=>c.res!=='I'),v=L.filter(c=>c.res==='V').length,of=L.filter(c=>c.of).length,vof=L.filter(c=>c.of&&c.res==='V').length;
+ let ap=0,cu=0;ok.forEach(c=>{for(let i=0;i<13;i++){const x=stv(c,i);if(x!=null){ap++;cu+=x}}});
+ const ofl=L.filter(c=>c.of);
+ return {n,v,pv:pc(v,ok.length),of,pof:pc(of,n),vof:pc(vof,of),cu:pc(cu,ap),rq:L.filter(c=>c.rq.length).length,prq:pc(L.filter(c=>c.rq.length).length,n),
+  dur:n?L.reduce((s,c)=>s+c.dur,0)/n:null,bp:pc(ofl.filter(c=>chk(c,'opcional')||chk(c,'complemento')).length,ofl.length),
+  sinopc:ofl.filter(c=>!chk(c,'opcional')).length,nof:ofl.length,anc:L.filter(c=>c.anc).length}
+}
+function stS(L,i){const ap=L.filter(c=>c.res!=='I'&&stv(c,i)!=null);const P=x=>pc(x.filter(c=>stv(c,i)).length,x.length);
+ const V=ap.filter(c=>c.res==='V'),N=ap.filter(c=>c.res==='N');const si=ap.filter(c=>stv(c,i)),no=ap.filter(c=>!stv(c,i));
+ const lift=(si.length>=15&&no.length>=15)?pc(si.filter(c=>c.res==='V').length,si.length)-pc(no.filter(c=>c.res==='V').length,no.length):null;
+ return {n:ap.length,p:P(ap),pv:P(V),pn:P(N),lift,post:['precio','cierre1','cierre2','desp_v','desp_nv'].includes(ST[i])}}
+const dl=(a,b,inv,suf=' pts')=>{if(a==null||b==null)return '';const x=a-b;const c=Math.abs(x)<0.5?'eq':((x>0)!==!!inv?'up':'dn');return `<div class="d ${c}">${x>0?'+':''}${nf(x,1)}${suf} vs ${mname(prevMes()).split(' ')[0].toLowerCase()}</div>`};
+// ---------- tooltip
+const tip=$('tip');
+document.addEventListener('pointermove',e=>{const t=e.target.closest('[data-tip]');if(!t){tip.style.display='none';return}tip.innerHTML=t.dataset.tip;tip.style.display='block';const r=tip.getBoundingClientRect();let x=e.clientX+14,y=e.clientY+14;if(x+r.width>innerWidth-8)x=e.clientX-r.width-14;if(y+r.height>innerHeight-8)y=e.clientY-r.height-14;tip.style.left=x+'px';tip.style.top=y+'px'});
+document.addEventListener('focusin',e=>{const t=e.target.closest('[data-tip]');if(!t)return;tip.innerHTML=t.dataset.tip;tip.style.display='block';const b=t.getBoundingClientRect();tip.style.left=Math.min(b.left,innerWidth-290)+'px';tip.style.top=(b.bottom+6)+'px'});
+document.addEventListener('focusout',()=>{tip.style.display='none'});
+// ---------- barras horizontales
+function hbars(rows,max){return `<div class="hb">${rows.map(r=>`<span class="l" title="${esc(r.l)}">${esc(r.l)}</span><span class="bars" tabindex="0" data-tip="${esc(r.tip||'')}">${r.b.map(b=>`<span class="bar ${b.c||''}" style="width:${Math.max(0.5,100*(b.v||0)/max)}%"></span>`).join('')}</span><span class="v">${r.v}</span>`).join('')}</div>`}
+function stacked(rows,max){return `<div class="hb">${rows.map(r=>`<span class="l" title="${esc(r.l)}">${esc(r.l)}</span><span class="track" tabindex="0" data-tip="${esc(r.tip)}"><span class="tot" style="width:${100*r.a/max}%"></span><span class="seg" style="width:${100*r.b/max}%;border-radius:0 ${r.b===r.a?4:0}px ${r.b===r.a?4:0}px 0"></span></span><span class="v">${r.v}</span>`).join('')}</div>`}
+// ---------- RESUMEN
+function vRes(){
+ const L=sel(),m=M(L),pm=prevMes(),P=pm?M(sel({mes:pm})):null;
+ const per=F.mes?`${mname(F.mes)} (${fd(META.meses[F.mes].desde)} – ${fd(META.meses[F.mes].hasta)})`:'Todos los meses';
+ $('r_tit').textContent='Resumen · '+per;
+ $('r_sub').textContent=`${nf(m.n)} llamadas${F.op?' de '+F.op:' de las cuatro operaciones'}${F.sup?' · supervisor '+F.sup:''}${F.ag?' · asesor «'+F.ag+'»':''}.`+(pm?` La flecha compara contra ${mname(pm)} con los mismos filtros.`:'');
+ const nd=x=>{const k=x||F.mes;if(!k)return null;const a=META.meses[k];return Math.round((new Date(a.hasta)-new Date(a.desde))/864e5)+1};const pd=(v,k)=>nd(k)?v/nd(k):null;
+ const K=[[nf(m.n),'llamadas',F.mes?`<div class="d eq">${nf(pd(m.n))} por día${P?' (antes '+nf(pd(P.n,pm))+')':''}</div>`:''],[nf(m.v),'ventas confirmadas',F.mes?`<div class="d eq">${nf(pd(m.v))} por día${P?' (antes '+nf(pd(P.v,pm))+')':''}</div>`:''],[pf(m.pv,1),'venta sobre llamadas',P&&dl(m.pv,P.pv)],[pf(m.vof,1),'venta sobre oferta',P&&dl(m.vof,P.vof)],[pf(m.pof),'llamadas con oferta',P&&dl(m.pof,P.pof)],[pf(m.cu),'cumplimiento del speech (etapas que aplican)',P&&dl(m.cu,P.cu)],[pf(m.bp),'ofertas con «opcional» o «complemento»',P&&dl(m.bp,P.bp)],[nf(m.rq),`llamadas con señal de riesgo (${pf(m.prq,1)})`,P&&dl(m.prq,P.prq,true)],[nf(m.dur,1)+' min','duración media',P&&dl(m.dur,P.dur,false,' min')]];
+ $('r_k').innerHTML=K.map(k=>`<div class="kpi"><b>${k[0]}</b><span>${k[1]}</span>${k[2]||''}</div>`).join('');
+ // lo principal
+ const fi=[];
+ if(P){OPS.filter(o=>!F.op||o===F.op).forEach(o=>{const a=M(L.filter(c=>c.op===o)),b=M(sel({mes:pm,op:o}));if(a.n>=30&&b.n>=30&&Math.abs(a.pv-b.pv)>=1.5)fi.push(`<b>${o}</b>: la venta ${a.pv>b.pv?'sube':'baja'} de ${pf(b.pv,1)} a ${pf(a.pv,1)} (${nf(a.n)} llamadas este periodo).`)});
+  const Lp=sel({mes:pm});const ch=ST.map((k,i)=>({k,i,a:stS(L,i).p,b:stS(Lp,i).p})).filter(x=>x.a!=null&&x.b!=null).sort((x,y)=>(x.a-x.b)-(y.a-y.b));
+  const w=ch[0],b=ch[ch.length-1];if(w&&w.a-w.b<=-2)fi.push(`La etapa que más cae es <b>${STN[w.i]}</b>: ${pf(w.b)} → ${pf(w.a)}.`);if(b&&b.a-b.b>=2)fi.push(`La que más mejora es <b>${STN[b.i]}</b>: ${pf(b.b)} → ${pf(b.a)}.`);
+  if(Math.abs(m.prq-P.prq)>=1)fi.push(`Llamadas con señal de riesgo: ${pf(P.prq,1)} → ${pf(m.prq,1)}.`)}
+ const lifts=ST.map((k,i)=>({i,s:stS(L,i)})).filter(x=>!x.s.post&&x.s.lift!=null).sort((a,b)=>b.s.lift-a.s.lift);
+ if(lifts[0])fi.push(`La etapa que más acompaña la venta es <b>${STN[lifts[0].i]}</b>: cuando se hace, la venta es ${nf(lifts[0].s.lift,1)} puntos mayor. Se hace en ${pf(lifts[0].s.p)} de las llamadas.`);
+ const low=ST.map((k,i)=>({i,s:stS(L,i)})).filter(x=>x.s.p!=null&&x.s.n>=30).sort((a,b)=>a.s.p-b.s.p)[0];if(low)fi.push(`La etapa menos usada es <b>${STN[low.i]}</b> (${pf(low.s.p)}).`);
+ fi.push(`De ${nf(m.nof)} ofertas, <b>${nf(m.sinopc)} (${pf(pc(m.sinopc,m.nof))}) no dicen «opcional»</b>; ${pf(m.bp)} usan «opcional» o «complemento».`);
+ if(F.mes===MS[MS.length-1]&&META.meses[F.mes].hasta.slice(8)<'28')fi.push(`<span class="muted">${mname(F.mes)} va hasta el ${fd(META.meses[F.mes].hasta)}: se compara contra un mes completo, mira los porcentajes más que los totales.</span>`);
+ $('r_find').innerHTML=fi.map(x=>`<li>${x}</li>`).join('');
+ // mes a mes
+ const MSs=F.mes?MS.slice(0,MS.indexOf(F.mes)+1).slice(-4):MS.slice(-4);const MC=['var(--base)','var(--s2)','var(--s3)','var(--s1)'].slice(-MSs.length);
+ $('mm_leg').innerHTML=MSs.map((x,i)=>`<span><i style="background:${MC[i]}"></i>${mname(x)}</span>`).join('');
+ let mx=1;const rows=OPS.filter(o=>!F.op||o===F.op).map(o=>{const vals=MSs.map(x=>M(sel({mes:x,op:o})));vals.forEach(v=>mx=Math.max(mx,v.pv||0));return {o,vals}});
+ $('mm').innerHTML=`<div class="hb">${rows.map(r=>`<span class="l">${r.o}</span><span class="bars">${r.vals.map((v,i)=>`<span class="bar" tabindex="0" style="background:${MC[i]};width:${Math.max(.5,100*(v.pv||0)/mx)}%" data-tip="<b>${pf(v.pv,1)}</b> venta · ${esc(r.o)}<br>${mname(MSs[i])}: ${nf(v.v)} ventas de ${nf(v.n)} llamadas"></span>`).join('')}</span><span class="v">${r.vals.map(v=>pf(v.pv)).join(' · ')}</span>`).join('')}</div>`;
+ // por día
+ const days={};L.forEach(c=>{(days[c.f]=days[c.f]||{n:0,v:0}).n++;if(c.res==='V')days[c.f].v++});const dk=Object.keys(days).sort();const dm=Math.max(1,...dk.map(k=>days[k].n));
+ $('dd').innerHTML=dk.map(k=>`<span class="c" tabindex="0" data-tip="<b>${nf(days[k].n)}</b> llamadas · ${fd(k)}<br><b>${nf(days[k].v)}</b> ventas (${pf(pc(days[k].v,days[k].n))})"><i class="a" style="height:${100*(days[k].n-days[k].v)/dm}%"></i><i class="s" style="height:${100*days[k].v/dm}%"></i></span>`).join('');
+ $('dd_x').innerHTML=dk.length?`<span>${fd(dk[0])}</span><span>máx. ${nf(dm)} llamadas/día</span><span>${fd(dk[dk.length-1])}</span>`:'<span>Sin llamadas</span>';
+ // etapas
+ $('stg').innerHTML=hbars(ST.map((k,i)=>{const s=stS(L,i);return {l:(i+1)+'. '+STN[i],b:[{v:s.pv},{v:s.pn,c:'b2'}],v:`${pf(s.pv)} · ${pf(s.pn)}`,tip:`<b>${STN[i]}</b><br>Ventas: <b>${pf(s.pv)}</b> · No ventas: <b>${pf(s.pn)}</b><br>Aplica en ${nf(s.n)} llamadas${s.lift!=null&&!s.post?`<br>Impacto: ${s.lift>0?'+':''}${nf(s.lift,1)} pts de venta`:''}`}}),100);
+ // productos
+ const pr={};L.filter(c=>c.of).forEach(c=>{const k=c.pr||'Otro';(pr[k]=pr[k]||{a:0,b:0}).a++;if(c.res==='V')pr[k].b++});const pk=Object.keys(pr).sort((a,b)=>pr[b].a-pr[a].a);const pmx=Math.max(1,...pk.map(k=>pr[k].a));
+ $('prd').innerHTML=stacked(pk.map(k=>({l:k,a:pr[k].a,b:pr[k].b,v:pf(pc(pr[k].b,pr[k].a)),tip:`<b>${esc(k)}</b><br>${nf(pr[k].a)} ofertas · ${nf(pr[k].b)} ventas · <b>${pf(pc(pr[k].b,pr[k].a),1)}</b>`})),pmx);
+ const ofl=L.filter(c=>c.of);const ob=META.obj.map((o,i)=>{const x=ofl.filter(c=>c.ob.includes(i));return {l:o,p:pc(x.length,ofl.length),n:x.length,v:pc(x.filter(c=>c.res==='V').length,x.length)}}).sort((a,b)=>b.n-a.n);
+ $('obj').innerHTML=hbars(ob.map(o=>({l:o.l,b:[{v:o.p}],v:`${pf(o.p)} · venta ${pf(o.v)}`,tip:`<b>${esc(o.l)}</b><br>${nf(o.n)} llamadas (${pf(o.p,1)} de las ofertas)<br>De ellas terminan en venta: <b>${pf(o.v,1)}</b>`})),Math.max(1,...ob.map(o=>o.p||0)));
+}
+// ---------- DIAGNÓSTICO
+function vOps(){
+ const pm=prevMes();
+ $('ops').innerHTML=OPS.filter(o=>!F.op||o===F.op).map((o,oi)=>{const L=sel({op:o});if(!L.length)return `<div class="card"><h3>${o}</h3><p class="small muted">Sin llamadas con estos filtros.</p></div>`;const m=M(L),P=pm?M(sel({op:o,mes:pm})):null;
+  const sts=ST.map((k,i)=>({i,s:stS(L,i)}));const weak=sts.filter(x=>x.s.p!=null&&x.s.n>=20).sort((a,b)=>a.s.p-b.s.p).slice(0,3);
+  const pr={};L.filter(c=>c.of).forEach(c=>{const k=c.pr||'Otro';(pr[k]=pr[k]||{a:0,b:0}).a++;if(c.res==='V')pr[k].b++});const pk=Object.keys(pr).sort((a,b)=>pr[b].a-pr[a].a).slice(0,4);
+  const ofl=L.filter(c=>c.of);const ob=META.obj.map((x,i)=>({x,n:ofl.filter(c=>c.ob.includes(i)).length})).sort((a,b)=>b.n-a.n).slice(0,3);
+  const gk=o==='Upsell'&&!F.t?'t':'sup';const G={};L.forEach(c=>{(G[c[gk]]=G[c[gk]]||[]).push(c)});
+  const gr=Object.entries(G).filter(([k,v])=>v.length>=5).map(([k,v])=>[k,M(v)]).sort((a,b)=>b[1].n-a[1].n);
+  return `<div class="card"><h3 style="color:${OPC[OPS.indexOf(o)]}">${o}</h3>
+  <div class="kpis" style="margin-bottom:12px"><div class="kpi"><b>${nf(m.n)}</b><span>llamadas</span></div><div class="kpi"><b>${pf(m.pv,1)}</b><span>venta</span>${P?dl(m.pv,P.pv):''}</div><div class="kpi"><b>${pf(m.vof,1)}</b><span>venta sobre oferta</span>${P?dl(m.vof,P.vof):''}</div><div class="kpi"><b>${pf(m.cu)}</b><span>cumplimiento</span>${P?dl(m.cu,P.cu):''}</div><div class="kpi"><b>${pf(m.prq,1)}</b><span>con riesgo</span>${P?dl(m.prq,P.prq,true):''}</div></div>
+  ${hbars(sts.map(x=>({l:(x.i+1)+'. '+STN[x.i],b:[{v:x.s.p}],v:pf(x.s.p),tip:`<b>${STN[x.i]}</b> · ${o}<br>Se hace en <b>${pf(x.s.p)}</b> (ventas ${pf(x.s.pv)} · no ventas ${pf(x.s.pn)})${x.s.lift!=null&&!x.s.post?`<br>Impacto: ${x.s.lift>0?'+':''}${nf(x.s.lift,1)} pts`:''}`})),100)}
+  <p class="small" style="margin:10px 0 4px"><b>Etapas más débiles:</b> ${weak.map(x=>`${STN[x.i]} (${pf(x.s.p)})`).join(' · ')}</p>
+  <p class="small" style="margin:4px 0"><b>Lo que más se ofrece:</b> ${pk.map(k=>`${esc(k)} — ${nf(pr[k].a)} ofertas, venta ${pf(pc(pr[k].b,pr[k].a))}`).join(' · ')||'—'}</p>
+  <p class="small" style="margin:4px 0"><b>Objeciones más comunes:</b> ${ob.filter(x=>x.n).map(x=>`${x.x} (${pf(pc(x.n,ofl.length))})`).join(' · ')||'—'}</p>
+  <p class="small" style="margin:4px 0 10px"><b>Oferta:</b> ${pf(m.bp)} dicen «opcional» o «complemento»; ${nf(m.sinopc)} de ${nf(m.nof)} no dicen «opcional».</p>
+  <div class="tw" style="max-height:300px"><table><thead><tr><th class="l">${gk==='t'?'Turno':'Supervisor'}</th><th>Llamadas</th><th>Venta</th><th>Venta/oferta</th><th>Cumpl.</th><th>Opc./compl.</th><th>Riesgo</th></tr></thead><tbody>${gr.map(([k,x])=>`<tr><td class="l">${gk==='sup'?`<button class="lnk" data-fsup="${esc(k)}">${esc(k)}</button>`:esc(k)}</td><td>${nf(x.n)}</td><td>${pf(x.pv,1)}</td><td>${pf(x.vof,1)}</td><td>${pf(x.cu)}</td><td>${pf(x.bp)}</td><td>${pf(x.prq,1)}</td></tr>`).join('')}</tbody></table></div></div>`}).join('');
+}
+// ---------- GUION VS LLAMADAS
+let GS=null;
+function vGui(){
+ const pm=prevMes(),ops=OPS.filter(o=>!F.op||o===F.op);
+ const D={},Dp={};ops.forEach(o=>{const L=sel({op:o});D[o]=ST.map((k,i)=>stS(L,i));if(pm){const Lp=sel({op:o,mes:pm});Dp[o]=ST.map((k,i)=>stS(Lp,i))}});
+ const Lall=sel();const tot=ST.map((k,i)=>stS(Lall,i));
+ const cell=(s,p)=>{if(s.p==null)return `<td class="muted">—</td>`;let dd=p&&p.p!=null?Math.round(s.p-p.p):null;if(dd===0)dd=null;return `<td class="${s.p<25?'lo':s.p>=70?'hi':''}">${pf(s.p)}${dd!=null?` <span class="tiny">(${dd>0?'+':''}${nf(dd)})</span>`:''}</td>`};
+ $('gtab').innerHTML=`<thead><tr><th class="l">Etapa</th>${ops.map(o=>`<th>${o}</th>`).join('')}<th>Total</th><th>Impacto en venta</th></tr></thead><tbody>${ST.map((k,i)=>`<tr><td class="l"><button class="lnk" data-gs="${i}">${i+1}. ${esc(STN[i])}</button></td>${ops.map(o=>cell(D[o][i],pm&&Dp[o][i])).join('')}<td class="hm">${pf(tot[i].p)}</td><td>${tot[i].post?'<span class="tiny">depende del cierre</span>':tot[i].lift==null?'<span class="tiny">pocos datos</span>':`<span class="${tot[i].lift>=3?'hi':tot[i].lift<=-3?'lo':''}">${tot[i].lift>0?'+':''}${nf(tot[i].lift,1)} pts</span>`}</td></tr>`).join('')}</tbody>`;
+ const B=[['opcional','Dice «opcional» / «no es obligatorio»'],['complemento','Dice «complemento» / «complementario»'],['memb','Upsell: membresía con su valor al inicio'],['link','Pago por link a nombre del estudiante (en ventas)'],['oferta_temprana','Oferta en el primer 20 % de la llamada (antes de acompañar)']];
+ $('btab').innerHTML=`<thead><tr><th class="l">Práctica</th>${ops.map(o=>`<th>${o}</th>`).join('')}<th>Total</th></tr></thead><tbody>${B.map(([k,l])=>{const f=L=>{const x=L.filter(c=>chk(c,k)!=null);return x.length?pc(x.filter(c=>chk(c,k)).length,x.length):null};return `<tr><td class="l">${l}</td>${ops.map(o=>`<td>${pf(f(sel({op:o})))}</td>`).join('')}<td class="hm">${pf(f(Lall))}</td></tr>`}).join('')}<tr><td class="l"><b>Ofertas sin decir «opcional»</b></td>${ops.map(o=>{const x=sel({op:o}).filter(c=>c.of);return `<td>${nf(x.filter(c=>!chk(c,'opcional')).length)} de ${nf(x.length)}</td>`}).join('')}<td class="hm">${nf(Lall.filter(c=>c.of&&!chk(c,'opcional')).length)} de ${nf(Lall.filter(c=>c.of).length)}</td></tr></tbody>`;
+ gDet();
+}
+function gDet(){if(GS==null){$('gdet').innerHTML='';return}const i=GS,k=ST[i];const ops=OPS.filter(o=>!F.op||o===F.op);const ms=F.mes?[F.mes]:MS;
+ const ex=[];ops.forEach(o=>ms.forEach(m=>{const e=(EJS[m+'|'+o]||{})['st_'+k]||[];e.forEach(x=>{if((!F.t||x.t===F.t)&&(!F.ag||nrm(x.ag).includes(nrm(F.ag))))ex.push({...x,o})})}));
+ $('gdet').innerHTML=`<div class="st-box"><h3>${i+1}. ${esc(STN[i])}</h3>${ops.map(o=>{const s=GUIONES[o].stages[i];return `<p class="small"><b>${o}:</b> ${esc(s.obj)}${s.frase?`<br><i>${esc(s.frase)}</i>`:''}</p>`}).join('')}<h3 style="margin-top:10px">Así suena en ventas reales</h3>${ex.slice(0,8).map(x=>`<div class="q">«${esc(x.q)}»${x.r?`<span class="src">Estudiante: «${esc(x.r)}»</span>`:''}<span class="src">${esc(x.ag)} · ${x.o}${x.t?' '+x.t:''} · ${fd(x.f)} · <button class="lnk" data-call="${x.id}">${x.id}</button></span></div>`).join('')||'<p class="small muted">Sin frases con estos filtros.</p>'}</div>`}
+// ---------- ASESORES
+let AK='n',AD=-1,AG=null;
+function agRows(){const G={};sel().forEach(c=>{const k=c.ag+'|'+c.op;(G[k]=G[k]||[]).push(c)});return Object.entries(G).map(([k,L])=>{const m=M(L);const sts=ST.map((x,i)=>({i,s:stS(L,i)})).filter(x=>x.s.p!=null&&x.s.n>=5).sort((a,b)=>a.s.p-b.s.p);return {ag:L[0].ag,op:L[0].op,sup:L[0].sup,t:L[0].t,...m,weak:sts[0]?STN[sts[0].i]+' ('+pf(sts[0].s.p)+')':'—',L}})}
+function vAg(){const R=agRows();R.sort((a,b)=>{const x=a[AK],y=b[AK];return (typeof x==='string'?x.localeCompare(y):(x??-1)-(y??-1))*AD});
+ const C=[['ag','Asesor','l'],['op','Operación','l'],['sup','Supervisor','l'],['n','Llamadas'],['v','Ventas'],['pv','Venta'],['vof','Venta/oferta'],['cu','Cumpl.'],['weak','Etapa más débil','l'],['bp','Opc./compl.'],['rq','Con riesgo'],['dur','Min.']];
+ $('atab').innerHTML=`<thead><tr>${C.map(c=>`<th class="${c[2]||''}"><button data-ak="${c[0]}">${c[1]}${AK===c[0]?(AD<0?' ↓':' ↑'):''}</button></th>`).join('')}</tr></thead><tbody>${R.map(r=>`<tr><td class="l"><button class="lnk" data-agd="${esc(r.ag)}|${r.op}">${esc(r.ag)}</button></td><td class="l">${r.op}${r.t?' '+r.t:''}</td><td class="l">${esc(r.sup)}</td><td>${nf(r.n)}</td><td>${nf(r.v)}</td><td>${pf(r.pv,1)}</td><td>${pf(r.vof,1)}</td><td class="${r.cu<40?'lo':''}">${pf(r.cu)}</td><td class="l">${esc(r.weak)}</td><td>${pf(r.bp)}</td><td class="${r.prq>=30?'lo':''}">${nf(r.rq)}</td><td>${nf(r.dur,1)}</td></tr>`).join('')}</tbody>`;
+ aDet()}
+function aDet(){if(!AG){$('adet').innerHTML='';return}const [ag,op]=AG.split('|');const L=sel({ag:'',op}).filter(c=>c.ag===ag);if(!L.length){$('adet').innerHTML='';return}const m=M(L);
+ const sts=ST.map((k,i)=>({i,s:stS(L,i),t:stS(sel({ag:'',sup:'',op}),i)}));
+ const rk={};L.forEach(c=>c.rq.forEach(k=>(rk[k]=rk[k]||[]).push(c)));
+ $('adet').innerHTML=`<div class="card"><h3>${esc(ag)} · ${op} · ${esc(L[0].sup)}</h3><p class="small muted">${nf(m.n)} llamadas · ${nf(m.v)} ventas (${pf(m.pv,1)}) · venta sobre oferta ${pf(m.vof,1)} · cumplimiento ${pf(m.cu)} · ${nf(m.sinopc)} de ${nf(m.nof)} ofertas sin «opcional»</p>
+ <div class="legend"><span><i style="background:var(--s1)"></i>${esc(ag)}</span><span><i style="background:var(--base)"></i>Toda la operación</span></div>
+ ${hbars(sts.map(x=>({l:(x.i+1)+'. '+STN[x.i],b:[{v:x.s.p},{v:x.t.p,c:'bg'}],v:`${pf(x.s.p)} · ${pf(x.t.p)}`,tip:`<b>${STN[x.i]}</b><br>${esc(ag)}: <b>${pf(x.s.p)}</b><br>Operación: ${pf(x.t.p)}`})),100)}
+ ${Object.keys(rk).length?`<h3 style="margin-top:14px">Señales de riesgo</h3>${Object.entries(rk).map(([k,cs])=>`<p class="small"><b>${esc(RK[k][1])}</b> · ${cs.length} llamada(s)</p>${cs.slice(0,2).map(c=>QUO[c.id]&&QUO[c.id][k]?`<div class="q bad">«${esc(QUO[c.id][k])}»<span class="src">${fd(c.f)} · <button class="lnk" data-call="${c.id}">${c.id}</button></span></div>`:'').join('')}`).join('')}`:'<p class="small">Sin señales de riesgo en el periodo.</p>'}
+ <h3 style="margin-top:14px">Llamadas</h3><div class="tw" style="max-height:360px"><table><thead><tr><th class="l">ID</th><th class="l">Fecha</th><th class="l">Resultado</th><th class="l">Producto</th><th>Etapas</th><th class="l">Señales</th></tr></thead><tbody>${L.sort((a,b)=>b.f.localeCompare(a.f)).map(c=>{let ap=0,cu=0;for(let i=0;i<13;i++){const x=stv(c,i);if(x!=null){ap++;cu+=x}}return `<tr><td class="l"><button class="lnk" data-call="${c.id}">${c.id}</button></td><td class="l">${fd(c.f)}</td><td class="l">${{V:'Venta',N:'No venta',I:'Indeterminada'}[c.res]}</td><td class="l">${esc(c.pr||'—')}</td><td>${cu}/${ap}</td><td class="l">${c.rq.map(k=>`<span class="pill no">${esc(RK[k][0])}</span>`).join('')}</td></tr>`}).join('')}</tbody></table></div></div>`}
+// ---------- RIESGO
+let MG=null;
+function vMal(){const L=sel(),m=M(L);const pm=prevMes(),P=pm?M(sel({mes:pm})):null;
+ const byCat=CAT.map(cat=>({cat,n:L.filter(c=>c.rq.some(k=>RK[k][0]===cat)).length}));
+ const per=F.mes?mname(F.mes)+` (${fd(META.meses[F.mes].desde)} – ${fd(META.meses[F.mes].hasta)})`:'todos los meses';
+ $('m_txt').innerHTML=`En ${per}, <b>${nf(m.rq)} de ${nf(m.n)} llamadas (${pf(m.prq,1)})</b> tienen al menos una señal contra los no negociables del speech${P?` (en ${mname(pm)} fue ${pf(P.prq,1)})`:''}. Por tipo: ${byCat.filter(x=>x.n).map(x=>`${x.cat.toLowerCase()} ${nf(x.n)} (${pf(pc(x.n,m.n),1)})`).join(' · ')}. Además, <b>${nf(m.sinopc)} de ${nf(m.nof)} ofertas (${pf(pc(m.sinopc,m.nof))}) no dicen «opcional»</b>. Es detección automática sobre la transcripción: antes de una medida, escucha la llamada con su ID.`;
+ $('m_k').innerHTML=byCat.map(x=>`<div class="kpi"><b>${nf(x.n)}</b><span>${x.cat}</span>${P?dl(pc(x.n,m.n),pc(sel({mes:pm}).filter(c=>c.rq.some(k=>RK[k][0]===x.cat)).length,P.n),true):''}</div>`).join('');
+ const sg=RKK.map(k=>({k,n:L.filter(c=>c.rq.includes(k)).length})).filter(x=>x.n).sort((a,b)=>b.n-a.n);
+ $('m_sig').innerHTML=hbars(sg.map(x=>({l:RK[x.k][1],b:[{v:x.n,c:'b2'}],v:nf(x.n),tip:`<b>${nf(x.n)}</b> llamadas<br>${esc(RK[x.k][1])}<br>${esc(RK[x.k][0])}`})),Math.max(1,...sg.map(x=>x.n)));
+ const ofl=L.filter(c=>c.of);const o1=ofl.filter(c=>chk(c,'opcional')).length,o2=ofl.filter(c=>chk(c,'complemento')).length,o3=ofl.filter(c=>chk(c,'opcional')||chk(c,'complemento')).length;
+ $('m_opc_t').textContent=`Sobre ${nf(ofl.length)} llamadas con oferta. Decir «opcional» o «complemento» es buena práctica: deja claro que lo adicional se decide aparte.`;
+ $('m_opc').innerHTML=hbars([{l:'Dice «opcional»',b:[{v:pc(o1,ofl.length)}],v:`${nf(o1)} (${pf(pc(o1,ofl.length))})`},{l:'Dice «complemento»',b:[{v:pc(o2,ofl.length)}],v:`${nf(o2)} (${pf(pc(o2,ofl.length))})`},{l:'Dice alguna de las dos',b:[{v:pc(o3,ofl.length)}],v:`${nf(o3)} (${pf(pc(o3,ofl.length))})`},{l:'No dice «opcional»',b:[{v:pc(ofl.length-o1,ofl.length),c:'b2'}],v:`${nf(ofl.length-o1)} (${pf(pc(ofl.length-o1,ofl.length))})`},{l:'No dice ninguna',b:[{v:pc(ofl.length-o3,ofl.length),c:'b2'}],v:`${nf(ofl.length-o3)} (${pf(pc(ofl.length-o3,ofl.length))})`}].map(r=>({...r,tip:`<b>${r.v}</b><br>${r.l}`})),100);
+ const G={};L.forEach(c=>{const k=c.ag+'|'+c.op;(G[k]=G[k]||[]).push(c)});
+ const cols=sg.map(x=>x.k);const R=Object.entries(G).map(([k,cs])=>({k,ag:cs[0].ag,op:cs[0].op,sup:cs[0].sup,n:cs.length,r:cs.filter(c=>c.rq.length).length,so:cs.filter(c=>c.of&&!chk(c,'opcional')).length,of:cs.filter(c=>c.of).length,c:Object.fromEntries(cols.map(x=>[x,cs.filter(c=>c.rq.includes(x)).length]))})).filter(x=>x.r).sort((a,b)=>b.r-a.r||pc(b.r,b.n)-pc(a.r,a.n));
+ $('mtab').innerHTML=`<thead><tr><th class="l">Asesor</th><th class="l">Supervisor</th><th>Llamadas</th><th>Con riesgo</th><th>Sin «opcional»</th>${cols.map(k=>`<th title="${esc(RK[k][1])}">${esc(RKS[k])}</th>`).join('')}</tr></thead><tbody>${R.map(r=>`<tr><td class="l" style="white-space:nowrap"><button class="lnk" data-mg="${esc(r.k)}">${esc(r.ag)}</button> <span class="tiny">${r.op}</span></td><td class="l">${esc(r.sup)}</td><td>${nf(r.n)}</td><td class="${pc(r.r,r.n)>=30?'lo':''}">${nf(r.r)} (${pf(pc(r.r,r.n))})</td><td>${nf(r.so)}/${nf(r.of)}</td>${cols.map(k=>`<td>${r.c[k]||''}</td>`).join('')}</tr>`).join('')}</tbody>`;
+ mDet();
+ const anc=L.filter(c=>c.anc).length;const ae=[];(F.op?[F.op]:OPS).forEach(o=>(F.mes?[F.mes]:MS).forEach(mm=>((EJS[mm+'|'+o]||{}).rk_ancla||[]).forEach(x=>ae.push(x))));
+ $('m_ancla').innerHTML=`<b>Precio ancla</b> («normalmente vale…», «tus compañeros pagan…»): aparece en <b>${nf(anc)} llamadas (${pf(pc(anc,L.length),1)})</b>. Es una práctica de toda la operación, no de un asesor; se muestra aparte para decidir si se mantiene en el speech.${ae[0]?`<div class="q">«${esc(ae[0].q)}»<span class="src">${esc(ae[0].ag)} · ${fd(ae[0].f)} · ${ae[0].id}</span></div>`:''}`}
+function mDet(){if(!MG){$('mdet').innerHTML='';return}const [ag,op]=MG.split('|');const L=sel({ag:'',op}).filter(c=>c.ag===ag&&c.rq.length);
+ $('mdet').innerHTML=`<div class="card" style="margin-top:12px"><h3>${esc(ag)} · ${op}</h3>${L.map(c=>`<div class="small" style="margin-top:8px"><button class="lnk" data-call="${c.id}">${c.id}</button> · ${fd(c.f)} · ${{V:'Venta',N:'No venta',I:'Indeterminada'}[c.res]}</div>${c.rq.map(k=>`<div class="q bad"><b>${esc(RK[k][1])}</b>${QUO[c.id]&&QUO[c.id][k]?`<br>«${esc(QUO[c.id][k])}»`:''}</div>`).join('')}`).join('')}</div>`}
+// ---------- GUION OFICIAL
+let GO=null;
+function vOf(){GO=GO||F.op||'Upsell';const g=GUIONES[GO];$('of_t').textContent='Speech de ventas · '+g.nombre;$('of_c').textContent=g.ctx+' '+(g.version||'');
+ $('of_sel').innerHTML=OPS.map(o=>`<button class="btn" data-go="${o}" ${o===GO?'style="border-color:var(--s1);font-weight:600"':''}>${o}</button>`).join('')+` <a class="small" href="./speech/${GO.toLowerCase()}.html">Abrir el speech completo (clave del Speech)</a>`;
+ $('of_b').innerHTML=`<div class="grid g3">${(g.reglas||[]).map(([t,d])=>`<div class="card"><h3>${esc(t)}</h3><p class="small">${esc(d)}</p></div>`).join('')}</div>`+g.stages.map((s,i)=>`<div class="st-box"><h3>${i+1}. ${esc(s.name)}</h3><p class="small">${esc(s.obj)}</p>${s.frase?`<div class="q">${esc(s.frase)}</div>`:''}<div class="grid g2"><div><b class="small">Hacer</b><ul class="small">${(s.hacer||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div>${(s.evitar||[]).length?`<b class="small">Evitar</b><ul class="small">${s.evitar.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}</div></div></div>`).join('')}
+// ---------- LLAMADA
+let LASTV='res';
+async function qaDecrypt(buf){const b=new Uint8Array(buf);const pw=sessionStorage.getItem('qa_pw')||'';const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b.slice(0,16),iterations:150000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:b.slice(16,28)},k,b.slice(28)))}
+const TXC={};
+async function openCall(id){const c=BYID[id];if(!c)return;show('call',true);try{history.replaceState(null,'','#llamada='+id)}catch(_){}
+ $('cl_t').textContent='Llamada '+id;
+ $('cl_m').innerHTML=`${fd(c.f)} · ${c.op}${c.t?' '+c.t:''} · ${esc(c.ag)} · supervisor ${esc(c.sup)} · ${nf(c.dur,1)} min · <b>${{V:'Venta',N:'No venta',I:'Indeterminada'}[c.res]}</b>${c.of?' · oferta: '+esc(c.pr||'—'):' · sin oferta'}`;
+ $('cl_s').innerHTML=`<p style="margin:10px 0 4px">${ST.map((k,i)=>{const v=stv(c,i);return `<span class="pill ${v==null?'na':v?'ok':'no'}">${v==null?'–':v?'✓':'✗'} ${esc(STN[i])}</span>`}).join('')}</p>${c.of?`<p class="small">${chk(c,'opcional')?'✓ Dice «opcional»':'✗ No dice «opcional»'} · ${chk(c,'complemento')?'✓ Dice «complemento»':'✗ No dice «complemento»'}</p>`:''}${c.ob.length?`<p class="small">Objeciones: ${c.ob.map(i=>META.obj[i]).join(', ')}</p>`:''}${c.rq.map(k=>`<div class="q bad"><b>${esc(RK[k][1])}</b>${QUO[c.id]&&QUO[c.id][k]?`<br>«${esc(QUO[c.id][k])}»`:''}</div>`).join('')}`;
+ const f=META.txf[c.m+'|'+c.op+'|'+c.t];const box=$('cl_x');box.textContent='Cargando la transcripción…';
+ try{if(!TXC[f]){const r=await fetch('./'+f);if(!r.ok)throw new Error(r.status);TXC[f]=JSON.parse(await qaDecrypt(await r.arrayBuffer()))}}catch(e){box.innerHTML=`<p class="small">No pude cargar <code>${esc(f)}</code>.</p>`;return}
+ const tx=TXC[f][id]||[];box.innerHTML=tx.map(([s,q,t])=>`<p class="${q?'c':'a'}"><b>${q?'Estudiante':'Asesor'}</b> <span class="tiny">${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</span> ${esc(t)}</p>`).join('')||'<p class="small">Sin transcripción.</p>'}
+// ---------- navegación
+const V={res:vRes,ops:vOps,gui:vGui,ag:vAg,mal:vMal,of:vOf};let CUR='res';
+function show(v,keep){document.querySelectorAll('.view').forEach(x=>x.hidden=x.id!=='v_'+v);document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===v));if(v!=='call'){CUR=v;LASTV=v;V[v]();if(!keep)try{history.replaceState(null,'','#'+v)}catch(_){}}}
+function render(){fillDeps();const L=sel();const m=M(L);$('f_info').textContent=`${nf(L.length)} llamadas · ${nf(m.v)} ventas`;V[CUR]();}
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)show(b.dataset.v)});
+[['f_mes','mes'],['f_op','op'],['f_t','t'],['f_sup','sup']].forEach(([id,k])=>$(id).addEventListener('change',e=>{F[k]=e.target.value;if(k==='op'&&F.op&&F.op!=='Upsell')F.t='';render()}));
+$('f_ag').addEventListener('input',e=>{F.ag=e.target.value;render()});
+$('f_clr').addEventListener('click',()=>{Object.assign(F,{mes:MS[MS.length-1],op:'',t:'',sup:'',ag:''});$('f_mes').value=F.mes;$('f_op').value='';$('f_ag').value='';AG=MG=null;render()});
+$('back').addEventListener('click',()=>show(LASTV));
+document.addEventListener('click',e=>{const t=e.target.closest('button,[data-call]');if(!t)return;const d=t.dataset;
+ if(d.call){openCall(d.call);return}
+ if(d.ak){if(AK===d.ak)AD*=-1;else{AK=d.ak;AD=['ag','op','sup','weak'].includes(d.ak)?1:-1}vAg();return}
+ if(d.agd){AG=d.agd;aDet();$('adet').scrollIntoView({behavior:'smooth',block:'start'});return}
+ if(d.mg){MG=d.mg;mDet();$('mdet').scrollIntoView({behavior:'smooth',block:'start'});return}
+ if(d.gs!=null&&d.gs!==undefined&&t.hasAttribute('data-gs')){GS=+d.gs;gDet();$('gdet').scrollIntoView({behavior:'smooth',block:'nearest'});return}
+ if(d.fsup){F.sup=d.fsup;render();return}
+ if(d.go){GO=d.go;vOf();return}});
+// textos
+const tot=CL.length;
+$('lead').textContent=`Qué está pasando en las llamadas, mes a mes. Revisión automática de ${nf(tot)} transcripciones de las cuatro operaciones (Upsell en tres turnos) contra el speech oficial de cada operación: resultado, oferta, las 13 etapas, objeciones, no negociables y buenas prácticas. Meses cargados: ${MS.map(m=>mname(m)+' ('+fd(META.meses[m].desde)+' – '+fd(META.meses[m].hasta)+', '+nf(META.meses[m].n)+' llamadas)').join(' · ')}.`;
+$('metodo').textContent=`Cada mes se procesan las llamadas nuevas con las mismas reglas, para que los meses se puedan comparar. «Venta» = venta confirmada en la llamada: un modelo entrenado con la marcación de septiembre coincide con ella en ${nf(100*META.vp.U.acc)} % de las llamadas de Upsell y ${nf(100*META.vp.O.acc)} % de las demás operaciones.`;
+$('foot').textContent=`Actualizado: ${META.generado}. Los datos personales de los estudiantes en las citas están ocultos (correos, números y datos de tarjeta).`;
+// hash
+const h=decodeURIComponent(location.hash.slice(1));
+$('f_mes').value=F.mes;fillDeps();
+if(h.startsWith('agente=')){const q=nrm(h.slice(7)).split(/\s+/).slice(0,2).join(' ');F.mes='';$('f_mes').value='';F.ag=q;$('f_ag').value=q;render();const r=agRows();show('ag');if(r.length===1){AG=r[0].ag+'|'+r[0].op;aDet()}else if(r.length){AG=r.sort((a,b)=>b.n-a.n)[0].ag+'|'+r[0].op;aDet()}}
+else if(h.startsWith('llamada=')){render();openCall(h.slice(8))}
+else{render();if(V[h])show(h)}
+})();
+</script>
+</body></html>
