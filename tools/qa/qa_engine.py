@@ -163,8 +163,45 @@ RX = {
     'link': re.compile(r'link (de pago|a tu nombre)|enlace de pago|te (envio|envie|mando|mande) el (link|enlace)'),
 }
 
-RX_OPC = re.compile(r'opcional|no es obligatori|nada es obligatori')
-RX_COMPL = re.compile(r'complement')
+# Regla «opcional o complemento»: cuenta si va junto a clases, material, valor o pago (no «cuestionarios opcionales»)
+RX_OPC = re.compile(r'\bopcional(es)?\b|no es obligatori|nada es obligatori')
+RX_COMPL = re.compile(r'\b(complemento|complementos|complementari[oa]s?)\b')
+RX_CTX = re.compile(r'clase|sesion|material|herramient|valor|usd|dolar|pago|adicional|aparte|inversion|paquete|plan|privad|experto|docente')
+RX_NOCTX = re.compile(r'cuestionario|actividad|leccion|modulo|tarea|reto')
+RX_MAT = re.compile(r'material (de apoyo|de estudio|academico|didactico|practico)|plan academico|herramientas? (academica|de apoyo|de estudio)|(tu|su) material\b')
+RX_UNICO = re.compile(r'(valor|pago) unico|unico (pago|valor)')
+RX_MEMB_ANY = re.compile(r'membresia|mensualidad')
+def dice(rx, txt):
+    for m in rx.finditer(txt):
+        if RX_CTX.search(txt[max(0, m.start() - 160): m.end() + 160]) and not RX_NOCTX.search(txt[max(0, m.start() - 60): m.end() + 40]): return m
+    return None
+# Reglas de la auditoría Upsell (presión, pagos, trato): se suman a las de arriba para que el tablero y la auditoría cuenten igual
+OLD_R = [
+    # --- Condicionamiento: el complemento presentado como parte de la compra, obligatorio o requisito
+    ('obligatorio', 'condicionamiento', r'(?<!no )(?<!nada )\b(es|son|seria|sería) (obligatori[oa]s?|un requisito)\b|\b(tienes|tiene|debes|debe) que (adquirir|tomar|pagar|comprar) (el|la|las|los|tu|su|este|esta|estas) (material|complement|clases? (privad|individual|practic|magistral)|herramient|paquete|kit|sesion)|sin (el|la|las|los|este|esta|estas|estos) (material|complement|clases (privadas|individuales|practicas)|sesiones)[^.]{0,50}\bno (vas a poder|puedes|podras|puede|podra|te (podemos|puedo) (certificar|entregar))|para (poder )?(certificarte|obtener (tu|su) certificado|graduarte)[^.]{0,50}(necesitas|necesita|debes|tienes que) (tomar|tener|adquirir|pagar|hacer) (las|los|el|la) (clases|sesiones|practicas|material)', 'Presenta el complemento como obligatorio o como requisito'),
+    ('incluido_falso', 'condicionamiento', r'\bte corresponde (el|la|las|los) (material|clases|sesiones|kit)|\b(material|clases|sesiones) que (te|le) corresponde|(todos|todas) (los|las) (estudiantes|alumnos) (lo |la |las |los )?(toman|adquieren|tienen que|deben)|es parte (del|de tu|de su) (proceso|programa|inscripcion) (que|el|la)? ?(material|clases|sesion)|(activar|activo|cargar|cargo|entregar|entrego)(te)? (tu|su|el) material (academico|de apoyo|complementario|practico)[^.]{0,120}(usd|dolares|valor|pago|costo|inversion)', 'Lo presenta como algo que "le corresponde" o que se activa con la compra y luego le pone precio'),
+    ('material_academico', 'guion', r'\bmaterial academico\b', 'Llama "material académico" al complemento (el script dice evitarlo)'),
+    # --- Presión comercial / precios
+    ('urgencia', 'presion', r'(solo|unicamente) (por )?hoy[^.]{0,80}(precio|descuento|valor|oferta|beneficio|oportunidad|costo|usd|dolares)|(precio|descuento|valor|oferta|beneficio|oportunidad)[^.]{0,60}(solo|unicamente) (por )?hoy|(se (te |le )?vence|vence) (hoy|el link|la oferta|el descuento|el beneficio)|(ultimos|solo quedan|me quedan) (\w+ )?cupos|por tiempo limitado[^.]{0,40}(precio|descuento|oferta)', 'Escasez o urgencia ligada al precio ("solo por hoy")'),
+    ('supervisor', 'presion', r'(me |lo |la )?(autoriz[oa]|aprob[oa]|habilit[oa])( a)?( mi| el| la)? (supervisor|supervisora|coordinador|coordinadora|jefe|gerente)|(mi|el|la) (supervisor|supervisora|jefe)[^.]{0,60}(me )?(autoriz|aprob|habilit|excepcion|descuento)|hable con mi (supervisor|supervisora|jefe)[^.]{0,80}(descuento|precio|excepcion|habilitar)', '"Me autorizó mi supervisor" un precio o excepción'),
+    ('descuento_asesor', 'presion', r'(te|le) (puedo|podria|podemos|voy a|vamos a) (dejar|hacer|dar|aplicar|habilitar|entregar)[^.]{0,25}(descuento|precio especial|rebaja)|descuento (especial|exclusivo|academico) (para ti|contigo|para usted)|(te|le) (aplica|aplico) (el|un) descuento', 'Descuento o precio especial ofrecido por el asesor'),
+    # --- Cobros poco claros
+    ('nada_mas', 'cobros', r'no (vas|va|van) a (pagar|tener que pagar) nada mas|no se (te|le) (va a )?cobra(r|ra)? nada mas|no (hay|tienes|tiene) (ningun|otro) (cobro|pago) (adicional|extra|mas)|unico pago que (realizas|haces|vas a hacer|realizarias)? ?(durante|en) todo (el|tu)', '"No vas a pagar nada más" / "único pago durante todo el programa" (omite la membresía)'),
+    # --- Pagos seguros
+    ('tarjeta', 'pagos', r'(dicta|dame|dime|regalame|me (das|da|dice|dices|regala|dictas|dicta)|me (puedes|podrias|puede) (dar|dictar|decir|regalar))[^.]{0,30}(numero(s)? de (la |tu |su )?tarjeta|los (16|dieciseis) (digitos|numeros)|fecha de (vencimiento|expiracion)|codigo de seguridad|(el )?cvv|codigo que (te|le) (llego|lleg[oó]))|(los )?(tres|3) (digitos|numeritos) de atras', 'Pide datos de la tarjeta por teléfono'),
+    ('terceros', 'pagos', r'tarjeta de (tu|su) (esposo|esposa|mama|papa|hijo|hija|hermano|hermana|pareja|novio|novia|amigo|amiga|familiar)|(pidele|pide|pidas|pedirle|pidale)[^.]{0,30}(prestad|un prestamo)|(hagas|hacer|saques|sacar) un prestamo', 'Sugiere préstamo o tarjeta de un familiar'),
+    # --- Trato
+    ('apelativo', 'trato', r'\bmi (amor|reina|rey|vida|cielo|corazon|princesa|bro|pana)\b|\bmamita\b|\bpapito\b|\bmija\b|\bmijo\b|(^|[,.!?¿¡] ?)corazon[,.!?]|\bcarino[,.!?]', 'Apelativos ("mi amor", "mi reina", "mija", "corazón")'),
+    ('maltrato', 'trato', r'\b(no me (interrumpa|interrumpas))\b|\b(ya (te|le) (lo )?(dije|explique) (varias|mil|muchas) veces)\b|\bescucheme bien\b|\b(no sea|no seas) (terco|terca|grosero|grosera)\b|\busted no entiende\b|(?<!si )\btu no entiendes\b|\bque pereza\b', 'Trato brusco o descalificador'),
+    # --- Promesas
+    ('promesa', 'promesas', r'(te|le) (garantizo|garantizamos|aseguro|aseguramos)[^.]{0,40}(trabajo|empleo|ingreso|dinero|clientes)|(vas|va) a (conseguir|tener) (trabajo|empleo) (seguro|garantizado)|titulo (oficial|universitario)|validez oficial|avalad[oa] por (el gobierno|la sep|el estado)', 'Promete empleo, ingresos o validez oficial'),
+    # --- Técnicas de cierre no autorizadas por el Speech
+    ('ancla', 'presion', r'(normalmente|habitualmente|el valor (habitual|real|normal)|precio (normal|real|habitual)|tus companeros|tus companeras|los demas estudiantes|cada mes el estudiante|un estudiante (curricular|normal|regular)|se le entrega en ventas|sin descuento,? sin)[^.]{0,200}\b\d{2,4} ?(usd|dolares)', 'Precio ancla ("tus compañeros pagan 1.375 USD", "normalmente vale 550")'),
+    ('regalo', 'presion', r'(te|le|nos) (vamos a )?(regal(o|a|amos|ar)|obsequi(o|a|amos|ar))[^.]{0,40}(clase|sesion|las otras|las restantes)|nos (encargamos|vamos a encargar) de (regalar|obsequiar)|(son|serian|quedan) \d+ (gratis|de regalo)|(te|le) (entrega|entregan|da|dan) las restantes', '"Te regalamos" clases (a cambio de pagar hoy)'),
+    ('caducidad', 'presion', r'ya no (te|le) aplica (el|la) (descuento|beneficio|beca)|si (cuelgo|colgamos|termina la llamada)[^.]{0,60}(descuento|beneficio|precio|valor|ya no)|(solo|solamente|unicamente) (hasta|por) (el dia de )?hoy[^.]{0,40}(beneficio|descuento|oportunidad|precio|valor)|no (te|se) (lo|la) (podriamos|podemos|puedo) guardar|despues de (la|esta) activacion (ya )?no|se cierra el sistema|ya no va a salir', 'El "beneficio" se pierde si no paga hoy o al colgar'),
+]
+OLD = {('descuento' if k == 'descuento_asesor' else k): re.compile(p) for k, c, p, d in OLD_R if k in ('regalo', 'caducidad', 'urgencia', 'supervisor', 'descuento_asesor', 'terceros', 'tarjeta', 'nada_mas', 'apelativo', 'maltrato', 'promesa')}
+
 
 def corte(i, n, desde=0.0, hasta=1.0):
     return n and desde <= i / n <= hasta
@@ -238,20 +275,36 @@ def analizar(c):
             if m:
                 rk[k] = rk.get(k, 0) + 1
                 if k not in citas: citas[k] = (i, m.start(), m.end())
+    for k, rx in OLD.items():
+        for i, t in A:
+            m = rx.search(t)
+            if m:
+                if k not in rk: rk[k] = 1
+                if k not in citas: citas[k] = (i, m.start(), m.end())
+                break
     sorpresa = any(CLI_OBJ[4][1].search(t) for _, t in C)
     queja = any(RX_QUEJA.search(t) for _, t in C)
     neg = sum(1 for i, t in C if (not oferta or i > i_of) and any(rx.search(t) for _, rx in CLI_OBJ))
     if venta and neg >= 4: rk['presion'] = 1
-    if c['op'] == 'Upsell' and oferta:
-        pre = ' '.join(t for i, t in A if i <= i_of)
-        if re.search(r'material (academico|de estudio)|plan academico|(tu|su) material de apoyo|(activar|entregar|cargar)(te)? (tu|su|el|los) (material|plan|kit)', pre) and not RX['opcional'].search(pre) and not RX_COMPL.search(pre):
-            rk['cond_impl'] = 1; citas['cond_impl'] = (i_of, mpos[0], mpos[1])
+    win = ' '.join(t for i, t in A if oferta and i <= i_of + 3)
+    opc, comp = (dice(RX_OPC, win), dice(RX_COMPL, win)) if oferta else (None, None)
+    memb_any = bool(RX_MEMB_ANY.search(txt_a))
+    if oferta and not (opc or comp):
+        for i, t in A:
+            if i > i_of + 3: break
+            m = RX_MAT.search(t)
+            if m: rk['cond_impl'] = 1; citas['cond_impl'] = (i, m.start(), m.end()); break
+    if c['op'] == 'Upsell' and not memb_any:
+        for i, t in A:
+            m = RX_UNICO.search(t)
+            if m: rk['unico_sin_memb'] = 1; citas['unico_sin_memb'] = (i, m.start(), m.end()); break
     # buenas prácticas / checks
     chk = {
         'grabacion': int(any(RX['grabacion'].search(t) for t in ini)),
         'memb': int(bool(RX['memb'].search(' '.join(ini)))) if c['op'] == 'Upsell' else None,
-        'opcional': int(bool(RX_OPC.search(' '.join(t for i, t in A if i <= i_of + 2)))) if oferta else None,
-        'complemento': int(bool(RX_COMPL.search(' '.join(t for i, t in A if i <= i_of + 2)))) if oferta else None,
+        'opcional': int(bool(opc)) if oferta else None,
+        'complemento': int(bool(comp)) if oferta else None,
+        'memb_any': int(memb_any) if c['op'] == 'Upsell' else None,
         'link': int(bool(RX['link'].search(txt_a))) if venta else None,
         'oferta_temprana': int(i_of / max(1, n) < 0.2) if oferta else None,
     }

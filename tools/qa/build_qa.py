@@ -14,7 +14,7 @@ for g in GUIONES.values(): g.pop('vol', None)
 OPS = ['Upsell', 'Recurrence', 'Bootcamp', 'Resurrection']
 PRODS = sorted({r[8] for r in d['rows'] if r[8]})
 OBJ = ['Dinero', 'Tiempo', 'Pensarlo / consultar', 'Más tarde', 'Otro pago / sorpresa', 'No le interesa']
-CH = ['opcional', 'complemento', 'memb', 'link', 'oferta_temprana']
+CH = ['opcional', 'complemento', 'memb', 'link', 'oferta_temprana', 'memb_any']
 c = lambda v: '-' if v is None else str(v)
 rows = []
 for r in d['rows']:
