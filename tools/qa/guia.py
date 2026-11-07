@@ -25,6 +25,9 @@ RX_MES2 = re.compile(r'segundo mes|(a partir|desde) del? (mes siguiente|proximo 
 RX_MES3 = re.compile(r'tercer mes|(dos|2) (primeros )?meses (gratis|sin pagar|no pagas)')
 RX_CANCEL = re.compile(r'cancelar(la)?|dar(la)? de baja|darla de baja|des?activar(la)?|cuando (tu |usted )?(quieras|quiera|decidas|decida)|el tiempo que (tu |usted )?(quieras|decidas|desees)|la puedes quitar|retirar(la)? cuando')
 RX_NOCANCEL = re.compile(r'no (la )?(puedes|puede|se puede) (cancelar|dar de baja)|(meses|mes) obligatori|a partir del (cuarto|quinto) mes es opcional|minimo (de )?(tres|3|seis|6) meses')
+# La membresía se evalúa sólo cuando el asesor la OFRECE en esta venta: si el estudiante ya la tiene, no se ofrece.
+RX_MEMB_YA = re.compile(r'(tu|su) membresia|membresia (que )?(ya )?(tienes|tiene|pagas|paga|tenias|activa|actual)|ya (tienes|tiene|pagas|paga|cuentas con) (la |tu |una )?membresia|(sigue|seguira|continua|queda) (igual|activa)|no (cambia|se modifica|afecta) (la |tu )?membresia|ningun cargo adicional|ya (lo |la )?(sabes|sabe|conoces|conoce)|(te|le) (dijeron|hablaron|explicaron|comentaron|mencionaron)|hablaron de la membresia|como (te|le) (dijeron|explicaron)|recuerda que|recuerde que|acordad[oa]s?|que (te|le) (explico|dijo|comento) (mi|tu|el|la) (companer|asesor)')
+RX_MEMB_OF = re.compile(r'(membresia|suscripcion)[^.?]{0,90}\b(\d{2}|veinticinco|cuarenta y nueve|cincuenta)\b ?(usd|dolares|dolar|al mes|mensual)|\b(\d{2}|veinticinco|cuarenta y nueve|cincuenta)\b ?(usd|dolares|dolar)[^.?]{0,60}(membresia|suscripcion)|(te|le) (ofrezco|incluyo|activo|activamos|dejamos) (la |una )?(membresia|suscripcion)|membresia mensual|(empiezas|empieza|comienza|comienzas) a pagar (la )?membresia|(se|te) (suma|agrega|cobra) (la )?membresia')
 RX_CUOTAS = re.compile(r'\b(cuotas|en (2|3|4|dos|tres|cuatro) (pagos|partes|mensualidades)|(2|3|4|dos|tres|cuatro) (pagos|mensualidades) de|pago inicial|primer pago de)\b')
 RX_MEZCLA = re.compile(r'(esas|las) (cuotas|mensualidades) (son|es) (tu|su|la) membresia|membresia (son|es) (las|esas) cuotas')
 RX_EFECTIVO = re.compile(r'(pagar|pago|pagas|pagaria|pagarlo) en efectivo|efectivo en (oxxo|tienda|el banco)|(oxxo|walmart|seven|7 eleven|farmacia)')
@@ -106,7 +109,9 @@ def evaluar(op, res, oferta, i_of, ts, A, C, es_pago):
     # --- 2 y 6 · primera venta: no hay primera venta en estas operaciones
     # --- 3 a 9 · membresía (sólo venta; efectivo como acuerdo final → no aplica)
     efectivo = any(RX_EFECTIVO.search(t) for i, t in A + C if i / max(1, n) >= 0.6)
-    if venta and not efectivo:
+    ya_tiene = any(RX_MEMB.search(t) and RX_MEMB_YA.search(t) for _, t in A)
+    ofrece_memb = (not ya_tiene) and any(RX_MEMB_OF.search(t) for i, t in A if oferta and i >= (i_of or 0) - 2)
+    if venta and not efectivo and ofrece_memb:
         i_pago = next((i for i, (_, q, t) in enumerate(ts) if es_pago(t.lower())), None)
         mt = [(i, t) for i, t in A if RX_MEMB.search(t)]          # turnos del asesor que hablan de la membresía
         cerca = lambda rx: next(((i, m) for i, t in A for m in [rx.search(t)] if m and any(abs(i - j) <= 1 for j, _ in mt)), (None, None))
