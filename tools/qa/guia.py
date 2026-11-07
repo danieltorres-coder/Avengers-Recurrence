@@ -29,24 +29,26 @@ RX_CUOTAS = re.compile(r'\b(cuotas|en (2|3|4|dos|tres|cuatro) (pagos|partes|mens
 RX_MEZCLA = re.compile(r'(esas|las) (cuotas|mensualidades) (son|es) (tu|su|la) membresia|membresia (son|es) (las|esas) cuotas')
 RX_EFECTIVO = re.compile(r'(pagar|pago|pagas|pagaria|pagarlo) en efectivo|efectivo en (oxxo|tienda|el banco)|(oxxo|walmart|seven|7 eleven|farmacia)')
 RX_CERT = re.compile(
-    NEG + r'(certificad\w*|diploma|titulo)[^.?]{0,70}(te (permite|permitira|va a permitir|habilita)|para (que puedas )?(trabajar|ejercer|laborar)\b)'
+    NEG + r'(certificad\w*|diploma|titulo)[^.?]{0,70}(te (permite|permitira|va a permitir|habilita|habilitara)( a| para)?|para (que puedas )?|(estas|esta) (capacitad\w*|habilitad\w*) para )[^.?]{0,12}\b(trabajar|ejercer|laborar)\b'
     r'|' + NEG + r'(certificad\w*|diploma)[^.?]{0,40}\b(es|son|seria) (oficial|un titulo|una licencia|valido en (cualquier|todo|todos))'
     r'|' + NEG + r'(certificad\w*|diploma|titulo)[^.?]{0,60}(valid\w*|vale|sirve|reconocid\w*) en (cualquier (estado|parte|lugar)|todo (el pais|estados unidos|usa|eeuu|ee uu)|todos los estados)'
     r'|' + NEG + r'(certificad\w*|diploma)[^.?]{0,40}(avalad\w*|reconocid\w*|aprobad\w*) por el (estado|gobierno|departamento)'
     r'|' + NEG + r'(obtienes|recibes|te (damos|dan|entregamos)) (tu |una |la )?licencia\b')
+RX_CERT_NO = re.compile(r'no (es|son) (una |un )?(licencia|titulo|oficial)|no (te )?la (damos|da|entregamos)|ellos te (dan|entregan) la licencia|no (te )?(habilita|permite)|depende de (cada|la|el) (estado|entidad|empleador)')
 RX_EMPLEO = re.compile(
     NEG + r'(te|le) (garantizo|garantizamos|aseguro|aseguramos|prometo)[^.?]{0,40}(trabajo|empleo|contrat|puesto)'
     r'|' + NEG + r'(trabajo|empleo|contratacion) (asegurad|garantizad|segur)\w*'
     r'|' + NEG + r'(te|le) van a contratar (seguro|si o si|de una|inmediatamente)'
     r'|' + NEG + r'(ya|de una) (tienes|tendras|vas a tener) (trabajo|empleo)')
 RX_INGRESO = re.compile(
-    NEG + r'inversion segura|se (paga|va pagando) solo|' + NEG + r'(vas|va) a recuperar (la|tu|su|esa|esta)? ?(inversion|dinero|plata)'
+    NEG + r'inversion segura|se (paga|va pagando) sol[oa]s?(?= *([.,;!?]|$| y | con ))|' + NEG + r'(vas|va) a recuperar (la|tu|su|esa|esta)? ?(inversion|dinero|plata)'
     r'|' + NEG + r'(recuperas|recupera|recuperar|recuperarias) (la inversion|tu inversion|su inversion|el dinero|tu dinero|esos|los \d+|lo invertido)'
     r'|' + NEG + r'(lo|la) (vas a|va a) recuperar (rapido|en (un|dos|pocos) (mes|meses|semanas))'
     r'|' + NEG + r'(te|le) (garantizo|garantizamos|aseguro|aseguramos)[^.?]{0,40}(ingreso|ganancia|dinero|clientes)')
 RX_TARJ = re.compile(r'(dicta|dame|dime|regalame|pasame|indicame|me (das|da|dice|dices|regalas|regala|dictas|dicta|pasas|indicas)|me (puedes|podrias|puede) (dar|dictar|decir|regalar|pasar|indicar)|necesito)[^.?]{0,40}'
                      r'(numero(s)? de (la |tu |su )?tarjeta|(los )?(16|dieciseis) (digitos|numeros)|(fecha de )?(vencimiento|expiracion)|codigo de seguridad|cvv|cvc|(los )?(tres|3) (numeros|digitos)( de atras| de seguridad)?|numeros de atras)'
                      r'|(foto|fotografia|imagen) de (la |tu |su )?tarjeta')
+RX_TARJ_NO = re.compile(r'pedido|(te|me) (aparecio|aparece|salio|sale) (el|un) numero|ya (te|le) (aparecio|salio)|orden|codigo (de|del) (pedido|compra|aprende)|empieza (por|con)|coloca|colocas|escribe|escribes|ingresa|ingresas|digita|digitas|no me (los|la|lo) (digas|compartas|dictes)|imaginate|por ejemplo')
 RX_AYUDA = re.compile(r'ayudame|ayudeme|me ayudas|me ayuda (a|con)|no (puedo|pude|me deja|me abre|abre|me carga|carga|me sale|sale|me llego|llego|me aparece|aparece|se como|se hacerlo|entiendo)|me (da|dio|sale|salio) (error|un error)|no (me )?funciona|fallo|rechaz|no paso|no pasa|tengo las manos|estoy manejando|hazlo tu|hagalo usted')
 RX_PAGO_INTENTO = re.compile(r'link (de pago|a tu nombre)|enlace de pago|tarjeta|realizar (el )?pago|procesar (el )?pago|pasarela|numero de pedido')
 RX_OBJ_MEMB = re.compile(r'(no (quiero|me interesa|estoy de acuerdo|voy a pagar|puedo pagar|sabia|me (dijeron|explicaron|informaron|comentaron))|muy caro|es caro|es mucho|mucho dinero|demasiado|otro (pago|cobro)|mas (pagos|cobros)|(quiero|puedo) cancelar|no me gusta|sin la membresia|quitar la membresia|por que (me )?(cobran|tengo que pagar))')
@@ -88,9 +90,17 @@ def evaluar(op, res, oferta, i_of, ts, A, C, es_pago):
     venta = res == 'V'
     # --- 1 · condicionamiento en Upsell (llamadas de Upsell, con o sin venta, cuando se ofreció el adicional)
     if op == 'Upsell':
-        rx1 = re.compile(NEG + r'(es|son|seria) (obligatori[oa]s?|necesari[oa]s? para (terminar|graduarte|certificarte|avanzar))|(tienes|tiene|debes|debe) que (adquirir|tomar|pagar|comprar)[^.?]{0,40}(clases|material|premium|paquete|sesiones|kit)'
+        rx1 = re.compile(r'(clases? privad\w*|material( de apoyo| de estudio)?|premium|paquete|kit|sesiones|herramienta)[^.?]{0,50}\b(es|son|seria|serian) (obligatori[oa]s?|necesari[oa]s? para (terminar|graduarte|certificarte|avanzar|el certificado))'
+                         r'|\b(es|son) (obligatori[oa]s?|un requisito)[^.?]{0,30}(las clases privad|el material|el premium|el paquete|el kit)'
+                         r'|(tienes|tiene|debes|debe) que (adquirir|tomar|pagar|comprar)[^.?]{0,25}(las clases privad|clases privad|el material|material de apoyo|el premium|el paquete|el kit|las sesiones)'
                          r'|sin (las clases|el (paquete )?premium|el material|el paquete)[^.?]{0,40}no (puedes|puede|vas a poder|podras)')
-        i, m = _riesgo(A, rx1)
+        RX1_NO = re.compile(r'\b(no|nada|ni|ningun\w*|nunca)\b[^.?]{0,25}$')
+        i, m = None, None
+        for k_, (i_, t_) in enumerate(A):
+            for m_ in rx1.finditer(t_):
+                if RX1_NO.search(t_[max(0, m_.start() - 40):m_.start()]) or re.search(r'\bno (es|son|tienes|tiene|debes|debe)\b', m_.group(0)): continue
+                i, m = i_, m_; break
+            if i is not None: break
         if i is not None: g[0], cit[0] = 1, (i, m.start(), m.end())
         elif oferta: g[0] = 0
     # --- 2 y 6 · primera venta: no hay primera venta en estas operaciones
@@ -144,11 +154,19 @@ def evaluar(op, res, oferta, i_of, ts, A, C, es_pago):
     for k, rx in ((9, RX_CERT), (10, RX_EMPLEO), (11, RX_INGRESO)):
         if n < 4: continue
         i, m = _riesgo(A, rx)
+        if k == 9 and i is not None:
+            t_ = next(t for j, t in A if j == i)
+            if RX_CERT_NO.search(t_[max(0, m.start() - 120): m.end() + 120]): i, m = None, None
         g[k] = 1 if i is not None else 0
         if i is not None: cit[k] = (i, m.start(), m.end())
     # --- 13 · datos de tarjeta (llamadas con pago o intento de pago)
     if venta or RX_PAGO_INTENTO.search(txt_a):
-        i, m = _riesgo(A, RX_TARJ)
+        i, m = None, None
+        for i_, t_ in A:
+            for m_ in RX_TARJ.finditer(t_):
+                if RX_TARJ_NO.search(t_[max(0, m_.start() - 60): m_.end() + 40]): continue
+                i, m = i_, m_; break
+            if i is not None: break
         if i is None: g[12] = 0
         else:
             ayuda = any(RX_AYUDA.search(t) for j, t in C if j < i) or any(RX_AYUDA.search(t) for j, t in A if i - 6 <= j < i)
