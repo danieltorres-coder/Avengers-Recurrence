@@ -8,7 +8,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_predict, StratifiedKFold
 D = sys.argv[1]
 src = open(D + '/qa_engine.py', encoding='utf-8').read()
-g = {'__name__': 'eng'}; sys.argv = ['x', D]
+g = {'__name__': 'eng', '__file__': D + '/qa_engine.py'}; sys.argv = ['x', D]
 exec(compile(src[:src.index('# ---------------------------------------------------------------- reglas')], 'eng', 'exec'), g)
 LL, norm = g['LL'], g['norm']
 

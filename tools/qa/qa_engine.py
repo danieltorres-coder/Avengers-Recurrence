@@ -12,6 +12,8 @@ Salida: out/calls.json (una fila por llamada), out/ej.json (citas por etapa y se
 Uso: python3 -I qa_engine.py <dir_qa>
 """
 import json, glob, re, sys, unicodedata, collections, os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import guia
 
 D = sys.argv[1]
 OUT = D + '/out'
@@ -311,8 +313,9 @@ def analizar(c):
     # silencios largos del asesor (> 60 s entre turnos)
     gaps = [b[0] - a[0] for a, b in zip(c['tx'], c['tx'][1:])]
     s60 = sum(1 for g in gaps if g > 60)
+    g, gcit, gd = guia.evaluar(c['op'], res, oferta, i_of, ts, A, C, es_pago)
     return dict(res=res, of=int(oferta), pr=prod, precio=precio, dur=dur, n=n, st=s, ob=objs, rk=rk, chk=chk,
-                sorp=int(sorpresa), queja=int(queja), s60=s60, i_of=i_of, ts=ts, citas=citas, i_obj=i_obj)
+                sorp=int(sorpresa), queja=int(queja), s60=s60, i_of=i_of, ts=ts, citas=citas, i_obj=i_obj, g=g, gcit=gcit, gd=gd)
 
 # ---------------------------------------------------------------- citas (enmascaradas)
 def limpiar(t, todo=False):
@@ -339,7 +342,7 @@ for c in LL:
     a = analizar(c)
     ts = a['ts']
     rows.append([c['id'], c['fecha'], c['op'], c['t'], c['sup'], c['ag'], a['res'], a['of'], a['pr'], a['precio'], a['dur'],
-                 [a['st'][k] for k in ST], a['ob'], a['rk'], a['chk'], a['sorp'], a['queja'], a['s60'], c['old']])
+                 [a['st'][k] for k in ST], a['ob'], a['rk'], a['chk'], a['sorp'], a['queja'], a['s60'], c['old'], a['g'], [x if k != 2 else (ts[x][0] if x is not None else None) for k, x in enumerate(a['gd'])]])
     TX[(c['mes'], c['op'], c['t'])][c['id']] = c['tx']
     key = (c['mes'], c['op'])
     # citas de riesgo (todas las llamadas)
@@ -349,6 +352,15 @@ for c in LL:
         if len(EJ[key]['rk_' + k]) < 60:
             EJ[key]['rk_' + k].append(dict(id=c['id'], ag=c['ag'], sup=c['sup'], t=c['t'], f=c['fecha'], res=a['res'],
                                           q=limpiar(frase(ts[i][2], x, y), k in ('tarjeta', 'terceros'))))
+    # Guía mandatoria: frase y segundo de cada punto en 1, y frase del cliente cuando objeta la membresía
+    for k, (i, x, y) in a['gcit'].items():
+        QUO.setdefault(c['id'], {})['g%d' % (k + 1)] = [ts[i][0], limpiar(frase(ts[i][2], x, y, 140), k == 12)]
+        if len(EJ[key]['g%d' % (k + 1)]) < 60:
+            EJ[key]['g%d' % (k + 1)].append(dict(id=c['id'], ag=c['ag'], sup=c['sup'], t=c['t'], f=c['fecha'], res=a['res'], s=ts[i][0],
+                                                 q=limpiar(frase(ts[i][2], x, y), k == 12)))
+    if a['gd'][2] is not None:
+        j = a['gd'][2]
+        QUO.setdefault(c['id'], {})['gcli'] = [ts[j][0], limpiar(frase(ts[j][2], None, None, 120))]
     # citas de etapas en ventas (para «llamadas que funcionan»)
     if a['res'] == 'V':
         for k in ST:
@@ -361,7 +373,7 @@ for c in LL:
             nxt = next((t for _, q, t in ts[i + 1:i + 3] if q == 1), '')
             EJ[key]['st_' + k].append(dict(id=c['id'], ag=c['ag'], t=c['t'], f=c['fecha'], q=limpiar(frase(ts[i][2], m.start(), m.end(), 150)), r=limpiar(nxt[:160])))
 
-json.dump(dict(ST=ST, cols=['id', 'fecha', 'op', 'turno', 'sup', 'ag', 'res', 'of', 'pr', 'precio', 'dur', 'st', 'ob', 'rk', 'chk', 'sorp', 'queja', 's60', 'old'], rows=rows),
+json.dump(dict(ST=ST, cols=['id', 'fecha', 'op', 'turno', 'sup', 'ag', 'res', 'of', 'pr', 'precio', 'dur', 'st', 'ob', 'rk', 'chk', 'sorp', 'queja', 's60', 'old', 'g', 'gd'], G=guia.PUNTOS, GQ=guia.QUE_PASO, rows=rows),
           open(OUT + '/calls.json', 'w', encoding='utf-8'), ensure_ascii=False)
 json.dump(QUO, open(OUT + '/quo.json', 'w', encoding='utf-8'), ensure_ascii=False)
 json.dump({f'{m}|{o}': v for (m, o), v in EJ.items()}, open(OUT + '/ej.json', 'w', encoding='utf-8'), ensure_ascii=False)

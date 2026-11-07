@@ -97,6 +97,7 @@ th button{font:inherit;font-weight:600;color:inherit;background:none;border:0;pa
  <button role="tab" data-v="ops">Diagnóstico por operación</button>
  <button role="tab" data-v="gui">Guion vs llamadas</button>
  <button role="tab" data-v="ag">Asesores</button>
+ <button role="tab" data-v="gm">Guía mandatoria · 13 puntos</button>
  <button role="tab" data-v="mal">Riesgo y experiencia</button>
  <button role="tab" data-v="of">Guion oficial por operación</button>
 </div>
@@ -127,6 +128,13 @@ th button{font:inherit;font-weight:600;color:inherit;background:none;border:0;pa
  <section><span class="eyebrow">Asesores</span><h2>Desempeño de calidad por asesor</h2><p class="small muted">Haz clic en un encabezado para ordenar, y en un asesor para ver sus llamadas, sus etapas débiles y sus señales de riesgo.</p>
  <div class="tw"><table id="atab"></table></div></section>
  <section id="adet"></section>
+</div>
+
+<div id="v_gm" class="view" hidden>
+ <section><span class="eyebrow">Guía mandatoria de evaluación</span><h2>Los 13 puntos en las llamadas</h2><p id="gm_txt"></p><div class="kpis" id="gm_k"></div></section>
+ <section class="card"><h3>Punto por punto</h3><p class="small muted">Cada punto se mide sólo donde aplica (por ejemplo, la membresía sólo en llamadas con venta). «En riesgo» = resultado 1: el asesor dijo algo prohibido o no dijo algo obligatorio. No hay puntaje total. Haz clic en un punto para leer las frases con el segundo de la llamada.</p><div class="tw"><table id="gm_tab"></table></div><div id="gm_det"></div></section>
+ <section class="grid g2"><div class="card"><h3>Membresía: reacción del cliente</h3><p class="small muted" id="gm_obt"></p><div id="gm_ob"></div></div><div class="card"><h3>Membresía: qué dijo el asesor</h3><p class="small muted">Sobre las llamadas que llegaron a una oferta con precio. Aquí 1 significa que la mencionó, no que haya riesgo.</p><div id="gm_mn"></div></div></section>
+ <section><h3>Por asesor</h3><p class="small muted">Puntos en riesgo por asesor en el periodo filtrado. Haz clic en un asesor para ver sus llamadas con la frase de cada punto.</p><div class="tw"><table id="gm_ag"></table></div><div id="gm_agd"></div></section>
 </div>
 
 <div id="v_mal" class="view" hidden>
@@ -162,7 +170,7 @@ const RK={apelativo:['Trato','Apelativos («mi amor», «mi reina», «mija», �
 const RKK=Object.keys(RK);
 const RKS={apelativo:'Apelativos',maltrato:'Trato brusco',tarjeta:'Datos de tarjeta',terceros:'Préstamo / tarjeta de otro',nada_mas:'«Nada más»',promesa:'Promesas',urgencia:'Urgencia',caducidad:'Beneficio se pierde',supervisor:'«Autorizó mi supervisor»',descuento:'Descuento del asesor',regalo:'«Te regalamos»',presion:'Venta tras 4+ negativas',condicion:'Obligatorio',cond_impl:'Material sin compl./opc.',unico_sin_memb:'«Valor único» sin membresía'};
 const CAT=['Trato','Pagos seguros','Cobros claros','Sin presión','Sin promesas','Tú decides'];
-const CL=CALLS.map(r=>({id:r[0],f:r[1],m:r[1].slice(0,7),op:OPS[r[2]],t:r[3],sup:r[4],ag:r[5],res:r[6],of:r[7],pr:r[8]<0?null:META.prods[r[8]],pre:r[9],dur:r[10],st:r[11],ob:r[12],rk:r[13],ch:r[14],sorp:r[15],q:r[16],s60:r[17]}));
+const CL=CALLS.map(r=>({id:r[0],f:r[1],m:r[1].slice(0,7),op:OPS[r[2]],t:r[3],sup:r[4],ag:r[5],res:r[6],of:r[7],pr:r[8]<0?null:META.prods[r[8]],pre:r[9],dur:r[10],st:r[11],ob:r[12],rk:r[13],ch:r[14],sorp:r[15],q:r[16],s60:r[17],g:r[18]||'',gd:r[19]||null}));
 CL.forEach(c=>{c.rq=c.rk.filter(k=>k!=='ancla');c.anc=c.rk.includes('ancla')});
 const BYID=Object.fromEntries(CL.map(c=>[c.id,c]));
 const MS=Object.keys(META.meses).sort();
@@ -310,6 +318,44 @@ function vMal(){const L=sel(),m=M(L);const pm=prevMes(),P=pm?M(sel({mes:pm})):nu
  $('m_ancla').innerHTML=`<b>Precio ancla</b> («normalmente vale…», «tus compañeros pagan…»): aparece en <b>${nf(anc)} llamadas (${pf(pc(anc,L.length),1)})</b>. Es una práctica de toda la operación, no de un asesor; se muestra aparte para decidir si se mantiene en el speech.${ae[0]?`<div class="q">«${esc(ae[0].q)}»<span class="src">${esc(ae[0].ag)} · ${fd(ae[0].f)} · ${ae[0].id}</span></div>`:''}`}
 function mDet(){if(!MG){$('mdet').innerHTML='';return}const [ag,op]=MG.split('|');const L=sel({ag:'',op}).filter(c=>c.ag===ag&&c.rq.length);
  $('mdet').innerHTML=`<div class="card" style="margin-top:12px"><h3>${esc(ag)} · ${op}</h3>${L.map(c=>`<div class="small" style="margin-top:8px"><button class="lnk" data-call="${c.id}">${c.id}</button> · ${fd(c.f)} · ${{V:'Venta',N:'No venta',I:'Indeterminada'}[c.res]}</div>${c.rq.map(k=>`<div class="q bad"><b>${esc(RK[k][1])}</b>${QUO[c.id]&&QUO[c.id][k]?`<br>«${esc(QUO[c.id][k])}»`:''}</div>`).join('')}`).join('')}</div>`}
+// ---------- GUÍA MANDATORIA (13 puntos)
+const GP=META.G,GQ=META.GQ;
+const GEN=['Upsell (activación de campus)','Primera venta con venta','Toda venta','Toda venta','Toda venta (salvo primera venta de bootcamp)','Primera venta de bootcamp/workshop','Toda venta','Toda venta','Venta en 2 o más cuotas','Todas las llamadas','Todas las llamadas','Todas las llamadas','Llamadas con pago o intento de pago'];
+const GSI=['presenta el adicional como obligatorio','dice que lo que le ofrezcan después es opcional o que no pagará nada más','no dice el monto (25, 49 o 50 USD) o lo dice mal','no dice que se cobra cada mes, o dice que termina sola','no dice desde cuándo se cobra, o lo dice mal','no dice que se cobra desde el tercer mes','no dice que se puede cancelar, o insinúa meses obligatorios','la explica después de cobrar, o nunca','mezcla cuota y membresía en un solo monto','dice que permite trabajar, que es oficial o que vale en todo EE. UU.','asegura trabajo o contratación','asegura ingresos o recuperar la inversión','pide datos de la tarjeta sin que el cliente haya pedido ayuda'];
+const gv=(c,k)=>{const v=(c.g||'')[k];return v==null||v==='-'?null:+v};
+function gS(L,k){const a=L.filter(c=>gv(c,k)!=null);const r=a.filter(c=>gv(c,k)===1).length;return {n:a.length,r,p:pc(r,a.length),na:L.length-a.length}}
+let GK=null,GA=null;
+function vGm(){const L=sel();const pm=prevMes(),LP=pm?sel({mes:pm}):null;const ops=OPS.filter(o=>!F.op||o===F.op);
+ const per=F.mes?mname(F.mes)+` (${fd(META.meses[F.mes].desde)} – ${fd(META.meses[F.mes].hasta)})`:'todos los meses';
+ const conR=L.filter(c=>[...(c.g||'')].includes('1')).length;
+ const V=L.filter(c=>c.res==='V');const mem=V.filter(c=>[2,3,4,6,7].some(k=>gv(c,k)===1)).length;
+ $('gm_txt').innerHTML=`En ${per}, <b>${nf(conR)} de ${nf(L.length)} llamadas (${pf(pc(conR,L.length),1)})</b> tienen al menos un punto en riesgo. En las ventas, <b>${nf(mem)} de ${nf(V.length)} (${pf(pc(mem,V.length),1)})</b> tienen algún punto de membresía en 1. Es detección automática sobre la transcripción, con la frase y el segundo: antes de una medida, escucha la llamada con su ID.`;
+ const K=[[[0],'Condicionamiento'],[[2,3,4,5,6,7,8],'Membresía (ventas)'],[[9,10,11],'Promesas'],[[12],'Datos de tarjeta']];
+ $('gm_k').innerHTML=K.map(([ks,l])=>{const f=X=>{const a=X.filter(c=>ks.some(k=>gv(c,k)!=null));return pc(a.filter(c=>ks.some(k=>gv(c,k)===1)).length,a.length)};const a=L.filter(c=>ks.some(k=>gv(c,k)!=null));const r=a.filter(c=>ks.some(k=>gv(c,k)===1)).length;
+  return `<div class="kpi"><b>${pf(pc(r,a.length))}</b><span>${l} · ${nf(r)} de ${nf(a.length)}</span>${LP?dl(f(L),f(LP),true):''}</div>`}).join('');
+ $('gm_tab').innerHTML=`<thead><tr><th class="l">Punto</th><th class="l">Se evalúa en</th><th>Evaluadas</th><th>En riesgo</th>${ops.length>1?ops.map(o=>`<th>${o}</th>`).join(''):''}${LP?'<th>Mes anterior</th>':''}</tr></thead><tbody>${GP.map((nm,k)=>{const s=gS(L,k);const sp=LP?gS(LP,k):null;
+  if(!s.n&&!(sp&&sp.n))return `<tr class="muted"><td class="l">${k+1}. ${esc(nm)}</td><td class="l">${esc(GEN[k])}</td><td colspan="${2+(ops.length>1?ops.length:0)+(LP?1:0)}" class="l small">No aplica en estas operaciones</td></tr>`;
+  return `<tr><td class="l"><button class="lnk" data-gk="${k}">${k+1}. ${esc(nm)}</button></td><td class="l small">${esc(GEN[k])}</td><td>${nf(s.n)}</td><td class="${s.p>=20?'lo':''}"><b>${nf(s.r)}</b> (${pf(s.p,1)})</td>${ops.length>1?ops.map(o=>{const x=gS(L.filter(c=>c.op===o),k);return `<td>${x.n?pf(x.p,1):'—'}</td>`}).join(''):''}${LP?`<td>${sp&&sp.n?pf(sp.p,1):'—'}</td>`:''}</tr>`}).join('')}</tbody>`;
+ gmDet();
+ // datos de seguimiento
+ const mm=L.filter(c=>c.gd&&c.gd[0]!=null);const ob=mm.filter(c=>c.gd[0]===1);
+ $('gm_obt').textContent=`Sobre ${nf(mm.length)} llamadas en que el asesor habló de la membresía. Objeción = el cliente se resiste al precio, al cobro mensual, a cuándo empieza o a la cancelación; preguntar «¿cuánto cuesta?» no cuenta.`;
+ const qp=GQ.map((q,i)=>({l:q,n:mm.filter(c=>c.gd[1]===i).length})).filter(x=>x.n&&x.l!=='No aplica');
+ $('gm_ob').innerHTML=`<p class="small"><b>${nf(ob.length)} con objeción (${pf(pc(ob.length,mm.length),1)})</b></p>`+hbars(qp.map(x=>({l:x.l,b:[{v:x.n,c:/Rechazo|sin resolver/.test(x.l)?'b2':''}],v:`${nf(x.n)} (${pf(pc(x.n,mm.length),1)})`,tip:`<b>${nf(x.n)}</b> llamadas<br>${esc(x.l)}`})),Math.max(1,...qp.map(x=>x.n)));
+ const of=L.filter(c=>c.gd&&c.gd[3]!=null);const m1=of.filter(c=>c.gd[3]===1).length,m2=of.filter(c=>c.gd[4]===1).length;
+ $('gm_mn').innerHTML=hbars([{l:'Mencionó la membresía',b:[{v:pc(m1,of.length)}],v:`${nf(m1)} de ${nf(of.length)} (${pf(pc(m1,of.length))})`},{l:'Dijo su precio',b:[{v:pc(m2,of.length)}],v:`${nf(m2)} de ${nf(of.length)} (${pf(pc(m2,of.length))})`},{l:'No la mencionó',b:[{v:pc(of.length-m1,of.length),c:'b2'}],v:`${nf(of.length-m1)} (${pf(pc(of.length-m1,of.length))})`}].map(r=>({...r,tip:`<b>${r.v}</b><br>${r.l}`})),100);
+ // por asesor
+ const G={};L.forEach(c=>{const k=c.ag+'|'+c.op;(G[k]=G[k]||[]).push(c)});
+ const act=GP.map((_,k)=>k).filter(k=>L.some(c=>gv(c,k)!=null));
+ const R=Object.entries(G).map(([k,cs])=>({k,ag:cs[0].ag,op:cs[0].op,sup:cs[0].sup,n:cs.length,v:cs.filter(c=>c.res==='V').length,r:cs.filter(c=>[...(c.g||'')].includes('1')).length,c:Object.fromEntries(act.map(x=>[x,cs.filter(c=>gv(c,x)===1).length]))})).filter(x=>x.r).sort((a,b)=>b.r-a.r);
+ $('gm_ag').innerHTML=`<thead><tr><th class="l">Asesor</th><th class="l">Supervisor</th><th>Llamadas</th><th>Ventas</th><th>Con algún 1</th>${act.map(k=>`<th title="${esc(GP[k])}">${k+1}</th>`).join('')}</tr></thead><tbody>${R.map(r=>`<tr><td class="l" style="white-space:nowrap"><button class="lnk" data-ga="${esc(r.k)}">${esc(r.ag)}</button> <span class="tiny">${r.op}</span></td><td class="l">${esc(r.sup)}</td><td>${nf(r.n)}</td><td>${nf(r.v)}</td><td>${nf(r.r)} (${pf(pc(r.r,r.n))})</td>${act.map(k=>`<td>${r.c[k]||''}</td>`).join('')}</tr>`).join('')}</tbody>`;
+ gmAg()}
+const mmss=s=>s==null?'':Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+function gmDet(){if(GK==null){$('gm_det').innerHTML='';return}const k=GK;const L=sel().filter(c=>gv(c,k)===1);
+ const ej=[];(F.op?[F.op]:OPS).forEach(o=>(F.mes?[F.mes]:MS).forEach(mm=>((EJS[mm+'|'+o]||{})['g'+(k+1)]||[]).forEach(x=>{const c=BYID[x.id];if(c&&(!F.t||c.t===F.t)&&(!F.sup||c.sup===F.sup))ej.push(x)})));
+ $('gm_det').innerHTML=`<div class="card" style="margin-top:12px"><h3>${k+1}. ${esc(GP[k])}</h3><p class="small">Saca 1 si el asesor ${esc(GSI[k])}. <b>${nf(L.length)} llamadas</b> en el periodo filtrado.</p>${ej.length?ej.slice(0,12).map(x=>`<div class="q bad">«${esc(x.q)}»<span class="src">${esc(x.ag)} · ${fd(x.f)} · minuto ${mmss(x.s)} · <button class="lnk" data-call="${x.id}">${x.id}</button></span></div>`).join(''):`<p class="small muted">Este punto sale en 1 por algo que no se dijo (no hay una frase que citar). Abre una llamada de la lista para revisarla.</p>${L.slice(0,15).map(c=>`<div class="small"><button class="lnk" data-call="${c.id}">${c.id}</button> · ${esc(c.ag)} · ${fd(c.f)}</div>`).join('')}`}</div>`}
+function gmAg(){if(!GA){$('gm_agd').innerHTML='';return}const [ag,op]=GA.split('|');const L=sel({ag:'',op}).filter(c=>c.ag===ag&&[...(c.g||'')].includes('1'));
+ $('gm_agd').innerHTML=`<div class="card" style="margin-top:12px"><h3>${esc(ag)} · ${op}</h3>${L.map(c=>`<div class="small" style="margin-top:8px"><button class="lnk" data-call="${c.id}">${c.id}</button> · ${fd(c.f)} · ${{V:'Venta',N:'No venta',I:'Indeterminada'}[c.res]}</div>${GP.map((nm,k)=>gv(c,k)===1?`<div class="q bad"><b>${k+1}. ${esc(nm)}</b>${QUO[c.id]&&QUO[c.id]['g'+(k+1)]?`<br>«${esc(QUO[c.id]['g'+(k+1)][1])}» <span class="tiny">min ${mmss(QUO[c.id]['g'+(k+1)][0])}</span>`:' — no lo dijo en la llamada'}</div>`:'').join('')}`).join('')}</div>`}
 // ---------- GUION OFICIAL
 let GO=null;
 function vOf(){GO=GO||F.op||'Upsell';const g=GUIONES[GO];$('of_t').textContent='Speech de ventas · '+g.nombre;$('of_c').textContent=g.ctx+' '+(g.version||'');
@@ -322,12 +368,12 @@ const TXC={};
 async function openCall(id){const c=BYID[id];if(!c)return;show('call',true);try{history.replaceState(null,'','#llamada='+id)}catch(_){}
  $('cl_t').textContent='Llamada '+id;
  $('cl_m').innerHTML=`${fd(c.f)} · ${c.op}${c.t?' '+c.t:''} · ${esc(c.ag)} · supervisor ${esc(c.sup)} · ${nf(c.dur,1)} min · <b>${{V:'Venta',N:'No venta',I:'Indeterminada'}[c.res]}</b>${c.of?' · oferta: '+esc(c.pr||'—'):' · sin oferta'}`;
- $('cl_s').innerHTML=`<p style="margin:10px 0 4px">${ST.map((k,i)=>{const v=stv(c,i);return `<span class="pill ${v==null?'na':v?'ok':'no'}">${v==null?'–':v?'✓':'✗'} ${esc(STN[i])}</span>`}).join('')}</p>${c.of?`<p class="small">${chk(c,'opcional')?'✓ Dice «opcional»':'✗ No dice «opcional»'} · ${chk(c,'complemento')?'✓ Dice «complemento»':'✗ No dice «complemento»'}</p>`:''}${c.ob.length?`<p class="small">Objeciones: ${c.ob.map(i=>META.obj[i]).join(', ')}</p>`:''}${c.rq.map(k=>`<div class="q bad"><b>${esc(RK[k][1])}</b>${QUO[c.id]&&QUO[c.id][k]?`<br>«${esc(QUO[c.id][k])}»`:''}</div>`).join('')}`;
+ $('cl_s').innerHTML=`<p style="margin:10px 0 4px">${ST.map((k,i)=>{const v=stv(c,i);return `<span class="pill ${v==null?'na':v?'ok':'no'}">${v==null?'–':v?'✓':'✗'} ${esc(STN[i])}</span>`}).join('')}</p>${c.of?`<p class="small">${chk(c,'opcional')?'✓ Dice «opcional»':'✗ No dice «opcional»'} · ${chk(c,'complemento')?'✓ Dice «complemento»':'✗ No dice «complemento»'}</p>`:''}${c.ob.length?`<p class="small">Objeciones: ${c.ob.map(i=>META.obj[i]).join(', ')}</p>`:''}${c.rq.map(k=>`<div class="q bad"><b>${esc(RK[k][1])}</b>${QUO[c.id]&&QUO[c.id][k]?`<br>«${esc(QUO[c.id][k])}»`:''}</div>`).join('')}<h3 style="margin-top:12px">Guía mandatoria</h3><p style="margin:6px 0">${GP.map((nm,k)=>{const v=gv(c,k);return `<span class="pill ${v==null?'na':v?'no':'ok'}" title="${v==null?'No aplica':v?'Riesgo':'Sin riesgo'}">${v==null?'–':v?'1':'0'} ${k+1}. ${esc(nm)}</span>`}).join('')}</p>${GP.map((nm,k)=>gv(c,k)===1&&QUO[c.id]&&QUO[c.id]['g'+(k+1)]?`<div class="q bad"><b>${k+1}. ${esc(nm)}</b> · min ${mmss(QUO[c.id]['g'+(k+1)][0])}<br>«${esc(QUO[c.id]['g'+(k+1)][1])}»</div>`:'').join('')}${QUO[c.id]&&QUO[c.id].gcli?`<div class="q"><b>Objeción a la membresía (cliente)</b> · min ${mmss(QUO[c.id].gcli[0])}<br>«${esc(QUO[c.id].gcli[1])}»</div>`:''}`;
  const f=META.txf[c.m+'|'+c.op+'|'+c.t];const box=$('cl_x');box.textContent='Cargando la transcripción…';
  try{if(!TXC[f]){const r=await fetch('./'+f);if(!r.ok)throw new Error(r.status);TXC[f]=JSON.parse(await qaDecrypt(await r.arrayBuffer()))}}catch(e){box.innerHTML=`<p class="small">No pude cargar <code>${esc(f)}</code>.</p>`;return}
  const tx=TXC[f][id]||[];box.innerHTML=tx.map(([s,q,t])=>`<p class="${q?'c':'a'}"><b>${q?'Estudiante':'Asesor'}</b> <span class="tiny">${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</span> ${esc(t)}</p>`).join('')||'<p class="small">Sin transcripción.</p>'}
 // ---------- navegación
-const V={res:vRes,ops:vOps,gui:vGui,ag:vAg,mal:vMal,of:vOf};let CUR='res';
+const V={res:vRes,ops:vOps,gui:vGui,ag:vAg,gm:vGm,mal:vMal,of:vOf};let CUR='res';
 function show(v,keep){document.querySelectorAll('.view').forEach(x=>x.hidden=x.id!=='v_'+v);document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===v));if(v!=='call'){CUR=v;LASTV=v;V[v]();if(!keep)try{history.replaceState(null,'','#'+v)}catch(_){}}}
 function render(){fillDeps();const L=sel();const m=M(L);$('f_info').textContent=`${nf(L.length)} llamadas · ${nf(m.v)} ventas`;V[CUR]();}
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)show(b.dataset.v)});
@@ -342,7 +388,9 @@ document.addEventListener('click',e=>{const t=e.target.closest('button,[data-cal
  if(d.mg){MG=d.mg;mDet();$('mdet').scrollIntoView({behavior:'smooth',block:'start'});return}
  if(d.gs!=null&&d.gs!==undefined&&t.hasAttribute('data-gs')){GS=+d.gs;gDet();$('gdet').scrollIntoView({behavior:'smooth',block:'nearest'});return}
  if(d.fsup){F.sup=d.fsup;render();return}
- if(d.go){GO=d.go;vOf();return}});
+ if(d.go){GO=d.go;vOf();return}
+ if(d.gk!=null&&t.hasAttribute('data-gk')){GK=+d.gk;gmDet();$('gm_det').scrollIntoView({behavior:'smooth',block:'nearest'});return}
+ if(d.ga){GA=d.ga;gmAg();$('gm_agd').scrollIntoView({behavior:'smooth',block:'start'});return}});
 // textos
 const tot=CL.length;
 $('lead').textContent=`Qué está pasando en las llamadas, mes a mes. Revisión automática de ${nf(tot)} transcripciones de las cuatro operaciones (Upsell en tres turnos) contra el speech oficial de cada operación: resultado, oferta, las 13 etapas, objeciones, no negociables y buenas prácticas. Meses cargados: ${MS.map(m=>mname(m)+' ('+fd(META.meses[m].desde)+' – '+fd(META.meses[m].hasta)+', '+nf(META.meses[m].n)+' llamadas)').join(' · ')}.`;
