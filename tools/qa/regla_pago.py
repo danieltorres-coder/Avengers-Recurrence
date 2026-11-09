@@ -11,11 +11,11 @@ SI_AYUDA = ('Si pide ayuda o tarda demasiado, le preguntas si necesita acompaña
 CAMBIOS = [
     # cierre de cajas y tablas de la etapa 11
     ('Nunca se piden datos de tarjeta.', 'Datos de tarjeta: nunca de forma proactiva. ' + SI_AYUDA),
-    # «Lo que nunca se dice»
-    ('Pedir o tomar datos de tarjeta, por cualquier motivo.',
-     'Pedir datos de tarjeta de forma proactiva u ofrecer ingresarlos sin que el estudiante pida ayuda, o tomarlos sin su autorización expresa y la del supervisor.'),
+    # «Lo que nunca se dice» (texto acordado con la operación)
+    ('Pedir o tomar datos de tarjeta, por cualquier motivo.', 'No solicitar ni ingresar datos de tarjeta de manera proactiva.'),
     ('El estudiante ingresa los datos en el link de su correo. Si falla: que pague sin mantener la llamada abierta; si sigue fallando, reagendar unos minutos después.',
-     'El estudiante ingresa los datos en el link de su correo. ' + SI_AYUDA + ' Si el link falla: que pague sin mantener la llamada abierta; si sigue fallando, reagendar unos minutos después.'),
+     'El estudiante ingresa los datos en el link de su correo. Si presenta dificultades o demora en completar el pago, podemos preguntarle si requiere ayuda. '
+     'Si confirma que necesita apoyo, se podrán solicitar los datos durante la llamada, previa autorización del supervisor.'),
     # errores a evitar (etapa 11)
     ('«Díctame los números de la tarjeta y te ayudo rápido»',
      'Ofrecer tomar los datos sin que el estudiante pida ayuda («Díctame los números de la tarjeta y te ayudo rápido»)'),
