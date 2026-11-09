@@ -314,6 +314,8 @@ def analizar(c):
     gaps = [b[0] - a[0] for a, b in zip(c['tx'], c['tx'][1:])]
     s60 = sum(1 for g in gaps if g > 60)
     g, gcit, gd = guia.evaluar(c['op'], res, oferta, i_of, ts, A, C, es_pago)
+    if g[12] == 0 and 'tarjeta' in rk:   # regla de pago: pedir datos cuando el cliente pidió ayuda no es riesgo
+        rk.pop('tarjeta'); citas.pop('tarjeta', None)
     return dict(res=res, of=int(oferta), pr=prod, precio=precio, dur=dur, n=n, st=s, ob=objs, rk=rk, chk=chk,
                 sorp=int(sorpresa), queja=int(queja), s60=s60, i_of=i_of, ts=ts, citas=citas, i_obj=i_obj, g=g, gcit=gcit, gd=gd)
 

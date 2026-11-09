@@ -49,7 +49,7 @@ def parse(md):
         # cajas «Importante» (tabla de una celda) en cualquier parte
         for ln in tabs:
             c = clean(ln.strip().strip('|'))
-            m = re.match(r'^(Importante\.\s*([^.]+)\.|Cierre y alternativas\.)\s*(.*)$', c)
+            m = re.match(r'^(Importante\.\s*([^.:]+)[.:]|Cierre y alternativas\.)\s*(.*)$', c)
             if m and not in_stages:
                 name = (m.group(2) or 'Cierre y alternativas').strip()
                 if [name, m.group(3)] not in cajas: cajas.append([name, m.group(3)])
