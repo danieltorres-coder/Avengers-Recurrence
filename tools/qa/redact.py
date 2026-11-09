@@ -13,7 +13,8 @@ _RX_TARJ_NUM = re.compile(r'((?:n[uú]mero de (?:la )?tarjeta|tarjeta (?:termina
 
 OCULTO = '[dato oculto]'
 
-def ocultar(t):
+def ocultar(t, ctx=True):
+    """ctx=False: solo patrones claros (para texto redactado por nosotros: guion, datos, escenarios)."""
     if not t or not isinstance(t, str): return t
     t = _RX_GRUPOS.sub(OCULTO, t)
     t = _RX_LARGO.sub(OCULTO, t)
@@ -21,7 +22,7 @@ def ocultar(t):
     t = _RX_TARJ_NUM.sub(lambda m: m.group(1) + OCULTO, t)
     t = _RX_CVV.sub(lambda m: m.group(1) + m.group(2) + OCULTO, t)
     t = _RX_VENCE.sub(lambda m: m.group(1) + OCULTO, t)
-    if CTX_TARJETA.search(_n(t)): t = _ocultar_cifras(t)
+    if ctx and CTX_TARJETA.search(_n(t)): t = _ocultar_cifras(t)
     return t
 
 import unicodedata as _ud
@@ -56,9 +57,12 @@ def ocultar_transcripcion(lineas):
 _SOLO_ID = re.compile(r'^\d{6,}$')
 _TEXTO = re.compile(r'[A-Za-zÁÉÍÓÚáéíóúñÑ]{2,}\s+\S')   # solo texto hablado (no códigos internos como «10000010---00»)
 
+# Texto redactado (no dicho en una llamada): no se ocultan cifras por contexto, solo patrones claros de tarjeta.
+_REDACTADO = {'dato', 'base', 'esc', 'obj', 'frase', 'hacer', 'preg', 'var', 'evitar', 'trans', 'name', 't', 'l'}
+
 def ocultar_json(o, clave=None):
     """Aplica ocultar() a todas las cadenas de una estructura JSON (no toca ids de llamada)."""
-    if isinstance(o, str): return o if (clave == 'id' or not _TEXTO.search(o)) else ocultar(o)
+    if isinstance(o, str): return o if (clave == 'id' or not _TEXTO.search(o)) else ocultar(o, clave not in _REDACTADO)
     if isinstance(o, list): return [ocultar_json(x, clave) for x in o]
     if isinstance(o, dict): return {k: ocultar_json(v, k) for k, v in o.items()}
     return o

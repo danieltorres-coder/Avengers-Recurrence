@@ -53,6 +53,12 @@ RX_TARJ = re.compile(r'(dicta|dame|dime|regalame|pasame|indicame|me (das|da|dice
                      r'|(foto|fotografia|imagen) de (la |tu |su )?tarjeta')
 RX_TARJ_NO = re.compile(r'pedido|(te|me) (aparecio|aparece|salio|sale) (el|un) numero|ya (te|le) (aparecio|salio)|orden|codigo (de|del) (pedido|compra|aprende)|empieza (por|con)|coloca|colocas|escribe|escribes|ingresa|ingresas|digita|digitas|no me (los|la|lo) (digas|compartas|dictes)|imaginate|por ejemplo')
 RX_AYUDA = re.compile(r'ayudame|ayudeme|me ayudas|me ayuda (a|con)|no (puedo|pude|me deja|me abre|abre|me carga|carga|me sale|sale|me llego|llego|me aparece|aparece|se como|se hacerlo|entiendo)|me (da|dio|sale|salio) (error|un error)|no (me )?funciona|fallo|rechaz|no paso|no pasa|tengo las manos|estoy manejando|hazlo tu|hagalo usted')
+# Regla de pago (nov 2026): se puede ofrecer acompañamiento si tarda; tomar datos solo si el cliente pide ayuda o acepta el acompañamiento.
+RX_OFRECE_ACOMP = re.compile(r'necesitas (ayuda|apoyo|acompanamiento|que te (ayude|acompane|guie))|quieres que te (ayude|acompane|guie)|te (puedo )?(ayudo|acompano|guio) (a|con|en)|(te|le) (puedo|podemos) (ayudar|acompanar)')
+RX_CTX_PAGO = re.compile(r'pago|pagar|link|enlace|datos|tarjeta|llenar|formulario|pedido')
+RX_SI = re.compile(r'^\W*(si|claro|dale|por favor|ok|okay|bueno|esta bien|ayudame|ayudeme|porfa|perfecto|de acuerdo)\b')
+RX_OFRECE_INGRESAR = re.compile(r'(si quieres|quieres que|prefieres que|deja que|dejame) yo (te )?(lo |la |los |las )?(llene|lleno|ingrese|ingreso|digite|digito|registre|registro|ponga|pongo|meta|meto|haga|hago) (el pago|los datos de (la |tu |su )?tarjeta|la tarjeta|los numeros de (la |tu |su )?tarjeta)'
+                                r'|(me (los|las) (dictas|das|pasas|dices)|dictamelos|damelos) y (yo )?(te )?(lo |la |los |las )?(lleno|ingreso|pongo|registro|digito|hago) (el pago|por ti)')
 RX_PAGO_INTENTO = re.compile(r'link (de pago|a tu nombre)|enlace de pago|tarjeta|realizar (el )?pago|procesar (el )?pago|pasarela|numero de pedido')
 RX_OBJ_MEMB = re.compile(r'(no (quiero|me interesa|estoy de acuerdo|voy a pagar|puedo pagar|sabia|me (dijeron|explicaron|informaron|comentaron))|muy caro|es caro|es mucho|mucho dinero|demasiado|otro (pago|cobro)|mas (pagos|cobros)|(quiero|puedo) cancelar|no me gusta|sin la membresia|quitar la membresia|por que (me )?(cobran|tengo que pagar))')
 RX_PREG = re.compile(r'^\W*(y )?(cuanto|desde cuando|cuando|como|que es)\b')
@@ -171,10 +177,16 @@ def evaluar(op, res, oferta, i_of, ts, A, C, es_pago):
             for m_ in RX_TARJ.finditer(t_):
                 if RX_TARJ_NO.search(t_[max(0, m_.start() - 60): m_.end() + 40]): continue
                 i, m = i_, m_; break
+            if i is None:   # ofrecer ingresar los datos sin que el cliente lo pida también es pedirlos de forma proactiva
+                m_ = RX_OFRECE_INGRESAR.search(t_)
+                if m_: i, m = i_, m_
             if i is not None: break
         if i is None: g[12] = 0
         else:
-            ayuda = any(RX_AYUDA.search(t) for j, t in C if j < i) or any(RX_AYUDA.search(t) for j, t in A if i - 6 <= j < i)
+            cli = dict(C)
+            acomp = any(RX_OFRECE_ACOMP.search(t) and any(RX_SI.search(cli.get(k, '')) or RX_AYUDA.search(cli.get(k, '')) for k in (j + 1, j + 2))
+                        for j, t in A if i - 10 <= j < i and RX_CTX_PAGO.search(t))
+            ayuda = acomp or any(RX_AYUDA.search(t) for j, t in C if j < i) or any(RX_AYUDA.search(t) for j, t in A if i - 6 <= j < i)
             if ayuda: g[12] = 0
             elif ts and ts[0][0] > 60 and i < 6: g[12] = None   # grabación cortada al inicio: no se ve si antes pidió ayuda
             else: g[12], cit[12] = 1, (i, m.start(), m.end())
