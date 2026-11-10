@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comisión Líderes</title>
+<style>
+:root{--bg:#f9f9f7;--surface:#fff;--ink:#141413;--muted:#5e5d59;--line:#e3e1d9;--soft:#f1f0ea;--accent:#2a78d6;
+ --gold:#b8860b;--gold-bg:#fbf3dc;--silver:#6b7280;--silver-bg:#eef0f3;--bronze:#a0522d;--bronze-bg:#f8e9df;--zero:#b42318;--zero-bg:#fdecea;--ok:#1a7f37}
+@media (prefers-color-scheme:dark){:root{--bg:#0f0f0e;--surface:#1a1a19;--ink:#f3f2ee;--muted:#b9b7ad;--line:#2f2e2b;--soft:#232321;--accent:#5b9ef0;
+ --gold:#e3b341;--gold-bg:#3a2f12;--silver:#c3c7cf;--silver-bg:#2b2e33;--bronze:#e19a6c;--bronze-bg:#3b261a;--zero:#f2867a;--zero-bg:#3b1d1a;--ok:#56c271}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:var(--accent)}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+h1{font-size:22px;margin:0}h2{font-size:17px;margin:0}
+.muted{color:var(--muted)}.small{font-size:12.5px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:12.5px;text-decoration:none;color:var(--ink);white-space:nowrap}
+select{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.status{padding:10px 14px;border-radius:10px;background:var(--soft);margin:10px 0;font-size:13.5px}
+.status.err{background:var(--zero-bg);color:var(--zero)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:14px 0}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;background:var(--soft)}
+td.n,th.n{text-align:right}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin:16px 0;overflow:hidden}
+.card>.hd{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)}
+.card>.bd{padding:12px 16px}
+.op{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin:14px 0 6px}
+.lvl{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:600}
+.lvl.Gold{background:var(--gold-bg);color:var(--gold)}.lvl.Silver{background:var(--silver-bg);color:var(--silver)}
+.lvl.Bronze{background:var(--bronze-bg);color:var(--bronze)}.lvl.Sin{background:var(--zero-bg);color:var(--zero)}
+.bar{position:relative;height:8px;background:var(--soft);border-radius:6px;min-width:120px;margin-top:6px}
+.bar i{position:absolute;top:0;bottom:0;left:0;border-radius:6px;background:var(--accent)}
+.bar s{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--muted);text-decoration:none}
+.tag{font-size:11px;color:var(--muted)}
+.aim{background:var(--soft);border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13.5px}
+.adj{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;margin-top:10px}
+.adj label{display:flex;gap:6px;align-items:center}
+input[type=number]{width:64px;font:inherit;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+details.rules{margin-top:18px}details.rules summary{cursor:pointer;font-weight:600}
+details.rules li{margin:4px 0;font-size:13px}
+.big{font-size:20px;font-weight:700}
+.pos{color:var(--ok)}.neg{color:var(--zero)}
+</style></head><body><div class="wrap">
+<header>
+ <div><h1>Comisión Líderes</h1><div class="muted small" id="sub">Esquema de comisión de supervisores y gerente vs. resultados de 🎯 Post-Venta · Control</div></div>
+ <div class="chips"><a class="chip" href="./index.html">🎯 Post-Venta · Control</a><a class="chip" href="./calidad-llamadas.html">🎧 Calidad Post-Sales · QA</a><a class="chip" href="./speech/index.html">🎙️ Speech de ventas</a>
+ <label class="small muted">Mes <select id="mes"></select></label></div>
+</header>
+<div id="st" class="status">Cargando datos del mes…</div>
+<div id="app"></div>
+</div>
+<script>
+const WFM_ENDPOINT='__WFM_ENDPOINT__', WFM_TOKEN='__WFM_TOKEN__';
+const SNAP=__SNAP__;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const M=v=>v==null||isNaN(v)?'—':'$'+Math.round(v).toLocaleString('es-CO');
+const M2=v=>v==null||isNaN(v)?'—':'$'+v.toLocaleString('es-CO',{minimumFractionDigits:2,maximumFractionDigits:2});
+const P=(v,d=1)=>v==null||isNaN(v)?'—':(100*v).toFixed(d)+'%';
+const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const fdm=f=>{const [y,m,d]=f.split('-');return (+d)+' '+MESES[+m-1].slice(0,3)};
+const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
+const LS={get(k,d){try{const v=localStorage.getItem('cl_'+k);return v==null?d:JSON.parse(v)}catch(_){return d}},set(k,v){try{localStorage.setItem('cl_'+k,JSON.stringify(v))}catch(_){}}};
+
+// ---------------------------------------------------------------- esquemas (sección del mes del Sheet → líderes)
+const LV=['Gold','Silver','Bronze'];
+function parseGrid(g, rolDefault){
+  if(!g) return {lideres:[], reglas:[], nota:''};
+  const cell=(r,c)=>(g[r]||[])[c], str=(r,c)=>{const v=cell(r,c);return typeof v==='string'?v.trim():''}, num=(r,c)=>{const v=cell(r,c);return typeof v==='number'?v:(v!=null&&v!==''&&!isNaN(+v)?+v:null)};
+  const starts=[];
+  g.forEach((row,r)=>row.forEach((v,c)=>{if(typeof v==='string'&&/^Esquema\s+/.test(v.trim()))starts.push({r,c,nombre:v.trim().replace(/^Esquema\s+/,'')})}));
+  const reglas=[]; let nota='';
+  const lideres=starts.map(s=>{
+    const L={nombre:s.nombre, rol:rolDefault, base:null, secciones:[], ratio:null, equipo:[], metaFeedbacks:null};
+    let op=null, maxSec=null;
+    const fin=(starts.find(o=>o.c===s.c&&o.r>s.r)||{r:g.length}).r;
+    for(let r=s.r+1;r<fin;r++){
+      const a=str(r,s.c);
+      if(/^Base/i.test(a)&&L.base==null) L.base=num(r,s.c+1);
+      if(/^M[aá]x Com/i.test(a)){ if(cell(r,s.c+2)===true||cell(r,s.c+2)==='TRUE'){maxSec=num(r,s.c+1);} else if(L.base==null) L.base=num(r,s.c+1); }
+      if(/^(Supervisor|Coordinador|Gerente)$/i.test(a)){ L.rol=a; const o=str(r+1,s.c); if(o&&!/^Nivel/i.test(o)) op=o; }
+      if(/^Nivel$/i.test(a)&&/^Indicador/i.test(str(r,s.c+2))){
+        const nombre=str(r+1,s.c+2); const tiers=[];
+        for(let k=0;k<3;k++){const rr=r+2+k; tiers.push({nivel:str(rr,s.c), pct:num(rr,s.c+1), acc:num(rr,s.c+3), umbral:num(rr,s.c+4), pago:num(rr,s.c+6)});}
+        const ind={nombre, meta:num(r+2,s.c+2), peso:num(r+2,s.c+5), tiers};
+        const esEquipo=/cumplimiento de asesor/i.test(nombre);
+        const secOp=esEquipo?'Equipo':op;
+        let sec=L.secciones.find(x=>x.op===secOp); if(!sec){sec={op:secOp,max:esEquipo?null:maxSec,indicadores:[]};L.secciones.push(sec);}
+        if(esEquipo&&sec.max==null) sec.max=maxSec;
+        sec.indicadores.push(ind); r+=4;
+      }
+      if(/^Las Metas/i.test(a)&&!nota) nota=a;
+      // reglas y tabla de asesores (columnas a la derecha del bloque)
+      for(const c of [s.c, s.c+8]){
+        const t=str(r,c);
+        if(/^Consideraciones y reglas/i.test(t)&&!reglas.length){ for(let q=r+1;q<Math.min(g.length,r+30);q++){const x=str(q,c); if(x) reglas.push(x); else if(reglas.length>3) break;} }
+      }
+      const rh=str(r,s.c+8);
+      if(/^Ratio\s/i.test(rh)) L.ratio={titulo:rh};
+      if(/^Ratio elegible/i.test(str(r,s.c+12))) L.ratio=Object.assign(L.ratio||{}, {elegibles:num(r,s.c+13)});
+      if(/^Meta de Feedbacks/i.test(rh)) L.metaFeedbacks=num(r,s.c+9);
+      const sk=str(r,s.c+10);
+      if(rh&&/^(Aplica|No Aplica)$/i.test(sk)) L.equipo.push({n:rh, skill:str(r,s.c+9), aplica:/^Aplica$/i.test(sk), obs:str(r,s.c+11)});
+    }
+    return L;
+  });
+  return {lideres, reglas, nota};
+}
+// El gerente viene en 4 bloques (uno por operación) con el mismo nombre: se juntan.
+function juntarGerente(ls){
+  if(!ls.length) return [];
+  const g={nombre:ls[0].nombre, rol:ls[0].rol||'Gerente', base:ls[0].base, secciones:[], equipo:[], ratio:null};
+  ls.forEach(l=>l.secciones.forEach(s=>g.secciones.push(s)));
+  return [g];
+}
+
+// ---------------------------------------------------------------- datos reales (mismas fuentes que Control)
+const OPMAP=[
+  {re:/^upsell/, codes:['2.1'], cr:'ups', label:'Upsell'},
+  {re:/^recurrence/, codes:['2.2'], cr:'recurrence', label:'Recurrence'},
+  {re:/^resurrection/, codes:['2.4','1.4'], cr:'resurrection', label:'Resurrection (2.4 + 1.4)'},
+  {re:/^bootcamp lead/, codes:['1.5'], cr:'bootcamp_acq', label:'Bootcamp Leads (1.5)'},
+  {re:/^bootcamp/, codes:['2.5'], cr:'bootcamp', label:'Bootcamp LTV (2.5)'},
+];
+const opInfo=op=>OPMAP.find(o=>o.re.test(norm(op)))||null;
+
+function metricas(pv, oh, corte){
+  const rows=pv.rows||[], dias=rows.map(r=>r.fecha), mtd=rows.filter(r=>r.fecha<=corte);
+  const sumC=(rs,codes,f)=>rs.reduce((a,r)=>a+codes.reduce((b,c)=>b+((r.det[c]||{})[f]||0),0),0);
+  const opDia=codes=>rows.filter(r=>codes.some(c=>((r.det[c]||{}).rp||0)>0));
+  const out={};
+  OPMAP.forEach(o=>{
+    const rr=sumC(mtd,o.codes,'rr'), rpM=sumC(mtd,o.codes,'rp'), rpT=sumC(rows,o.codes,'rp'), vr=sumC(mtd,o.codes,'vr'), vp=sumC(rows,o.codes,'vp'), vpM=sumC(mtd,o.codes,'vp');
+    const dOp=opDia(o.codes), dHechos=dOp.filter(r=>r.fecha<=corte).length, dRest=dOp.filter(r=>r.fecha>corte).length;
+    const rest=rows.filter(r=>r.fecha>corte), rpRest=sumC(rest,o.codes,'rp'), vpRest=sumC(rest,o.codes,'vp');
+    const ritmo=rpM>0?rr/rpM:null;
+    const proyRev=ritmo!=null?rr+rpRest*ritmo:rr;
+    const vRest=vpRest*(vpM>0?vr/vpM:1);
+    let cr=null, crBase=null;
+    if(o.cr==='ups'){ let v=0,e=0; mtd.forEach(r=>{const c=+r.du_cr, n=+r.bm_ventas_ups_real_u; if(c>0&&n>=0){v+=n;e+=n/c;}}); cr=e>0?v/e:null; crBase={conv:v, base:e, tipo:'ventas ÷ elegibles (Planif_2026 · DU)'}; }
+    else if(oh&&oh.ops&&oh.ops[o.cr]){ const F=oh.fechas, x=oh.ops[o.cr]; let c2=0,cv=0; F.forEach((f,i)=>{if(f>=corte.slice(0,8)+'01'&&f<=corte){c2+=+(x.c2||[])[i]||0; cv+=+(x.conv||[])[i]||0;}}); cr=c2>0?cv/c2:null; crBase={conv:cv, base:c2, tipo:'conversiones ÷ contactos de 2 min (Reporte de Margen)'}; }
+    out[o.label]={rr,rpM,rpT,vr,vp,ritmo,proyRev,asp:vr>0?rr/vr:null,vRest,cr,crBase,dHechos,dRest};
+  });
+  return out;
+}
+
+// ---------------------------------------------------------------- evaluación del esquema
+const nivelDe=(ind,v)=>{ if(v==null) return null; for(const t of ind.tiers) if(t.umbral!=null&&v>=t.umbral-1e-9) return t; return null; };
+function valorInd(ind, m, equipoN){
+  const n=norm(ind.nombre);
+  if(/cumplimiento de asesor/.test(n)) return {corte:equipoN, proy:equipoN, tipo:'n'};
+  if(!m) return {corte:null, proy:null, tipo:'x'};
+  if(/^revenue/.test(n)) return {corte:m.rpM>0&&ind.meta?ind.meta*m.rr/m.rpM:null, proy:m.proyRev, tipo:'rev', real:m.rr, pctCorte:m.rpM>0?m.rr/m.rpM:null};
+  if(/^asp/.test(n)) return {corte:m.asp, proy:m.asp, tipo:'asp'};
+  if(/cr/.test(n)) return {corte:m.cr, proy:m.cr, tipo:'cr'};
+  return {corte:null, proy:null, tipo:'x'};
+}
+function fmtVal(tipo,v){ return tipo==='rev'?M(v):tipo==='asp'?M2(v):tipo==='cr'?P(v,2):tipo==='n'?(v==null?'—':String(v)):'—'; }
+function falta(ind, val, m, tierActual){
+  const idx=tierActual?LV.indexOf(tierActual.nivel):3;
+  const next=idx>0?ind.tiers[idx-1]:null;
+  if(!next) return {txt:'Ya está en Gold', gain:0};
+  const gain=(next.pago||0)-(tierActual?tierActual.pago||0:0);
+  if(val.tipo==='rev'&&m){
+    const need=next.umbral-m.rr, porDia=m.dRest>0?need/m.dRest:null, hoy=m.dHechos>0?m.rr/m.dHechos:null;
+    return {txt:`${next.nivel}: faltan ${M(need)} → ${M(porDia)}/día en ${m.dRest} días (hoy va a ${M(hoy)}/día)`, gain, esfuerzo: hoy&&porDia?porDia/hoy-1:null};
+  }
+  if(val.tipo==='asp'&&m){
+    const reqRest=m.vRest>0?(next.umbral*(m.vr+m.vRest)-m.rr)/m.vRest:null;
+    return {txt:`${next.nivel}: ASP ${M2(next.umbral)} (hoy ${M2(m.asp)})${reqRest?` → lo que falta vender a ${M2(reqRest)} de ticket`:''}`, gain, esfuerzo: m.asp?next.umbral/m.asp-1:null};
+  }
+  if(val.tipo==='cr'&&m&&m.crBase){
+    const b=m.crBase, dias=Math.max(1,m.dHechos), baseRest=b.base/dias*m.dRest, req=baseRest>0?(next.umbral*(b.base+baseRest)-b.conv)/baseRest:null;
+    return {txt:`${next.nivel}: CR ${P(next.umbral,2)} (hoy ${P(m.cr,2)})${req!=null&&m.dRest?` → el resto del mes al ${P(Math.max(0,req),2)}`:''}`, gain, esfuerzo: m.cr?next.umbral/m.cr-1:null};
+  }
+  if(val.tipo==='n') return {txt:`${next.nivel}: ${Math.ceil(next.umbral)} asesores cumpliendo`, gain, esfuerzo:null};
+  return {txt:'—', gain};
+}
+function evaluar(L, MET){
+  const adj=LS.get('adj_'+L.nombre,{adh:false,mon:false}), eqN=LS.get('eq_'+L.nombre,null);
+  let corte=0, proy=0, max=0; const filas=[], opciones=[];
+  L.secciones.forEach(sec=>{
+    const info=sec.op==='Equipo'?null:opInfo(sec.op), m=info?MET[info.label]:null;
+    sec.indicadores.forEach(ind=>{
+      const val=valorInd(ind,m,eqN), tc=nivelDe(ind,val.corte), tp=nivelDe(ind,val.proy), f=falta(ind,val,m,tp);
+      const gold=(ind.tiers[0]||{}).pago||0; max+=gold; corte+=tc?tc.pago||0:0; proy+=tp?tp.pago||0:0;
+      filas.push({sec, info, ind, val, tc, tp, f, m});
+      if(f.gain>0) opciones.push({ind, sec, f});
+    });
+  });
+  const desc=(adj.adh?0.1:0)+(adj.mon?0.1:0);
+  // dónde apuntar: el mayor $ extra entre los que están a menos de 15 % de su siguiente nivel; si no hay, el mayor $ extra
+  const cerca=opciones.filter(o=>o.f.esfuerzo!=null&&o.f.esfuerzo<=0.15).sort((a,b)=>b.f.gain-a.f.gain);
+  const apunta=(cerca[0]||opciones.sort((a,b)=>b.f.gain-a.f.gain)[0])||null;
+  return {corte:corte*(1-desc), proy:proy*(1-desc), max, filas, desc, adj, eqN, apunta};
+}
+
+// ---------------------------------------------------------------- vista
+let STATE={};
+function lvl(t){ return t?`<span class="lvl ${t.nivel}">${t.nivel}</span>`:'<span class="lvl Sin">Sin nivel</span>'; }
+function barra(ind,val){
+  const g=ind.tiers[0]&&ind.tiers[0].umbral; if(!g||val.proy==null) return '';
+  const max=g*1.12, w=Math.max(0,Math.min(100,100*val.proy/max));
+  return `<div class="bar" title="Proyección vs umbrales Bronze / Silver / Gold"><i style="width:${w}%"></i>${ind.tiers.map(t=>t.umbral?`<s style="left:${100*t.umbral/max}%" title="${t.nivel} ${fmtVal(val.tipo,t.umbral)}"></s>`:'').join('')}</div>`;
+}
+function tarjeta(L, E, i){
+  const ops=L.secciones.filter(s=>s.op!=='Equipo').map(s=>s.op).join(' · ');
+  let h=`<div class="card" id="l${i}"><div class="hd"><div><h2>${esc(L.nombre)}</h2><div class="muted small">${esc(L.rol||'')} · ${esc(ops)}${L.base?` · base ${M(L.base)}`:''}</div></div>
+   <div style="display:flex;gap:22px;flex-wrap:wrap"><div><div class="tag">Al corte</div><div class="big">${M(E.corte)}</div></div><div><div class="tag">Proyección fin de mes</div><div class="big">${M(E.proy)}</div></div><div><div class="tag">Máximo posible</div><div class="big muted">${M(E.max)}</div></div></div></div><div class="bd">`;
+  let cur=null;
+  h+='<div class="tw"><table><thead><tr><th>Indicador</th><th class="n">Meta (Gold)</th><th class="n">Real al corte</th><th class="n">Proyección</th><th>Al corte</th><th>Fin de mes</th><th class="n">$ proyectado</th><th>Qué falta para el siguiente nivel</th></tr></thead><tbody>';
+  E.filas.forEach(f=>{
+    if(f.sec!==cur){cur=f.sec; h+=`<tr><td colspan="8" class="op">${esc(f.sec.op)}${` · hasta ${M(f.sec.indicadores.reduce((x,i)=>x+((i.tiers[0]||{}).pago||0),0))}`}${f.info&&f.info.label!==f.sec.op?` <span class="tag">(${esc(f.info.label)})</span>`:''}</td></tr>`;}
+    const meta=f.val.tipo==='n'?`${f.ind.meta} elegibles`:fmtVal(f.val.tipo,f.ind.meta);
+    let real=f.val.tipo==='rev'?`${M(f.val.real)} <span class="tag">${P(f.val.pctCorte,0)} del plan a la fecha</span>`:fmtVal(f.val.tipo,f.val.corte);
+    if(f.val.tipo==='n') real=`<input type="number" min="0" step="1" data-eq="${esc(L.nombre)}" value="${f.val.corte==null?'':f.val.corte}" placeholder="?"> <span class="tag">asesores que cumplen</span>`;
+    h+=`<tr><td>${esc(f.ind.nombre)}<div class="tag">peso ${P(f.ind.peso,0)}</div></td><td class="n">${meta}</td><td class="n">${real}</td><td class="n">${fmtVal(f.val.tipo,f.val.proy)}${barra(f.ind,f.val)}</td><td>${lvl(f.tc)}</td><td>${lvl(f.tp)}</td><td class="n">${M(f.tp?f.tp.pago:0)}<div class="tag">de ${M((f.ind.tiers[0]||{}).pago)}</div></td><td class="small">${esc(f.f.txt)}${f.f.gain>0?` <b class="pos">+${M(f.f.gain)}</b>`:''}</td></tr>`;
+  });
+  h+='</tbody></table></div>';
+  if(E.apunta) h+=`<div class="aim">🎯 <b>Dónde apuntar:</b> ${esc(E.apunta.sec.op)} · ${esc(E.apunta.ind.nombre)} — ${esc(E.apunta.f.txt)} <b class="pos">(+${M(E.apunta.f.gain)})</b></div>`;
+  h+=`<div class="adj"><label><input type="checkbox" data-adj="${esc(L.nombre)}" data-k="adh" ${E.adj.adh?'checked':''}> Adherencia del equipo &lt; 95 % (−10 %)</label><label><input type="checkbox" data-adj="${esc(L.nombre)}" data-k="mon" ${E.adj.mon?'checked':''}> No cumplió monitoreos / feedbacks${L.metaFeedbacks?` (meta ${L.metaFeedbacks})`:''} (−10 %)</label>${L.ratio&&L.ratio.elegibles?`<span class="muted">Asesores elegibles: ${L.ratio.elegibles}${L.equipo.length?` · ${L.equipo.filter(a=>!a.aplica).map(a=>esc(a.n)+' no aplica'+(a.obs?' ('+esc(a.obs)+')':'')).join(', ')}`:''}</span>`:''}</div>`;
+  return h+'</div></div>';
+}
+function render(){
+  const {sup, ger, MET, corte, pv, fuente, reglas, nota}=STATE;
+  const todos=[...ger, ...sup]; const ev=todos.map(L=>evaluar(L,MET));
+  const diasMes=(pv.rows||[]).length, diaN=(pv.rows||[]).filter(r=>r.fecha<=corte).length;
+  $('sub').textContent=`Esquema de ${MESES[+STATE.mes.slice(5)-1]} ${STATE.mes.slice(0,4)} vs. resultados de 🎯 Post-Venta · Control · corte ${fdm(corte)} (${diaN} de ${diasMes} días) · esquema: ${fuente}`;
+  const tot=k=>ev.reduce((a,e)=>a+e[k],0);
+  let h=`<div class="kpis"><div class="kpi"><span class="tag">Comisión al corte (todos)</span><b>${M(tot('corte'))}</b></div><div class="kpi"><span class="tag">Proyección fin de mes</span><b>${M(tot('proy'))}</b></div><div class="kpi"><span class="tag">Máximo posible</span><b>${M(tot('max'))}</b></div><div class="kpi"><span class="tag">Se está dejando en la mesa</span><b class="neg">${M(tot('max')-tot('proy'))}</b></div></div>`;
+  h+='<div class="tw"><table><thead><tr><th>Líder</th><th>Operación</th><th class="n">Al corte</th><th class="n">Proyección</th><th class="n">Máximo</th><th class="n">% del máximo</th><th>Dónde apuntar</th></tr></thead><tbody>';
+  todos.forEach((L,i)=>{const E=ev[i]; h+=`<tr><td><a href="#l${i}">${esc(L.nombre)}</a><div class="tag">${esc(L.rol||'')}</div></td><td class="small">${esc(L.secciones.filter(s=>s.op!=='Equipo').map(s=>s.op).join(' · '))}</td><td class="n">${M(E.corte)}</td><td class="n"><b>${M(E.proy)}</b></td><td class="n">${M(E.max)}</td><td class="n">${P(E.max?E.proy/E.max:null,0)}</td><td class="small">${E.apunta?esc(E.apunta.sec.op+' · '+E.apunta.ind.nombre)+` <b class="pos">+${M(E.apunta.f.gain)}</b>`:'—'}</td></tr>`;});
+  h+='</tbody></table></div>';
+  h+=`<p class="small muted" style="margin-top:8px">Revenue y ASP: Planif_2026 (igual que Control). CR 2 min: Reporte de Margen (conversiones ÷ contactos de 2 min). %CR Elegibles de Upsell: CR diario de Planif_2026 (columna DU) ponderado por ventas. La proyección de revenue sigue el ritmo del mes contra el plan; ASP y CR se proyectan con el valor a la fecha. Cumplimiento de asesores no viene en ninguna fuente: escribe cuántos asesores cumplen y se calcula.</p>`;
+  todos.forEach((L,i)=>h+=tarjeta(L,ev[i],i));
+  if(reglas.length) h+=`<details class="rules"><summary>Consideraciones y reglas del esquema</summary><ul>${reglas.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>${nota?`<p class="small muted">${esc(nota)}</p>`:''}</details>`;
+  $('app').innerHTML=h;
+  document.querySelectorAll('[data-eq]').forEach(el=>el.addEventListener('change',()=>{const v=el.value===''?null:Math.max(0,parseInt(el.value,10)||0); LS.set('eq_'+el.dataset.eq,v); render();}));
+  document.querySelectorAll('[data-adj]').forEach(el=>el.addEventListener('change',()=>{const k='adj_'+el.dataset.adj, a=LS.get(k,{adh:false,mon:false}); a[el.dataset.k]=el.checked; LS.set(k,a); render();}));
+}
+
+// ---------------------------------------------------------------- carga
+async function getJSON(action, extra){
+  const r=await fetch(WFM_ENDPOINT+'?token='+encodeURIComponent(WFM_TOKEN)+'&action='+action+(extra||''),{redirect:'follow'});
+  if(!r.ok) throw new Error('El servidor respondió '+r.status); return r.json();
+}
+async function cargar(mes){
+  $('st').className='status'; $('st').hidden=false; $('st').textContent='Cargando datos del mes…';
+  try{
+    const [pv, oh, cl]=await Promise.all([getJSON('postventa', mes?'&mes='+mes:''), getJSON('opshist').catch(()=>null), getJSON('comlideres', mes?'&mes='+mes:'').catch(()=>null)]);
+    if(!pv||!pv.ok) throw new Error((pv&&pv.error)||'Planif_2026 no respondió');
+    const m=pv.mes;
+    let esquema=null, fuente='';
+    const vivo=cl&&cl.ok&&cl.action==='comlideres'&&cl.mes===m?cl:null, copia=SNAP.mes===m?SNAP:null;
+    if(vivo&&vivo.lideres&&vivo.gerente){ esquema=vivo; fuente='Sheet en vivo'; }
+    else if(vivo&&(vivo.lideres||vivo.gerente)&&copia){ esquema={lideres:vivo.lideres||copia.lideres, gerente:vivo.gerente||copia.gerente}; fuente=`Sheet en vivo (${vivo.lideres?'líderes':'gerente'}) + copia del 9 nov (${vivo.lideres?'gerente':'líderes'}: ${(vivo.warnings||[]).join(' ')})`; }
+    else if(vivo&&(vivo.lideres||vivo.gerente)){ esquema=vivo; fuente='Sheet en vivo (incompleto: '+(vivo.warnings||[]).join(' ')+')'; }
+    else if(copia){ esquema=copia; fuente='copia del Sheet del 9 nov'+(vivo?' ('+(vivo.warnings||[]).join(' ')+')':' (falta publicar la acción comlideres del Apps Script)'); }
+    if(!esquema) throw new Error('No hay esquema de '+m+'. Publica la acción comlideres del Apps Script para leer cualquier mes.');
+    const A=parseGrid(esquema.lideres,'Supervisor'), B=parseGrid(esquema.gerente,'Gerente');
+    const hoy=pv.hoy, ultimo=pv.rows.length?pv.rows[pv.rows.length-1].fecha:hoy;
+    const ayer=(()=>{const d=new Date(hoy+'T12:00:00');d.setDate(d.getDate()-1);return d.toISOString().slice(0,10)})();
+    const corte=hoy.slice(0,7)===m?ayer:(hoy>ultimo?ultimo:ayer);
+    STATE={mes:m, pv, oh, corte, MET:metricas(pv,oh,corte), sup:A.lideres, ger:juntarGerente(B.lideres), fuente, reglas:A.reglas, nota:B.nota};
+    const sel=$('mes'); const ms=(pv.mesesDisponibles||[m]);
+    sel.innerHTML=ms.map(x=>`<option value="${x}" ${x===m?'selected':''}>${MESES[+x.slice(5)-1]} ${x.slice(0,4)}</option>`).join('');
+    $('st').hidden=true; render();
+  }catch(e){ $('st').className='status err'; $('st').textContent='⚠️ '+e.message; }
+}
+$('mes').addEventListener('change',e=>cargar(e.target.value));
+cargar('');
+</script></body></html>
