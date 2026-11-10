@@ -26,9 +26,9 @@ function comLideresWeb_(p) {
   return out;
 }
 
-// Busca la pestaña sin importar mayúsculas ni espacios de más (el nombre puede venir recortado).
+// Busca la pestaña sin importar mayúsculas, espacios, tildes ni signos (el nombre puede venir recortado).
 function comHoja_(ss, nombre) {
-  const n = s => String(s).toLowerCase().replace(/\s+/g, ' ').trim();
+  const n = s => String(s).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '');   // sin espacios, tildes ni signos («RevOps: …» = «RevOps …»)
   const b = n(nombre);
   return ss.getSheets().find(sh => n(sh.getName()) === b) || ss.getSheets().find(sh => b.indexOf(n(sh.getName())) === 0 || n(sh.getName()).indexOf(b) === 0) || null;
 }

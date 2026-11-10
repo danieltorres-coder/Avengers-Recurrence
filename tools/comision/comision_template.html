@@ -256,8 +256,11 @@ async function cargar(mes){
     if(!pv||!pv.ok) throw new Error((pv&&pv.error)||'Planif_2026 no respondió');
     const m=pv.mes;
     let esquema=null, fuente='';
-    if(cl&&cl.ok&&cl.action==='comlideres'&&(cl.lideres||cl.gerente)){ esquema=cl; fuente='Sheet en vivo'; }
-    else if(SNAP.mes===m){ esquema=SNAP; fuente='copia del Sheet del 9 nov (falta publicar la acción comlideres del Apps Script)'; }
+    const vivo=cl&&cl.ok&&cl.action==='comlideres'&&cl.mes===m?cl:null, copia=SNAP.mes===m?SNAP:null;
+    if(vivo&&vivo.lideres&&vivo.gerente){ esquema=vivo; fuente='Sheet en vivo'; }
+    else if(vivo&&(vivo.lideres||vivo.gerente)&&copia){ esquema={lideres:vivo.lideres||copia.lideres, gerente:vivo.gerente||copia.gerente}; fuente=`Sheet en vivo (${vivo.lideres?'líderes':'gerente'}) + copia del 9 nov (${vivo.lideres?'gerente':'líderes'}: ${(vivo.warnings||[]).join(' ')})`; }
+    else if(vivo&&(vivo.lideres||vivo.gerente)){ esquema=vivo; fuente='Sheet en vivo (incompleto: '+(vivo.warnings||[]).join(' ')+')'; }
+    else if(copia){ esquema=copia; fuente='copia del Sheet del 9 nov'+(vivo?' ('+(vivo.warnings||[]).join(' ')+')':' (falta publicar la acción comlideres del Apps Script)'); }
     if(!esquema) throw new Error('No hay esquema de '+m+'. Publica la acción comlideres del Apps Script para leer cualquier mes.');
     const A=parseGrid(esquema.lideres,'Supervisor'), B=parseGrid(esquema.gerente,'Gerente');
     const hoy=pv.hoy, ultimo=pv.rows.length?pv.rows[pv.rows.length-1].fecha:hoy;
